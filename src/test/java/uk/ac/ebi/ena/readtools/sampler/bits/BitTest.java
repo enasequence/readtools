@@ -2,9 +2,13 @@ package uk.ac.ebi.ena.readtools.sampler.bits;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 
+import org.junit.Assert;
 import org.junit.Test;
+
+
 
 public class BitTest
 {
@@ -48,21 +52,26 @@ public class BitTest
     {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DictionaryOutputStream bstream = new DictionaryOutputStream( new BitOutputStream( bytes ), new BaseDict() );
-        bstream.write( "ACGTNTGCAN".getBytes() );
+        String seq = "ACGTNTGCAN";
+        bstream.write( seq.getBytes() );
         
         bstream.close();
         
         DictionaryInputStream bis = new DictionaryInputStream( new BitInputStream( new ByteArrayInputStream( bytes.toByteArray() ) ), new BaseDict() ); 
         System.out.println( "Stream length: " + bytes.toByteArray().length );
+
+        StringBuilder sb = new StringBuilder();
+        int ch = 0;
         
-        System.out.printf( "%c, %c, %c, %c, %c, %c, %c, %c, %c, %c\n", 
-                           bis.read(), bis.read(), bis.read(), bis.read(),
-                           bis.read(), bis.read(), bis.read(), bis.read(), bis.read(), bis.read() );
-        
-        
-        bis.close();
-        
+        try
+        {
+        	while( -1 != ( ch = bis.read() ) )
+        		sb.append( (char)ch );
+
+        	Assert.fail();
+        } catch( EOFException eof )
+        {
+        	Assert.assertEquals( seq, sb.toString() );
+        }
     }
-
-
 }

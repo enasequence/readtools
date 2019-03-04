@@ -1,5 +1,6 @@
 package uk.ac.ebi.ena.readtools.sampler.bits;
 
+import htsjdk.samtools.util.Log;
 
 public class 
 BaseDict implements ConstantLengthDataDictionary<Character>
@@ -37,14 +38,14 @@ BaseDict implements ConstantLengthDataDictionary<Character>
     {
         switch( value )
         {
-        case 'A': return 0x8;
-        case 'T': return 0x7;
-        case 'G': return 0x2;
-        case 'C': return 0x11;
-        case 'N': return 0x6;
+        case 'A': return 0x1;
+        case 'T': return 0x3;
+        case 'G': return 0x5;
+        case 'C': return 0x7;
+        case 'N': return 0x0;
         
         default:
-            throw new RuntimeException();
+            throw new RuntimeException( String.format( "Unknown value: 0x%h", value ) );
         }
     }
 
@@ -55,11 +56,11 @@ BaseDict implements ConstantLengthDataDictionary<Character>
     {
         switch( value )
         {
-        case 0x0: return 'A';
-        case 0x1: return 'C';
-        case 0x2: return 'G';
+        case 0x1: return 'A';
         case 0x3: return 'T';
-        case 0x4: return 'N';
+        case 0x5: return 'G';
+        case 0x7: return 'C';
+        case 0x0: return 'N';
         default:
             throw new RuntimeException( String.format( "Unknown value: 0x%h", value ) );
         }
