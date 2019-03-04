@@ -1,0 +1,136 @@
+plugins {
+    id "io.github.ddimtirov.codacy" version "0.1.0"
+}
+
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+apply plugin: 'maven'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: "jacoco"
+
+wrapper{
+    gradleVersion = '5.2.1'
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+
+group = 'uk.ac.ebi.ena.frankenstein'
+ext.version_base = '1.2.0'
+version = version_base
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+jar { 
+	into( 'native' ) { 
+		from fileTree( dir: 'native', includes: [ '**/*.so' ] ) 
+	}
+	
+   	manifest {
+        attributes 'Implementation-Title': 'frankenstein',
+                   'Implementation-Version': version_base,
+                   'Built-By': System.getProperty( 'user.name' ),
+                   'Built-Date': new Date(),
+                   'Main-Class': 'uk.ac.ebi.ena.frankenstein.loader.fastq.Loader'
+    }
+}
+
+configurations.all {
+	
+	if( !hasProperty( 'artifactoryUsername' ) )
+		project.ext.properties.artifactoryUsername = ''
+	else
+		project.ext.properties.artifactoryUsername = artifactoryUsername;
+		
+	if( !hasProperty( 'artifactoryPassword' ) )
+		project.ext.properties.artifactoryPassword = ''
+	else
+	 	project.ext.properties.artifactoryPassword = artifactoryPassword;
+
+	if( !hasProperty( 'gitlab_private_token' ) )
+		project.ext.properties.gitlab_private_token = ''
+	else
+		project.ext.properties.gitlab_private_token = gitlab_private_token;
+}
+
+
+test {
+	jvmArgs "-Dfile.encoding=UTF-8"
+	maxHeapSize = '5G'
+}
+
+
+repositories {
+    mavenLocal()
+    maven { url "https://gitlab.ebi.ac.uk/api/v4/groups/enasequence/-/packages/maven" }
+    mavenCentral()
+    maven { url "http://maven.imagej.net/content/repositories/public/" } 
+}
+
+
+dependencies {
+	compile( group: 'net.java.dev.jna', name: 'jna', version: '5.2.0' )
+    compile( group:'cisd', name: 'jhdf5', version: '14.12.6' )
+    compile( group: 'org.apache.commons', name: 'commons-compress', version: '1.18' )
+    compile group: 'com.beust', name: 'jcommander', version: '1.72'
+    compile( group: 'uk.ac.ebi.ena', name: 'ena-cram-processing-tools', version: '1.1.0' )
+    compile( group: 'com.github.samtools', name: 'htsjdk', version: '2.15.0' )
+    compile 'log4j:log4j:1.2.17'
+    testCompile "junit:junit:4.11"
+    // implementation("org.projectlombok:lombok:1.18.4")
+    // testImplementation('org.assertj:assertj-core:3.11.1')
+    // testImplementation('org.mockito:mockito-core:2.23.4')
+}
+
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourceJar
+        }
+    }
+    repositories {
+	    maven {
+            // Project specific maven repository in Gitlab.
+            url "https://gitlab.ebi.ac.uk/api/v4/projects/<811>/packages/maven"
+            // Developer token in Gitlab.
+            credentials(HttpHeaderCredentials) {
+                name = "Private-Token"
+                value = project.ext.properties.gitlab_private_token
+            }
+            authentication {
+                header( HttpHeaderAuthentication )
+            }
+	    }
+    }
+}
+
+task writePom {
+    doLast {
+        pom {
+            project {
+                inceptionYear '2019'
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                }
+            }
+        }.writeTo( "pom.xml" )
+    }
+}   
+
+
+compileJava.dependsOn( writePom )
