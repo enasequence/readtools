@@ -196,7 +196,7 @@ SPACE HERE
     }
     
 
-    enum
+    public enum
     ReadStyle
     {
         FASTQ,

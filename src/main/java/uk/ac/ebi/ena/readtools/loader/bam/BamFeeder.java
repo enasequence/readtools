@@ -30,7 +30,7 @@ BamFeeder extends Thread implements DataFeeder<BamSpot>
     Throwable           stored_exception;
     
     
-    protected 
+    public 
     BamFeeder( InputStream istream ) 
     {
         Log.setGlobalLogLevel( LogLevel.ERROR );
