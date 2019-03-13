@@ -19,6 +19,7 @@ IlluminaSpot
     //NCBI coords start from 0!
     public int[] read_start;
     public int[] read_length;
+    public String[] read_name;
     //TODO byte arrays?
     public String bases = "";
     public String quals = "";
@@ -29,8 +30,9 @@ IlluminaSpot
     initPaired()
     {
         IlluminaSpot result = new IlluminaSpot();
-        result.read_start = new int[] { -1, -1 };
-        result.read_length = new int[] { -1, -1 };
+        result.read_start   = new int[] { -1, -1 };
+        result.read_length  = new int[] { -1, -1 };
+        result.read_name    = new String[ 2 ]; 
         return result;
     }
     
@@ -39,8 +41,9 @@ IlluminaSpot
     initSingle()
     {
         IlluminaSpot result = new IlluminaSpot();
-        result.read_start = new int[] { -1 };
-        result.read_length = new int[] { -1 };
+        result.read_start   = new int[] { -1 };
+        result.read_length  = new int[] { -1 };
+        result.read_name    = new String[ 1 ];
         return result;
     }
     

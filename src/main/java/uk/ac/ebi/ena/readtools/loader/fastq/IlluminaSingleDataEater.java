@@ -33,7 +33,7 @@ IlluminaSingleDataEater implements DataEater<DataSpot, IlluminaSpot>
         ispot.quals = spot.quals;
         ispot.read_start[ IlluminaSpot.FORWARD ] = 0;
         ispot.read_length[ IlluminaSpot.FORWARD ] = spot.bases.length();
-        
+        ispot.read_name[ IlluminaSpot.FORWARD ] = spot.bname;
         if( null != dataEater )
             dataEater.eat( ispot );
         else

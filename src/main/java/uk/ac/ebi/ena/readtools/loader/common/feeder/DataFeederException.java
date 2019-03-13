@@ -44,5 +44,10 @@ DataFeederException extends Exception
                            : String.format( "%s:%d %s", thread_name, line_no, super.toString() );
     }
     
-
+    
+    public long
+    getLineNo()
+    {
+    	return this.line_no;
+    }
 }

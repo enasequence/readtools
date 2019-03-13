@@ -10,12 +10,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.eater.PrintDataEater;
 import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataFeeder;
 import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 
 public class 
@@ -61,7 +61,8 @@ LoaderTest
     boolean 
     read( String resource, final QualityNormalizer normalizer ) throws Exception
     {
-        InputStream is = getClass().getResourceAsStream( resource );
+        InputStream is = getClass().getResourceAsStream( "/resources/" + resource );
+        is = is == null ? new FileInputStream( new File( "resources/" + resource ) ) : is;
         try
         {
             return read( is, resource, normalizer );
@@ -87,47 +88,45 @@ LoaderTest
 
     
     
-    @org.junit.Test
-    public void
+    @Test public void
     testCorrect() throws Exception
     {
         
-        if( !read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/fastq/mp3_schw3.fq" ), QualityNormalizer.ILLUMINA_1_3 ) )
+        if( !read( "mp3_schw3.fq", QualityNormalizer.ILLUMINA_1_3 ) )
             throw new Exception( "fail!" );
         
-        if( !read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/fastq/fastq_spots_correct.txt" ), QualityNormalizer.ILLUMINA_1_3 ) )
+        if( !read( "fastq_spots_correct.txt", QualityNormalizer.ILLUMINA_1_3 ) )
             throw new Exception( "fail!" );
         
-        if( !read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/fastq/fastq_casava1_8_correct.txt" ), QualityNormalizer.SANGER ) )
+        if( !read( "fastq_casava1_8_correct.txt", QualityNormalizer.SANGER ) )
             throw new Exception( "fail!" );
 
     }
     
     
-    @org.junit.Test
-    public void
+    @Test public void
     testFailed() throws Exception
     {
 
-        if( read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/fastq/fastq_spot_incorrect.txt" ), QualityNormalizer.ILLUMINA_1_3 ) )
+        if( read( "fastq_spot_incorrect.txt", QualityNormalizer.ILLUMINA_1_3 ) )
             throw new Exception( "fail!" );
 
-        if( read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/fastq/fastq_spot_incorrect2.txt" ), QualityNormalizer.ILLUMINA_1_3 ) )
+        if( read( "fastq_spot_incorrect2.txt", QualityNormalizer.ILLUMINA_1_3 ) )
             throw new Exception( "fail!" );
 
-        if( read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/fastq/fastq_spot_incorrect3.txt" ), QualityNormalizer.ILLUMINA_1_3 ) )
+        if( read( "fastq_spot_incorrect3.txt", QualityNormalizer.ILLUMINA_1_3 ) )
             throw new Exception( "fail!" );
         
-        if( read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/fastq/fastq_spot_incorrect4.txt" ), QualityNormalizer.ILLUMINA_1_3 ) )
+        if( read( "fastq_spot_incorrect4.txt", QualityNormalizer.ILLUMINA_1_3 ) )
             throw new Exception( "fail!" );
 
-        if( read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/fastq/fastq_spot_incorrect5.txt" ), QualityNormalizer.ILLUMINA_1_3 ) )
+        if( read( "fastq_spot_incorrect5.txt", QualityNormalizer.ILLUMINA_1_3 ) )
             throw new Exception( "fail!" );
         
-        if( read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/fastq/fastq_spot_incorrect6.txt" ), QualityNormalizer.SANGER ) )
+        if( read( "fastq_spot_incorrect6.txt", QualityNormalizer.SANGER ) )
             throw new Exception( "fail!" );
 
-        if( read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/fastq/fastq_casava1_8_incorrect.txt" ), QualityNormalizer.SANGER ) )
+        if( read( "fastq_casava1_8_incorrect.txt", QualityNormalizer.SANGER ) )
             throw new Exception( "fail!" );
 
     }

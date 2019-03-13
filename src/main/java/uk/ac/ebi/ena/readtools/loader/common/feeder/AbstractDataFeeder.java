@@ -23,6 +23,7 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
     protected boolean      is_ok = true;
     protected DataEater<T, ?> dataEater;
     protected Throwable    stored_exception;
+    private long           field_feed_count;
     static final int       YIELD_CYCLES = 362;//16384;
     
     
@@ -65,13 +66,18 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
     protected abstract T
     newFeedable();
     
+    public long
+    getFieldFeedCount()
+    {
+        return field_feed_count;
+    }
     
     //Re-implement if you need special type of feeding
     public T
     feed() throws DataFeederException 
     {
         T object = newFeedable();
-        boolean started = false;
+        boolean record_started = false;
         try
         {
             try
@@ -79,24 +85,25 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
                 for( Method m : feedables )
                 {
                     m.invoke( object, new Object[] { istream } );
-                    started = true;
+                    field_feed_count++;
+                    record_started = true;
                 }
             } catch( InvocationTargetException ite )
             {
                 Throwable cause = ite.getCause();
                 if( cause instanceof EOFException )
                 {
-                    if( started )
+                	if( record_started )
                     {
                         if( null != checker )
                         {
                             checker.invoke( object, (Object [])null );
                         } else
                         {
-                            throw new DataFeederException( -1, "EOF while reading fields" );
+                        throw new DataFeederException( field_feed_count, "EOF while reading fields" );
                         }
                     }
-                    throw new DataFeederEOFException();
+                throw new DataFeederEOFException( field_feed_count );
                 }
                 throw ite;
             } 
@@ -142,20 +149,20 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
             
         } catch( DataEaterException e )
         {
-            e.printStackTrace();
+            //e.printStackTrace();
             this.stored_exception = e;
             is_ok = false;
         } catch( DataFeederEOFException e )
         {
-            e.printStackTrace();
+            //e.printStackTrace();
         } catch( DataFeederPanicException e )
         {
-            e.printStackTrace();
+            //e.printStackTrace();
             is_ok = false;
             this.stored_exception = e;
         } catch( Throwable t )
         {
-            t.printStackTrace();
+            //t.printStackTrace();
             this.stored_exception = t;
             is_ok = false;
         }

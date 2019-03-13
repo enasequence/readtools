@@ -11,8 +11,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.commons.lang.NotImplementedException;
-
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
@@ -53,7 +51,7 @@ IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataEater<Illu
             break;
             
         default:
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
 
         }
         

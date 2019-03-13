@@ -106,6 +106,7 @@ IlluminaPairedDataEater extends AbstractPagedDataEater<DataSpot, IlluminaSpot>
             bases.append( spot.bases );
             quals.append( spot.quals );
             i_spot.read_length[ i ] = spot.bases.length();
+            i_spot.read_name[ i ] = spot.bname;
         }
 
         i_spot.bases = bases.toString();

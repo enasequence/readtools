@@ -14,6 +14,15 @@ DataFeederEOFException extends DataFeederException
         thread_name = Thread.currentThread().getName();
     }
 
+    
+    public 
+    DataFeederEOFException( long line_no )
+    {
+        super( line_no );
+        thread_name = Thread.currentThread().getName();
+    }
+    
+    
     public 
     DataFeederEOFException()
     {
