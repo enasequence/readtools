@@ -81,8 +81,8 @@ IlluminaIterativeEaterIteratorTest
     {
         IlluminaIterativeEater wrapper = new IlluminaIterativeEater();
         
-        wrapper.setFiles( new File[] { new File( "bin/uk/ac/ebi/ena/frankenstein/loader/fastq/fastq_spots_correct2_1.txt" ),  
-                                       new File( "bin/uk/ac/ebi/ena/frankenstein/loader/fastq/fastq_spots_correct2_2.txt" ) } );
+        wrapper.setFiles( new File[] { new File( "resources/fastq_spots_correct2_1.txt" ),  
+                                       new File( "resources/fastq_spots_correct2_2.txt" ) } );
         
         wrapper.setNormalizers( new QualityNormalizer[] { QualityNormalizer.SANGER } );
         wrapper.setReadType( READ_TYPE.PAIRED );
