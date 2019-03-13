@@ -39,8 +39,8 @@ IlluminaIterativeEaterIteratorTest
     {
         IlluminaIterativeEater wrapper = new IlluminaIterativeEater();
         
-        wrapper.setFiles( new File[] { new File( "bin/uk/ac/ebi/ena/frankenstein/loader/fastq/T966_R1.fastq.gz" ),  
-                                       new File( "bin/uk/ac/ebi/ena/frankenstein/loader/fastq/T966_R2.fastq.gz" ) } );
+        wrapper.setFiles( new File[] { new File( "resources/T966_R1.fastq.gz" ),  
+                                       new File( "resources/T966_R2.fastq.gz" ) } );
         
         wrapper.setNormalizers( new QualityNormalizer[] { QualityNormalizer.SANGER } );
         wrapper.setReadType( READ_TYPE.PAIRED );
