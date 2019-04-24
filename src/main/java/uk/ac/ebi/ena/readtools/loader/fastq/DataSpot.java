@@ -301,7 +301,7 @@ SPACE HERE
                 String[] scores = line.split( " +" );
                 StringBuilder sb = new StringBuilder( scores.length );
                 for( String score : scores )
-                    sb.append( (char) ( Integer.parseInt( score ) + '@' ) );
+                    sb.append( (char) ( Integer.parseInt( score ) + '!' ) );
                 value = sb.toString();
                 
                 if( expected_qual_length != value.length() )
