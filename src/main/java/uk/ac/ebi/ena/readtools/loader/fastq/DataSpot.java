@@ -7,8 +7,6 @@ import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.junit.Assert;
-
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer.QualityNormaizationException;
 import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
@@ -367,7 +365,7 @@ SPACE HERE
                 int       len,
                 int       stop ) throws IOException
     {
-        Assert.assertTrue( istream.markSupported() );
+        assert istream.markSupported();
         StringBuilder b = new StringBuilder( 1024 );
         
         int space_cnt = 0;

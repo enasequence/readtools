@@ -134,8 +134,8 @@ LoaderTest
     public void
     testCorrect() throws Exception
     {
-        if( !read( new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/bam/bnlx1mp_srt.header.bam" ),
-                   new File( "src/test/java/uk/ac/ebi/ena/readtools/loader/bam/bnlx1mp_srt.header.bam" ), 
+        if( !read( new File( "resources/bnlx1mp_srt.header.bam" ),
+                   new File( "resources/bnlx1mp_srt.header.bam" ), 
                    "bnlx1mp_srt.header.bam" ) )
             throw new Exception( "fail!" );
        

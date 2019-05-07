@@ -99,8 +99,8 @@ TestEater
     boolean 
     read( String read_resource, String map_resource ) throws Exception
     {
-        InputStream read_stream = getClass().getResourceAsStream( read_resource );
-        InputStream map_stream  = getClass().getResourceAsStream( map_resource );
+        InputStream read_stream = TestEater.class.getClassLoader().getResourceAsStream( read_resource );
+        InputStream map_stream  = TestEater.class.getClassLoader().getResourceAsStream( map_resource );
         try
         {
             return read( read_stream, map_stream );

@@ -12,7 +12,7 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
-import net.sf.cram.ref.ENAReferenceSource;
+import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
 import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
 import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
 import uk.ac.ebi.ena.readtools.loader.common.eater.PrintDataEater;

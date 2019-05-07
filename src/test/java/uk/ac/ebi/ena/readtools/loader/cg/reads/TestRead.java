@@ -15,7 +15,7 @@ import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataFeeder;
 import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
 
 public class 
-TestMap
+TestRead
 {
     @Before
     public void
@@ -36,17 +36,18 @@ TestMap
     read( InputStream is ) throws SecurityException, DataFeederException, NoSuchMethodException, IOException
     {
         final ReadHeader h = ReadHeader( is );
-        AbstractDataFeeder<CompleteGenomicsMap3> df = new AbstractDataFeeder<CompleteGenomicsMap3>( is, CompleteGenomicsMap3.class ) 
+        
+        AbstractDataFeeder<CompleteGenomicsRead> df = new AbstractDataFeeder<CompleteGenomicsRead>( is, CompleteGenomicsRead.class ) 
         {
 
             @Override
-            protected CompleteGenomicsMap3 newFeedable()
+            protected CompleteGenomicsRead newFeedable()
             {
-                return new CompleteGenomicsMap3( h );
+                return new CompleteGenomicsRead( h );
             }
         };
         
-        df.setEater( new PrintDataEater<CompleteGenomicsMap3, Object>() );
+        df.setEater( new PrintDataEater<CompleteGenomicsRead, Object>() );
         df.run();
         return df.isOk();
     }
@@ -65,7 +66,7 @@ TestMap
     boolean 
     read( String resource ) throws Exception
     {
-        InputStream is = getClass().getResourceAsStream( resource );
+        InputStream is = TestRead.class.getClassLoader().getResourceAsStream( resource );
         
         try
         {
@@ -83,6 +84,7 @@ TestMap
         InputStream is = new BufferedInputStream( new FileInputStream( file ) );
         try
         {
+            ReadHeader( is );
             return read( is );
         } finally
         {
@@ -100,7 +102,7 @@ TestMap
         if( !read( new File( "h:/mp3_schw3.fq" ), QualityNormalizer.ILLUMINA_1_3 ) )
             throw new Exception( "fail!" );
       */  
-        if( !read( "cg_map.txt" ) )
+        if( !read( "cg_read.txt" ) )
             throw new Exception( "fail!" );
     }
     
