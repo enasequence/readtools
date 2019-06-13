@@ -60,8 +60,8 @@ FastqScanner
 
     private static final Logger log = Logger.getLogger(FastqScanner.class);
     
-    abstract void logProcessedReadNumber( long count );
-    abstract void logFlushMsg( String message );
+    abstract protected void logProcessedReadNumber( long count );
+    abstract protected void logFlushMsg( String message );
     
     
     public

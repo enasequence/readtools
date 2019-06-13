@@ -47,7 +47,7 @@ FastqScannerTest
 		}
 
 		
-	    @Override void 
+	    @Override protected void 
 	    logProcessedReadNumber( long count )
 	    {
 	        String msg = String.format( "\rProcessed %16d read(s)", count );
@@ -55,7 +55,7 @@ FastqScannerTest
 	    }
 
 	    
-	    @Override void
+	    @Override protected void
 	    logFlushMsg( String msg )
 	    {
 	        System.out.print( msg );

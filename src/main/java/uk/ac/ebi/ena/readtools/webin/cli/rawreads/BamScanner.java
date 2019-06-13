@@ -31,6 +31,12 @@ import uk.ac.ebi.ena.readtools.webin.cli.rawreads.refs.CramReferenceInfo;
 public abstract class
 BamScanner 
 {
+    static 
+    {
+        System.setProperty( "samjdk.use_cram_ref_download", Boolean.TRUE.toString() );
+    }
+
+
     private static final Logger log = Logger.getLogger( BamScanner.class );
     private static final String BAM_STAR = "*";    
     abstract protected void logProcessedReadNumber( long cnt );
