@@ -29,18 +29,46 @@ import java.util.zip.GZIPOutputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
+import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerErrorMessage;
+
 
 public class 
 FastqScannerTest 
 {
     private static final int expected_reads = 10_000;
     
+    static class 
+    MyScanner extends FastqScanner
+    {
+		public
+		MyScanner( int expected_size ) 
+		{
+			super( expected_size );
+		}
+
+		
+	    @Override void 
+	    logProcessedReadNumber( long count )
+	    {
+	        String msg = String.format( "\rProcessed %16d read(s)", count );
+	        logFlushMsg( msg );
+	    }
+
+	    
+	    @Override void
+	    logFlushMsg( String msg )
+	    {
+	        System.out.print( msg );
+	        System.out.flush();
+	    }
+    }
+
     
     @Test public void 
     testSingle() throws Throwable
     {
         URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.gz" );
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf = new RawReadsFile();
         
         rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
@@ -55,7 +83,7 @@ FastqScannerTest
     testSingleDuplications() throws Throwable
     {
         URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.dup.gz" );
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf = new RawReadsFile();
         
         rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
@@ -70,7 +98,7 @@ FastqScannerTest
     testPaired() throws Throwable
     {
         URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_0.txt.gz" );
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf = new RawReadsFile();
         
         rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
@@ -86,7 +114,7 @@ FastqScannerTest
     {
         URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.gz" );
         URL  url2 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S2.txt.gz" );
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( new File( url1.getFile() ).getCanonicalPath() );
         
@@ -139,7 +167,7 @@ FastqScannerTest
         Path f1 = saveRandomized( "@NAME1/1\nACGT\n+\n1234\n"
                                 + "@NAME1/1\nACGT\n+\n1234\n" 
                                 + "@NAME2/1\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-1", "gz" );
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
@@ -155,7 +183,7 @@ FastqScannerTest
         Path f1 = saveRandomized( "@NAME1/1\nACGT\n+\n1234\n"
                                 + "@NAME1/2\nACGT\n+\n1234\n" 
                                 + "@NAME1/1\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-1", "gz" );
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
@@ -171,7 +199,7 @@ FastqScannerTest
         Path f1 = saveRandomized( "@NAME1\nACGT\n+\n1234\n"
                                 + "@NAME1\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-1", "gz" );
         Path f2 = saveRandomized( "@NAME2\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-2", "gz" );
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
@@ -191,7 +219,7 @@ FastqScannerTest
         File output_dir = createOutputFolder();
         Path f1 = saveRandomized( "@NAME\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-1", "gz" );
         Path f2 = saveRandomized( "@NAME\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-2", "gz" );
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
@@ -212,7 +240,7 @@ FastqScannerTest
         Path f2 = saveRandomized( "@NAME2\nACGT\n+\n1234\n"
                                 + "@NAME2\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-2", "gz" );
         
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
@@ -234,7 +262,7 @@ FastqScannerTest
         Path f2 = saveRandomized( "@NAME/2\nACGT\n+\n1234\n"
                                 + "@NAME/3\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-2", "gz" );
         
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
@@ -256,7 +284,7 @@ FastqScannerTest
         Path f2 = saveRandomized( "@NAME2/2\nACGT\n+\n1234\n"
                                 + "@NAME/2\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-2", "gz" );
         
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
@@ -277,7 +305,7 @@ FastqScannerTest
         Path f1 = saveRandomized( "@NAME2/1\nACGT\n+\n1234\n"
                                 + "@NAME/2\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-2", "gz" );
         
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
@@ -293,7 +321,7 @@ FastqScannerTest
         URL  url2 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.dup.gz" );
         URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S2.txt.gz" );
 
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( new File( url1.getFile() ).getCanonicalPath() );
@@ -311,7 +339,7 @@ FastqScannerTest
     {
         URL  url2 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.dup.gz" );
         //URL  url1 = GenomeAssemblyWebinCliTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S2.txt.gz" );
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         //RawReadsFile rf1 = new RawReadsFile();
         //rf1.setFilename( new File( url1.getFile() ).getCanonicalPath() );
         
@@ -377,7 +405,7 @@ FastqScannerTest
     @Test public void 
     testGeneratedSingleDuplications() throws Throwable
     {
-        FastqScanner fs = new FastqScanner( expected_reads );
+        FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf = new RawReadsFile();
         Path path = generateRandomFastq( 1000, 2, 3, 80 );
         rf.setFilename( path.toString() );

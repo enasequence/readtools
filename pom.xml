@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>uk.ac.ebi.ena</groupId>
   <artifactId>readtools</artifactId>
-  <version>1.1.1</version>
+  <version>1.1.2</version>
   <inceptionYear>2019</inceptionYear>
   <licenses>
     <license>
@@ -36,6 +36,18 @@
       <groupId>com.github.samtools</groupId>
       <artifactId>htsjdk</artifactId>
       <version>2.15.0</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jdom</groupId>
+      <artifactId>jdom</artifactId>
+      <version>2.0.2</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>27.0.1-jre</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>

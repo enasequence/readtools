@@ -44,109 +44,11 @@ import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeEater;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeEater.READ_TYPE;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaSpot;
+import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerErrorMessage;
+import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerInfoMessage;
 
 
-interface 
-ScannerMessage
-{
-	String    getMessage();
-	String    getOrigin();
-	Throwable getThrowable();
-}
-
-
-class 
-ScannerInfoMessage implements ScannerMessage
-{
-	private Throwable throwable;
-	private String    message;
-	private String    origin;
-	
-	
-	public
-	ScannerInfoMessage( String m )
-	{
-		this( m, null );
-	}
-
-	
-	public
-	ScannerInfoMessage( String m, String o )
-	{
-		this.message = m;
-		this.origin  = o;
-	}
-	
-	
-	@Override public String
-	getMessage()
-	{
-		return message;
-	}
-	
-
-	@Override public String
-	getOrigin()
-	{
-		return origin;
-	}
-
-	
-	@Override public Throwable
-	getThrowable()
-	{
-		return this.throwable;
-	}
-}
-
-
-class 
-ScannerErrorMessage implements ScannerMessage
-{
-	Throwable throwable;
-	String    message;
-	String    origin;
-	
-	
-	public
-	ScannerErrorMessage( String m )
-	{
-		this( null, m, null );
-	}
-	
-	
-	public
-	ScannerErrorMessage( Throwable t, String m, String o )
-	{
-		this.throwable = t;
-		this.message   = m;
-		this.origin    = o;
-	}
-	
-	
-	@Override public String
-	getMessage()
-	{
-		return message;
-	}
-	
-
-	@Override public String
-	getOrigin()
-	{
-		return origin;
-	}
-
-	
-	@Override public Throwable
-	getThrowable()
-	{
-		return this.throwable;
-	}
-}
-
-
-public class 
+public abstract class 
 FastqScanner
 {
     private static final int MAX_LABEL_SET_SIZE = 10;
@@ -157,7 +59,11 @@ FastqScanner
     private final AtomicBoolean paired = new AtomicBoolean();
 
     private static final Logger log = Logger.getLogger(FastqScanner.class);
-
+    
+    abstract void logProcessedReadNumber( long count );
+    abstract void logFlushMsg( String message );
+    
+    
     public
     FastqScanner( int expected_size )
     {
@@ -470,21 +376,5 @@ FastqScanner
                       .filter( e-> counts.get(e.getKey()) > 1 )
                       .limit( limit )
                       .collect( Collectors.toMap( e -> e.getKey(), e -> e.getValue(), ( v1, v2 ) -> v1, LinkedHashMap::new ) );
-    }
-
-    
-    private void 
-    logProcessedReadNumber(long count )
-    {
-        String msg = String.format( "\rProcessed %16d read(s)", count );
-        logFlushMsg( msg );
-    }
-
-    
-    private void
-    logFlushMsg( String msg )
-    {
-        System.out.print( msg );
-        System.out.flush();
     }
 }
