@@ -172,6 +172,7 @@ FastqScannerTest
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
         List<ScannerMessage> vr = fs.checkFiles( rf1 );
+        Assert.assertFalse( fs.getPaired() );
         Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
     }
 
@@ -188,6 +189,7 @@ FastqScannerTest
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
         List<ScannerMessage> vr = fs.checkFiles( rf1 );
+        Assert.assertTrue( fs.getPaired() );
         Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
     }
     
@@ -248,7 +250,7 @@ FastqScannerTest
         rf2.setFilename( f2.toFile().getCanonicalPath() );
 
         List<ScannerMessage> vr = fs.checkFiles( rf1, rf2 );
-        
+        Assert.assertTrue( fs.getPaired() );
         Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
     }
 
@@ -303,15 +305,52 @@ FastqScannerTest
     {
         File output_dir = createOutputFolder();
         Path f1 = saveRandomized( "@NAME2/1\nACGT\n+\n1234\n"
-                                + "@NAME/2\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-2", "gz" );
+                                + "@NAME/2\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-8", "gz" );
         
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
         
         List<ScannerMessage> vr = fs.checkFiles( rf1 );
-        
+        Assert.assertTrue( fs.getPaired() );
         Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+    }
+    
+    
+    /*  PacBio RS II Wrong pair set in one file */
+    @Test public void 
+    testCase9() throws Throwable
+    {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized( 
+        "@m150522_164945_42237_c100824932550000001823179511031571_s1_p0/134/0_15617\n"
+      + "ACCAACAAGAGA\n"
+      + "+\n"
+      + "\"#'#&''$,-,)\n"
+      
+      + "@m150522_164945_42237_c100824932550000001823179511031571_s1_p0/135/0_15617\n"
+      + "ACCAACAAGAGA\n"
+      + "+\n"
+      + "\"#'#&''$,-,)\n"
+      
+      + "@m150522_164945_42237_c100824932550000001823179511031571_s1_p0/134/15661_24597\n"
+      + "ACCACCCTTAT\n"
+      + "+\n"
+      + "/&\"-('--.#/\n"
+
+      + "@m150522_164945_42237_c100824932550000001823179511031571_s1_p0/135/15661_24597\n"
+      + "ACCACCCTTAT\n"
+      + "+\n"
+      + "/&\"-('--.#/\n",
+      	output_dir.toPath(), true, "fastq-9", "gz" );
+        
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+        
+        List<ScannerMessage> vr = fs.checkFiles( rf1 );
+        Assert.assertFalse( fs.getPaired() );
+        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 0, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
     }
     
     

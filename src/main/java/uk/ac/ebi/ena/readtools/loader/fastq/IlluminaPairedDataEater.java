@@ -15,8 +15,8 @@ IlluminaPairedDataEater extends AbstractPagedDataEater<DataSpot, IlluminaSpot>
     // Provided readname structure is @{readkey}{separator:1(.|/|:|_)}{index:1(0:1:2)}
         
     static final Pattern split_regexp = Pattern.compile( "^(.*)(?:[\\.|:|/|_])([12])$" ); 
-    static final int KEY = 1;
-    static final int INDEX = 2;
+    static public final int KEY = 1;
+    static public final int INDEX = 2;
     
     
     public
@@ -26,7 +26,7 @@ IlluminaPairedDataEater extends AbstractPagedDataEater<DataSpot, IlluminaSpot>
     }
     
     
-    private String 
+    public static String 
     getReadnamePart( String readname, int group ) throws DataEaterException
     {
         Matcher m = split_regexp.matcher( readname );
@@ -38,8 +38,7 @@ IlluminaPairedDataEater extends AbstractPagedDataEater<DataSpot, IlluminaSpot>
     }
     
     
-    @Override
-    public Object 
+    @Override public Object 
     getKey( DataSpot object )
     {
         try

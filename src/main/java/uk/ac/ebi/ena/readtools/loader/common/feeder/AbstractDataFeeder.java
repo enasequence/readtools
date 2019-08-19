@@ -103,10 +103,17 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
                         throw new DataFeederException( field_feed_count, "EOF while reading fields" );
                         }
                     }
-                throw new DataFeederEOFException( field_feed_count );
+                	throw new DataFeederEOFException( field_feed_count );
+                } else if( cause instanceof DataFeederException )
+                {
+                	throw (DataFeederException) cause;
+                	
+                } else
+                {
+                	throw ite;
                 }
-                throw ite;
             } 
+            
             if( null != checker )
                 checker.invoke( object, (Object [])null );
             

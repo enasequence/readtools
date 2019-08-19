@@ -36,6 +36,7 @@ import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
 import uk.ac.ebi.ena.readtools.loader.common.eater.NullDataEater;
 import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataFeeder;
 import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
@@ -43,6 +44,7 @@ import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeEater;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeEater.READ_TYPE;
+import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaPairedDataEater;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaSpot;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerErrorMessage;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerInfoMessage;
@@ -143,7 +145,7 @@ FastqScanner
     private DataFeederException 
     read( RawReadsFile rf,
           String       stream_name,
-          Set<String>labels, 
+          Set<String>  labels, 
           BloomWrapper pairing,
           BloomWrapper duplications,
           AtomicLong count ) throws Throwable
@@ -169,13 +171,21 @@ FastqScanner
             df.setEater( new NullDataEater<DataSpot>() 
             {
                 @Override public void
-                eat( DataSpot spot ) {
-                    int slash_idx = spot.bname.lastIndexOf( '/' );
-                    String name = slash_idx == -1 ? spot.bname 
-                                                  : spot.bname.substring( 0, slash_idx );
-                    String label = slash_idx == -1 ? stream_name
-                                                   : spot.bname.substring( slash_idx + 1 );
-                    
+                eat( DataSpot spot ) 
+                {
+                	String name  = null;
+                	String label = null;
+                			
+                	try
+                	{
+                		name = IlluminaPairedDataEater.getReadnamePart( spot.bname, IlluminaPairedDataEater.KEY );
+                		label = IlluminaPairedDataEater.getReadnamePart( spot.bname, IlluminaPairedDataEater.INDEX );
+                	} catch ( DataEaterException dee )
+                	{
+                    	name  = spot.bname;
+                    	label = stream_name;
+                	}
+                	
                     if( labels.size() < MAX_LABEL_SET_SIZE )
                         labels.add( label );
                     
