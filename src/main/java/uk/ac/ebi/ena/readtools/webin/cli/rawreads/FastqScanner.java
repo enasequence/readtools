@@ -54,7 +54,7 @@ public abstract class
 FastqScanner
 {
     private static final int MAX_LABEL_SET_SIZE = 10;
-    private static final int PAIRING_THRESHOLD = 30;
+    private static final int PAIRING_THRESHOLD = 20;
     
     private final int expected_size;
     private final Set<String> labelset = new HashSet<>();
