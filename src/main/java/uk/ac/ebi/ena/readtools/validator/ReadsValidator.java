@@ -30,11 +30,6 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
   private ReadsManifest manifest;
   private ReadsReporter reporter = new ReadsReporter();
 
-  // TODO: make quality score enum in WebinCLI Validator project ReadsManifest
-  public final static String QUALITY_SCORE_PHRED_33 = "PHRED_33";
-  public final static String QUALITY_SCORE_PHRED_64 = "PHRED_64";
-  public final static String QUALITY_SCORE_LOGODDS = "LOGODDS";
-
   @Override
   public ReadsValidationResponse validate(ReadsManifest manifest) {
     this.manifest = manifest;
@@ -85,7 +80,6 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
       try {
         Map<String, Boolean> ref_set = cri.confirmFileReferences(new File(rf.getFilename()));
         if (!ref_set.isEmpty() && ref_set.containsValue(Boolean.FALSE)) {
-          // TODO: log into rf.getReportFile() and ERROR
           reporter.write(rf.getReportFile().toFile(), Severity.ERROR,
               "",
               "Unable to find reference sequence(s) from the CRAM reference registry: " +
@@ -135,13 +129,10 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
 
       paired.set(fs.getPaired());
       files.forEach(rf -> {
-        // TODO: log into rf.getReportFile() and ERROR if ScannerErrorMessage OR INFO if ScannerInfoMessage - print message& origin & exception if exist
         reporter.write(rf.getReportFile().toFile(), list);
       });
 
-      // TODO: check if list it contains any ScannerErrorMessage the return false else true
       return isValid(list);
-
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     } catch (Throwable throwable) {
@@ -152,7 +143,6 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
   private void
   reportToFileList(List<RawReadsFile> files, String msg) {
     for (RawReadsFile rf : files) {
-      // TODO: log into rf.getReportFile() and ERROR
       reporter.write(rf.getReportFile().toFile(), Severity.ERROR, "", msg);
     }
   }
@@ -176,15 +166,10 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
         List<ScannerMessage> list =
             Filetype.cram == rf.getFiletype() ? scanner.readCramFile(rf, paired)
                 : scanner.readBamFile(rf, paired);
-        list.stream().forEachOrdered(m ->
-            // TODO: log into rf.getReportFile() and ERROR if ScannerErrorMessage OR INFO if ScannerInfoMessage - print message& origin & exception if exist
-            reporter.write(rf.getReportFile().toFile(), m))
-        ;
-        // TODO: check if list it contains any ScannerErrorMessage the return false else true
+        list.stream().forEachOrdered(m -> reporter.write(rf.getReportFile().toFile(), m));
         valid = isValid(list);
 
       } catch (SAMFormatException | CRAMException e) {
-        // TODO: log into rf.getReportFile() and ERROR
         reporter.write(rf.getReportFile().toFile(), Severity.ERROR, "", e.getMessage());
         valid = false;
 
