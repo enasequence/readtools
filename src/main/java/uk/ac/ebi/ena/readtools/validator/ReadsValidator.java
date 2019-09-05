@@ -45,7 +45,7 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
       throw new RuntimeException("Report file is missing.");
     }
     if (manifest.getProcessDir() == null) {
-      reporter.write(manifest.getReportFile(), Severity.ERROR, getOrigin("validate"), "Process directory is missing.");
+      reporter.write(manifest.getReportFile(), Severity.ERROR, "", "Process directory is missing.");
       throw new RuntimeException("Process directory is missing.");
     }
 
@@ -87,7 +87,7 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
         if (!ref_set.isEmpty() && ref_set.containsValue(Boolean.FALSE)) {
           // TODO: log into rf.getReportFile() and ERROR
           reporter.write(rf.getReportFile().toFile(), Severity.ERROR,
-              getOrigin("readCramFile"),
+              "",
               "Unable to find reference sequence(s) from the CRAM reference registry: " +
                   ref_set.entrySet()
                       .stream()
@@ -99,7 +99,7 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
 
       } catch (IOException ioe) {
         reporter.write(rf.getReportFile().toFile(), Severity.ERROR,
-            getOrigin("readCramFile"),
+            "",
             ioe.getMessage()); // RuntimeEx
         valid = false;
       }
@@ -127,7 +127,7 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
         @Override
         protected void
         logFlushMsg(String msg) {
-          reporter.write(manifest.getReportFile(), Severity.INFO, getOrigin("readFastqFile"), msg);
+          reporter.write(manifest.getReportFile(), Severity.INFO, "", msg);
         }
       };
 
@@ -153,7 +153,7 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
   reportToFileList(List<RawReadsFile> files, String msg) {
     for (RawReadsFile rf : files) {
       // TODO: log into rf.getReportFile() and ERROR
-      reporter.write(rf.getReportFile().toFile(), Severity.ERROR, getOrigin("reportToFileList"), msg);
+      reporter.write(rf.getReportFile().toFile(), Severity.ERROR, "", msg);
     }
   }
 
@@ -171,7 +171,7 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
     for (RawReadsFile rf : files) {
       try {
         String msg = String.format("Processing file %s\n", rf.getFilename());
-        reporter.write(manifest.getReportFile(), Severity.INFO, getOrigin("readBamFile"), msg);
+        reporter.write(manifest.getReportFile(), Severity.INFO, "", msg);
 
         List<ScannerMessage> list =
             Filetype.cram == rf.getFiletype() ? scanner.readCramFile(rf, paired)
@@ -185,7 +185,7 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
 
       } catch (SAMFormatException | CRAMException e) {
         // TODO: log into rf.getReportFile() and ERROR
-        reporter.write(rf.getReportFile().toFile(), Severity.ERROR, getOrigin("readBamFile"),e.getMessage());
+        reporter.write(rf.getReportFile().toFile(), Severity.ERROR, "", e.getMessage());
         valid = false;
 
       } catch (IOException ex) {
@@ -261,7 +261,7 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
   private void
   logProcessedReadNumber(long count) {
     String msg = String.format("\rProcessed %16d read(s)", count);
-    reporter.write(manifest.getReportFile(), Severity.INFO, getOrigin("logProcessedReadNumber"), msg);
+    reporter.write(manifest.getReportFile(), Severity.INFO, "", msg);
   }
 
   boolean isValid(List<ScannerMessage> list) {
@@ -271,12 +271,5 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
       }
     }
     return true;
-  }
-
-  String getOrigin(String fname) {
-    String res = this.getClass().getCanonicalName();
-    if (null != fname)
-      res += "." + fname;
-    return res;
   }
 }
