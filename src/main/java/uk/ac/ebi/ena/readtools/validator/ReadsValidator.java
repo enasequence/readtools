@@ -188,15 +188,15 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
 
     if (manifest.getQualityScore() != null) {
       switch (manifest.getQualityScore()) {
-        case QUALITY_SCORE_PHRED_33:
+        case PHRED_33:
           asciiOffset = RawReadsFile.AsciiOffset.FROM33;
           qualityScoringSystem = RawReadsFile.QualityScoringSystem.phred;
           break;
-        case QUALITY_SCORE_PHRED_64:
+        case PHRED_64:
           asciiOffset = RawReadsFile.AsciiOffset.FROM64;
           qualityScoringSystem = RawReadsFile.QualityScoringSystem.phred;
           break;
-        case QUALITY_SCORE_LOGODDS:
+        case LOGODDS:
           asciiOffset = null;
           qualityScoringSystem = RawReadsFile.QualityScoringSystem.log_odds;
           break;
