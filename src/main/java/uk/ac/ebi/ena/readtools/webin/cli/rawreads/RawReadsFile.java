@@ -24,8 +24,8 @@ RawReadsFile
         fastq( "fastq" ),
         bam( "bam"),
         cram( "cram");
-        
-        
+
+        // TODO: remove
         public final String xml_name;
 
         Filetype(String xml_name)
@@ -110,7 +110,9 @@ RawReadsFile
     private AsciiOffset          ascii_offset; 
     private QualityEncoding      quality_encoding;
     private Path                 inputDir;
-    
+    private Path                 reportFile;
+
+    // TODO: remove
     public Element
     toElement( String element_name, Path uploadDir )
     {
@@ -119,18 +121,18 @@ RawReadsFile
         e.setAttribute( "filetype", filetype.xml_name );
         e.setAttribute( "checksum", checksum );
         e.setAttribute( "checksum_method", checksum_method.xml_name );
-        if( null != quality_scoring_system ) 
+        if( null != quality_scoring_system )
             e.setAttribute( "quality_scoring_system", quality_scoring_system.xml_name );
-        
+
         if( null != ascii_offset )
             e.setAttribute( "ascii_offset", ascii_offset.xml_name );
-        
+
         if( null != quality_encoding )
             e.setAttribute( "quality_encoding", quality_encoding.xml_name );
- 
+
         return e;
     }
-    
+
     
     @Override public String 
     toString()
@@ -258,6 +260,14 @@ RawReadsFile
         this.inputDir = inputDir;
     }
 
+
+    public Path getReportFile() {
+        return reportFile;
+    }
+
+    public void setReportFile(Path reportFile) {
+        this.reportFile = reportFile;
+    }
 
     public Compression
     getCompression()
