@@ -1,7 +1,6 @@
 package uk.ac.ebi.ena.readtools.validator;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
@@ -11,6 +10,8 @@ import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerErrorMes
 public class ReadsReporter {
 
   public void write(File file, Severity severity, String origin, String message) {
+    origin = (null == origin) ? "" : origin;
+    message = (null == message) ? "" : message;
     try {
       if (!file.exists()) {
         file.createNewFile();

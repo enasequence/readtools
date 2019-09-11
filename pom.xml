@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>uk.ac.ebi.ena</groupId>
   <artifactId>readtools</artifactId>
-  <version>1.1.3-snapshot-01</version>
+  <version>1.1.3-snapshot-03</version>
   <inceptionYear>2019</inceptionYear>
   <licenses>
     <license>
