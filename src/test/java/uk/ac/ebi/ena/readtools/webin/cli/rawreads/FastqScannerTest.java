@@ -354,6 +354,64 @@ FastqScannerTest
     }
     
     
+    /*  PacBio RS II Wrong pair set in one file */
+    @Test public void 
+    testCase10() throws Throwable
+    {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized( 
+            	"@CL100031435L2C001R001_63456 :TGGTCCTTCC\n"
+        	  + "ATCCTTATAGTGGGCCAAGCTCTCACATGCAAACACGTTGCCTGCTGGATTTTGTTTCAGAGAGGAAATGTTTATGTGAGACAGAAAAAGCCGGGGGCC\n"
+        	  + "+\n"
+        	  + "FDFFFFFFFG3FFFFFF7?D8FFFFF=>DFG(FBEFFFFDF;FF?FF<8FGGFFFCBB8F0F@FBC?FAGFEE>.FFEFCF:?E(E@;3*(,FD/BFE-\n"
+              + "@CL100031435L2C001R001_63472 :TGGTCCTTCA\n"
+              + "AGCACTATGGAAAATGGAACCTCTTTGGGTCCTGTAATCAC\n"
+              + "+\n"
+              + "FFFFFFEGFFFGEFGFFFGFGGFEFDFFFFGGEFEFBG;FG\n"
+              + "@CL100031435L2C001R001_63487 :TGGTCCTTCC\n"
+              + "CCGCTCTGCCCACCACAATCCGGCCCCTGTGTACGGCAACACAGGGCCCAGGCAAGCAGATCCTTCCTGCTGGGAGCTCCAGCTTGTAGAATTTCACCC\n"
+              + "+\n"
+              + "FFFFFFFFFEFFFFFFD5FEFFEEEFFEBCE?EEFFFECD:DAFFCDFFBFFDB@>FCFBEEFF>F-CBFFF&E9F=BBF:4@B?B45E2F+A-EFFCA\n"
+              + "@CL100031435L2C001R001_63499 :TGGTCCTTGC\n"
+              + "CTCTTTTGATGCCTTCTGTATTGAGACACTTTCAGCAGAGTCCCAAGGCCAGGTGAAGAGGAAGCATGGCGGGGGCAGGTCGGGGGCCAACGGGTCTTAG\n"
+              + "+\n"
+              + "FEFF@E9F=FFF7FDD@FDFFFF4F;EFFFFAA8FEADDFFEFFE5F?FEBDEFFACD;BFFBFD2F>EDD:7FDDF'FDFF)+7FF1F1<4FF:@A@/F\n"
+              + "@CL100031435L2C001R001_63541 :TGGTCCTTGC\n"
+              + "CATGGGGGCATCTTCCTGCTCCAGGCACAAAGCTCTGGCTGTCACAACCCAG\n"
+              + "+\n"
+              + "FFFGFF>GFFGFFBFAGGFEFFDEFGFFEEAGGFFFBB>GGBFF6FFFGF@F\n"
+              + "@CL100031435L2C001R001_63542 :TGGTCCTTGC\n"
+              + "CCTCATTCTAAAATGCAGGTGCTCTGCTGACAGCAAAATTCTGTGTTTGAGCTGTGCAGTCTTAAACCAAGACGTGGGAGGCCAGGCGGTTTTAGAAAG\n"
+              + "+\n"
+              + "AAE>AFE4EFFA3FBAEDDFBEFDDA?F=;E?6?>FC4BF@EFC5A9FE=ECFCCD<CEEBF(EACE1F<5D(0(+DA;C9@1F&3,F76&B?DF1<30\n"
+              + "@CL100031435L2C001R001_63548 :TGGTCCTTGC\n"
+              + "GTGGTGGTGGTGTTTTTTTGGTTTGGGGTTTGGGTTTTTTTCAGGGAA\n"
+              + "+\n"
+              + "GFGFFFFFF=DGFFGGEFFFFFBGFF>FFFGFFFEGFGGEEGGGGFGF\n"
+              + "@CL100031435L2C001R001_63553 :TGGTCCTTCC\n"
+              + "GCACTTCTCGAGCTTCACATTCTAATGAGAACAATTTCCTTGGATTCATTGGTGTTGCCATTTTTTTGTTGACTCATTCAAAAAACAAATTAGCTGAGGT\n"
+              + "+\n"
+              + "FFFFFFFFFFDFEGFFGEGG=EEDFGFEFEFEEGEFFFFEFAD:BEDGBGFDF,FFAF7<FF;(GEGFFD8?FBF?/1-GGD8'FF'ECGA:AF<FF&AD\n"
+              + "@CL100031435L2C001R001_63565 :TGGTCCTTGC\n"
+              + "AAAGCTCTAGGGGAGGCCGACCTCTCAGCTTTTGGAGTCGGTGATACAGAGGA\n"
+              + "+\n"
+              + "EFFEDBCFFDAC7C@DBEF6DDFDFE;EEFFF:DA=DFDE8EC;DF@E0=AEF\n"
+              + "@CL100031435L2C001R001_63596 :TGGTCCTTGC\n"
+              + "CCTTCTTTTTGATCCTACAAGTGAAGCCATGTGGAAATGATTGAGAGTGACGTCACGAGTTCAGTTGTGGGGGGCGGCGGCCGGGTTGTCCGGTCGGGAC\n"
+              + "+\n"
+              + "CBEC>=EFCED@?CDDF<EFA>4CDD8E8AAC>:4FDD>=CDD4F7CEF;CAB=FB>:CAA?F,EFE?;&@D7>5:?/==(C>.<&26'-=?8%-+E42F",
+      	output_dir.toPath(), true, "fastq-10", "gz" );
+        
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+        
+        List<ScannerMessage> vr = fs.checkFiles( rf1 );
+        Assert.assertFalse( fs.getPaired() );
+        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 0, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+    }
+
+    
     @Test public void 
     testPairWithDuplication() throws Throwable
     {
@@ -453,5 +511,4 @@ FastqScannerTest
 
         Assert.assertNotEquals( toString( vr ), 0, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
     }
-
 }
