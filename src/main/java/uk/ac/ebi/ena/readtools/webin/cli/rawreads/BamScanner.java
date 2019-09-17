@@ -9,7 +9,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.SAMFormatException;
@@ -36,8 +37,7 @@ BamScanner
         System.setProperty( "samjdk.use_cram_ref_download", Boolean.TRUE.toString() );
     }
 
-
-    private static final Logger log = Logger.getLogger( BamScanner.class );
+    private static final Logger log = LoggerFactory.getLogger( BamScanner.class );
     private static final String BAM_STAR = "*";    
     abstract protected void logProcessedReadNumber( long cnt );
     

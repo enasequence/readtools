@@ -31,9 +31,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
@@ -60,7 +61,7 @@ FastqScanner
     private final Set<String> labelset = new HashSet<>();
     private final AtomicBoolean paired = new AtomicBoolean();
 
-    private static final Logger log = Logger.getLogger(FastqScanner.class);
+    private static final Logger log = LoggerFactory.getLogger( FastqScanner.class );
     
     abstract protected void logProcessedReadNumber( long count );
     abstract protected void logFlushMsg( String message );

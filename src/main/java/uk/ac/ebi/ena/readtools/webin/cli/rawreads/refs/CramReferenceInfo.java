@@ -35,7 +35,8 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamFiles;
@@ -61,7 +62,8 @@ CramReferenceInfo
     private final ScriptEngine engine;
     private final PathPattern  cache_pattern;
 
-    private static final Logger log = Logger.getLogger( CramReferenceInfo.class );
+    private static final Logger log = LoggerFactory.getLogger( CramReferenceInfo.class );
+    
 
     public 
     CramReferenceInfo()
