@@ -57,6 +57,11 @@ FastqScanner
     private static final int MAX_LABEL_SET_SIZE = 10;
     private static final int PAIRING_THRESHOLD = 20;
     
+    //TODO remove duplication
+    private static final int    DEFAULT_PRINT_FREQ = 1_000;
+    private static final String PRINT_FREQ_PROPERTY_NAME = "webincli.scanner.print.freq";
+    private static final int    print_freq = Integer.valueOf( System.getProperty( PRINT_FREQ_PROPERTY_NAME, String.valueOf( DEFAULT_PRINT_FREQ ) ) );    
+    
     private final int expected_size;
     private final Set<String> labelset = new HashSet<>();
     private final AtomicBoolean paired = new AtomicBoolean();
@@ -194,7 +199,7 @@ FastqScanner
                     pairing.add( name );
                     duplications.add( spot.bname );
                     
-                    if( 0 == count.get() % 1000 )
+                    if( 0 == count.get() % print_freq )
                         logProcessedReadNumber( count.get() );
                 }  
             } );

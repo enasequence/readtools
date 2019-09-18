@@ -37,6 +37,11 @@ BamScanner
         System.setProperty( "samjdk.use_cram_ref_download", Boolean.TRUE.toString() );
     }
 
+    //TODO remove duplication
+    private static final int    DEFAULT_PRINT_FREQ = 1_000;
+    private static final String PRINT_FREQ_PROPERTY_NAME = "webincli.scanner.print.freq";
+    private static final int    print_freq = Integer.valueOf( System.getProperty( PRINT_FREQ_PROPERTY_NAME, String.valueOf( DEFAULT_PRINT_FREQ ) ) );    
+
     private static final Logger log = LoggerFactory.getLogger( BamScanner.class );
     private static final String BAM_STAR = "*";    
     abstract protected void logProcessedReadNumber( long cnt );
@@ -153,7 +158,7 @@ BamScanner
 
                     paired.compareAndSet( false, record.getReadPairedFlag() );
                     reads_cnt++;
-                    if( 0 == reads_cnt % 1000 )
+                    if( 0 == reads_cnt % print_freq )
                         logProcessedReadNumber( reads_cnt );
                 }
 
