@@ -2,9 +2,7 @@ package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -24,9 +22,10 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
 import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerErrorMessage;
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerInfoMessage;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.refs.CramReferenceInfo;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
 public abstract class
@@ -47,10 +46,9 @@ BamScanner
     abstract protected void logProcessedReadNumber( long cnt );
     
     
-    public List<ScannerMessage>
-    readCramFile( RawReadsFile rf, AtomicBoolean paired ) throws IOException
+    public void
+    readCramFile( ValidationResult fileResult, RawReadsFile rf, AtomicBoolean paired ) throws IOException
     {
-        List<ScannerMessage> result = new ArrayList<>();
         CramReferenceInfo cri = new CramReferenceInfo();
         {
             Map<String, Boolean> ref_set;
@@ -59,63 +57,57 @@ BamScanner
                 ref_set = cri.confirmFileReferences( new File( rf.getFilename() ) );
                 if( !ref_set.isEmpty() && ref_set.containsValue( Boolean.FALSE ) )
                 {
-                    result.add( new ScannerErrorMessage( "Unable to find reference sequence(s) from the CRAM reference registry: " 
+                    fileResult.add( ValidationMessage.error( "Unable to find reference sequence(s) from the CRAM reference registry: "
                                                        + ref_set.entrySet()
-                                                                .stream()
-                                                                .filter( e -> !e.getValue() )
-                                                                .map( e -> e.getKey() )
-                                                                .collect(Collectors.toList() ) ) );
+                                                            .stream()
+                                                            .filter( e -> !e.getValue() )
+                                                            .map( e -> e.getKey() )
+                                                            .collect(Collectors.toList() ) ) );
                 }
-
-            } catch( IOException e1 )
+            } catch( IOException ex )
             {
-                result.add( new ScannerErrorMessage( e1, e1.getMessage(), null ) );
+                fileResult.add( ValidationMessage.error( ex ) );
             }
         }
-        
-        result.addAll( readBamFile( rf, paired ) );
-        return result;
+        readBamFile( fileResult, rf, paired );
     }
     
     
-    public List<ScannerMessage>
-    readBamFile( RawReadsFile rf, AtomicBoolean paired ) throws IOException
+    public void
+    readBamFile( ValidationResult result, RawReadsFile rf, AtomicBoolean paired ) throws IOException
     {
-        List<ScannerMessage> reporter = new ArrayList<>();
         {
             long read_no = 0;
             long reads_cnt = 0;
 
             try 
             {
-                String msg = String.format( "Processing file %s\n", rf.getFilename() );
-                log.info( msg );
-                
+                result.add(ValidationMessage.info("Processing file"));
+
                 ENAReferenceSource reference_source = new ENAReferenceSource();
                 reference_source.setLoggerWrapper( new ENAReferenceSource.LoggerWrapper() 
                 {
                     @Override public void
                     error( Object... messageParts )
                     {
-                        reporter.add( new ScannerErrorMessage( null == messageParts ? "null" : String.valueOf( Arrays.asList( messageParts ) ) ) );
+                        result.add( ValidationMessage.error( null == messageParts ? "null" : String.valueOf( Arrays.asList( messageParts ) ) ) );
                     }
 
                     @Override public void
                     warn( Object... messageParts )
                     {
-                        reporter.add( new ScannerInfoMessage( /* Severity.WARNING, */ null == messageParts ? "null" : String.valueOf( Arrays.asList( messageParts ) ) ) );
+                        result.add( ValidationMessage.info( null == messageParts ? "null" : String.valueOf( Arrays.asList( messageParts ) ) ) );
                     }
 
                     @Override public void
                     info( Object... messageParts )
                     {
-                        reporter.add( new ScannerInfoMessage( null == messageParts ? "null" : String.valueOf( Arrays.asList( messageParts ) ) ) );
+                        result.add( ValidationMessage.info( null == messageParts ? "null" : String.valueOf( Arrays.asList( messageParts ) ) ) );
                     }
                 } );
 
-                reporter.add( new ScannerInfoMessage( "REF_PATH  " + reference_source.getRefPathList() ) );
-                reporter.add( new ScannerInfoMessage( "REF_CACHE " + reference_source.getRefCacheList() ) );
-
+                result.add( ValidationMessage.info( "REF_PATH  " + reference_source.getRefPathList() ) );
+                result.add( ValidationMessage.info( "REF_CACHE " + reference_source.getRefCacheList() ) );
 
                 File file = new File( rf.getFilename() );
                 Log.setGlobalLogLevel( LogLevel.ERROR );
@@ -127,7 +119,7 @@ BamScanner
                 factory.samRecordFactory( DefaultSAMRecordFactory.getInstance() );
                 SamInputResource ir = SamInputResource.of( file );
                 File indexMaybe = SamFiles.findIndex( file );
-                reporter.add( new ScannerInfoMessage( "proposed index: " + indexMaybe ) );
+                result.add( ValidationMessage.info( "proposed index: " + indexMaybe ) );
 
                 if (null != indexMaybe)
                     ir.index(indexMaybe);
@@ -149,11 +141,8 @@ BamScanner
 
                     if( record.getReadBases().length != record.getBaseQualities().length )
                     {
-                        ScannerMessage validationMessage = new ScannerErrorMessage( null, 
-                                                                                    "Mismatch between length of read bases and qualities",
-                                                                                    String.format( "%s:%d", rf.getFilename(), read_no ) );
-                        
-                        reporter.add( validationMessage );
+                        ValidationResult readResult = result.create(new ValidationOrigin("read number", read_no));
+                        readResult.add( ValidationMessage.error("Mismatch between length of read bases and qualities"));
                     }
 
                     paired.compareAndSet( false, record.getReadPairedFlag() );
@@ -166,18 +155,17 @@ BamScanner
 
                 reader.close();
 
-                reporter.add( new ScannerInfoMessage( "Valid reads count: " + reads_cnt ) );
-                reporter.add( new ScannerInfoMessage( "LibraryLayout: " + ( paired.get() ? "PAIRED" : "SINGLE" ) ) );
+                result.add( ValidationMessage.info( "Valid reads count: " + reads_cnt ) );
+                result.add( ValidationMessage.info( "LibraryLayout: " + ( paired.get() ? "PAIRED" : "SINGLE" ) ) );
 
-                if( 0 == reads_cnt )
-                    reporter.add( new ScannerErrorMessage( "File contains no valid reads" ) );
+                if( 0 == reads_cnt ) {
+                    result.add( ValidationMessage.error("File contains no valid reads"));
+                }
 
             } catch( SAMFormatException | CRAMException e )
             {
-                reporter.add( new ScannerErrorMessage( e.getMessage() ) );
-
+                result.add(ValidationMessage.error(e));
             }
         }
-        return reporter;
     }
 }

@@ -6,13 +6,12 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerErrorMessage;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
 public class 
@@ -39,9 +38,9 @@ BamScannerTest
         AtomicBoolean paired = new AtomicBoolean();
         RawReadsFile rf = new RawReadsFile();
         rf.setFilename( file.getPath() );
-        List<ScannerMessage> list = bs.readCramFile( rf, paired );
-        list.forEach( System.out::println );
-        Assert.assertFalse( list.stream().filter( e -> e instanceof ScannerErrorMessage ).findFirst().isPresent() );
+        ValidationResult vr = new ValidationResult();
+        bs.readCramFile( vr, rf, paired );
+        Assert.assertTrue( vr.isValid() );
         Assert.assertTrue( "cram should be paired", paired.get() );
     }
     
@@ -55,9 +54,9 @@ BamScannerTest
         AtomicBoolean paired = new AtomicBoolean();
         RawReadsFile rf = new RawReadsFile();
         rf.setFilename( file.getPath() );
-        List<ScannerMessage> list = bs.readCramFile( rf, paired );
-        list.forEach( System.out::println );
-        Assert.assertTrue( list.stream().filter( e -> e instanceof ScannerErrorMessage ).findFirst().isPresent() );
+        ValidationResult vr = new ValidationResult();
+        bs.readCramFile( vr, rf, paired );
+        Assert.assertFalse( vr.isValid() );
     }
 
     
@@ -70,9 +69,9 @@ BamScannerTest
         AtomicBoolean paired = new AtomicBoolean();
         RawReadsFile rf = new RawReadsFile();
         rf.setFilename( file.getPath() );
-        List<ScannerMessage> list = bs.readBamFile( rf, paired );
-        list.forEach( System.out::println );
-        Assert.assertTrue( list.stream().filter( e -> e instanceof ScannerErrorMessage ).findFirst().isPresent() );
+        ValidationResult vr = new ValidationResult();
+        bs.readBamFile( vr, rf, paired );
+        Assert.assertFalse( vr.isValid() );
     }
     
     
@@ -86,9 +85,9 @@ BamScannerTest
         AtomicBoolean paired = new AtomicBoolean();
         RawReadsFile rf = new RawReadsFile();
         rf.setFilename( String.valueOf( file ) );
-        List<ScannerMessage> list = bs.readBamFile( rf, paired );
-        list.forEach( System.out::println );
-        Assert.assertFalse( list.stream().filter( e -> e instanceof ScannerErrorMessage ).findFirst().isPresent() );
+        ValidationResult vr = new ValidationResult();
+        bs.readBamFile( vr, rf, paired );
+        Assert.assertTrue( vr.isValid() );
         Assert.assertFalse( paired.get() );
     }
 }

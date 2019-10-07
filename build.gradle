@@ -80,7 +80,7 @@ dependencies {
     implementation( group: 'com.github.samtools', name: 'htsjdk', version: '2.15.0' )
     implementation( "org.jdom:jdom:2.0.2" )
     implementation( group: 'com.google.guava', name: 'guava', version: '27.0.1-jre' )
-    implementation( group: 'uk.ac.ebi.ena.webin-cli', name: 'webin-cli-validator', version: '1.0.5' )
+    implementation( group: 'uk.ac.ebi.ena.webin-cli', name: 'webin-cli-validator', version: '1.0.6' )
     implementation( group: 'org.slf4j', name: 'slf4j-api', version: '1.7.28' )
     
     //implementation 'log4j:log4j:1.2.17'

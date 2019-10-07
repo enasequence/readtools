@@ -19,8 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,8 +26,8 @@ import java.util.zip.GZIPOutputStream;
 
 import org.junit.Assert;
 import org.junit.Test;
-
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerErrorMessage;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage.Severity;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
 public class 
@@ -72,10 +70,12 @@ FastqScannerTest
         RawReadsFile rf = new RawReadsFile();
         
         rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
-        
-        List<ScannerMessage> vr = fs.checkFiles( rf );
-        
-        Assert.assertFalse( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).findAny().isPresent() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf );
+
+        Assert.assertTrue( vr.isValid() );
     }
     
     
@@ -87,10 +87,12 @@ FastqScannerTest
         RawReadsFile rf = new RawReadsFile();
         
         rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf );
         
-        List<ScannerMessage> vr = fs.checkFiles( rf );
-        
-        Assert.assertEquals( vr.toString(), 2, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertEquals( 2, vr.count(Severity.ERROR) );
     }
 
 
@@ -102,10 +104,12 @@ FastqScannerTest
         RawReadsFile rf = new RawReadsFile();
         
         rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf );
         
-        List<ScannerMessage> vr = fs.checkFiles( rf );
-        
-        Assert.assertEquals( vr.toString(), 0, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertTrue( vr.isValid() );
     }
     
     
@@ -121,9 +125,11 @@ FastqScannerTest
         RawReadsFile rf2 = new RawReadsFile();
         rf2.setFilename( new File( url2.getFile() ).getCanonicalPath() );
 
-        List<ScannerMessage> vr = fs.checkFiles( rf1, rf2 );
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
         
-        Assert.assertEquals( toString( vr ), 0, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertTrue( vr.isValid() );
     }
     
     
@@ -170,10 +176,13 @@ FastqScannerTest
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
-        
-        List<ScannerMessage> vr = fs.checkFiles( rf1 );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1 );
+
         Assert.assertFalse( fs.getPaired() );
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
 
     
@@ -187,10 +196,13 @@ FastqScannerTest
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
-        
-        List<ScannerMessage> vr = fs.checkFiles( rf1 );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1 );
+
         Assert.assertTrue( fs.getPaired() );
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
     
     
@@ -208,9 +220,11 @@ FastqScannerTest
         RawReadsFile rf2 = new RawReadsFile();
         rf2.setFilename( f2.toFile().getCanonicalPath() );
 
-        List<ScannerMessage> vr = fs.checkFiles( rf1, rf2 );
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
         
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
     
     /* 4. Paired run with two files with duplication from first file in second file */
@@ -228,9 +242,11 @@ FastqScannerTest
         RawReadsFile rf2 = new RawReadsFile();
         rf2.setFilename( f2.toFile().getCanonicalPath() );
 
-        List<ScannerMessage> vr = fs.checkFiles( rf1, rf2 );
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
         
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
     
     /* */
@@ -249,9 +265,12 @@ FastqScannerTest
         RawReadsFile rf2 = new RawReadsFile();
         rf2.setFilename( f2.toFile().getCanonicalPath() );
 
-        List<ScannerMessage> vr = fs.checkFiles( rf1, rf2 );
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
+
         Assert.assertTrue( fs.getPaired() );
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
 
     
@@ -271,9 +290,11 @@ FastqScannerTest
         RawReadsFile rf2 = new RawReadsFile();
         rf2.setFilename( f2.toFile().getCanonicalPath() );
 
-        List<ScannerMessage> vr = fs.checkFiles( rf1, rf2 );
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
         
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
 
 
@@ -293,9 +314,11 @@ FastqScannerTest
         RawReadsFile rf2 = new RawReadsFile();
         rf2.setFilename( f2.toFile().getCanonicalPath() );
 
-        List<ScannerMessage> vr = fs.checkFiles( rf1, rf2 );
-        
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
     
     
@@ -310,10 +333,13 @@ FastqScannerTest
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
-        
-        List<ScannerMessage> vr = fs.checkFiles( rf1 );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1 );
+
         Assert.assertTrue( fs.getPaired() );
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 1, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
     
     
@@ -347,10 +373,13 @@ FastqScannerTest
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
-        
-        List<ScannerMessage> vr = fs.checkFiles( rf1 );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1 );
+
         Assert.assertFalse( fs.getPaired() );
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 0, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertEquals( 0, vr.count(Severity.ERROR) );
     }
     
     
@@ -405,10 +434,13 @@ FastqScannerTest
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
-        
-        List<ScannerMessage> vr = fs.checkFiles( rf1 );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1 );
+
         Assert.assertFalse( fs.getPaired() );
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 0, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        Assert.assertEquals( 0, vr.count(Severity.ERROR) );
     }
 
     
@@ -426,8 +458,11 @@ FastqScannerTest
         RawReadsFile rf2 = new RawReadsFile();
         rf2.setFilename( new File( url2.getFile() ).getCanonicalPath() );
 
-        List<ScannerMessage> vr = fs.checkFiles( rf1, rf2 );
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 2, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
+
+        Assert.assertEquals( 2, vr.count(Severity.ERROR) );
     }
     
 
@@ -443,23 +478,12 @@ FastqScannerTest
         RawReadsFile rf2 = new RawReadsFile();
         rf2.setFilename( new File( url2.getFile() ).getCanonicalPath() );
 
-        List<ScannerMessage> vr = fs.checkFiles( rf2, rf2 );
-        
-        Assert.assertEquals( toString( vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.toList() ) ), 2, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf2, rf2 );
+
+        Assert.assertEquals( 2, vr.count(Severity.ERROR) );
     }
-    
-    
-    private String
-    toString( Collection<ScannerMessage> result ) 
-    {
-        StringWriter sw = new StringWriter();
-        for( ScannerMessage m : result )
-        {
-            sw.write( String.format( "%s: %s%s\n", m.getClass().getSimpleName(), m.getMessage(), m.getOrigin() ) );
-        }
-        return sw.toString();
-    }
-    
     
     
     private Path
@@ -506,9 +530,11 @@ FastqScannerTest
         RawReadsFile rf = new RawReadsFile();
         Path path = generateRandomFastq( 1000, 2, 3, 80 );
         rf.setFilename( path.toString() );
-        
-        List<ScannerMessage> vr = fs.checkFiles( rf );
 
-        Assert.assertNotEquals( toString( vr ), 0, vr.stream().filter( e -> e instanceof ScannerErrorMessage ).collect( Collectors.counting() ).intValue() );
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf );
+
+        Assert.assertNotEquals( 1, vr.count(Severity.ERROR) );
     }
 }
