@@ -269,9 +269,14 @@ FastqScanner
 
         for( RawReadsFile rf : rfs )
         {
-            // TODO: result.create(rf.getReportFile().toFile(), new ValidationOrigin("file", rf.getFilename()));
-
-            ValidationResult fileResult = result.create(new ValidationOrigin("file", rf.getFilename()));
+            ValidationResult fileResult;
+            if( rf.getReportFile() == null )
+            {
+                fileResult = result.create(new ValidationOrigin("file", rf.getFilename()));
+            } else
+            {
+                fileResult = result.create( rf.getReportFile().toFile(), new ValidationOrigin("file", rf.getFilename() ) );
+            }
 
             Set<String> flabelset = new HashSet<>();
             checkSingleFile( fileResult, rf, flabelset, pairing, duplications );

@@ -179,8 +179,13 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
 
         for( RawReadsFile rf : files )
         {
-            // TODO: result.create(rf.getReportFile().toFile(), new ValidationOrigin("file", rf.getFilename()));
-            ValidationResult fileResult = result.create(new ValidationOrigin("file", rf.getFilename()));
+            ValidationResult fileResult;
+            if( rf.getReportFile() == null ) {
+                fileResult = result.create(new ValidationOrigin("file", rf.getFilename()));
+            } else
+            {
+                fileResult = result.create(rf.getReportFile().toFile(), new ValidationOrigin("file", rf.getFilename()));
+            }
 
             try
             {
