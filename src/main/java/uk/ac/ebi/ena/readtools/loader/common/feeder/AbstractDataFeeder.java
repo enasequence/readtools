@@ -100,7 +100,7 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
                             checker.invoke( object, (Object [])null );
                         } else
                         {
-                        throw new DataFeederException( field_feed_count, "EOF while reading fields" );
+                            throw new DataFeederException( field_feed_count, "EOF while reading fields" );
                         }
                     }
                 	throw new DataFeederEOFException( field_feed_count );
@@ -121,7 +121,7 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
 
         } catch( IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new DataFeederPanicException( e );
+            throw new DataFeederPanicException( String.valueOf( object ), e );
         }
     }
  

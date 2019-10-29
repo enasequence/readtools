@@ -502,14 +502,14 @@ out:    for( int i = 0; len == -1 || i < len; )
             .append( "bases = [" )
             .append( bases )
             .append( "], length = " )
-            .append( bases.length() )
+            .append( null == bases ? "null" : bases.length() )
             .append( "\nqual_name = [" )
             .append( qname )
             .append( "]\n" )
             .append( "quals = [" )
             .append( quals )
             .append( "], length = " )
-            .append( quals.length() )
+            .append( null == quals ? "null" : quals.length() )
             .toString();
     }
 }

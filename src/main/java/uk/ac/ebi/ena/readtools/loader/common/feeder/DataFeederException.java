@@ -31,6 +31,13 @@ DataFeederException extends Exception
 
 
     public 
+    DataFeederException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
+    
+    
+    public 
     DataFeederException( Throwable cause )
     {
         super( cause );

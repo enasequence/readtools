@@ -14,6 +14,7 @@ DataFeederPanicException extends DataFeederException
         thread_name = Thread.currentThread().getName();
     }
 
+    
     public 
     DataFeederPanicException()
     {
@@ -21,10 +22,19 @@ DataFeederPanicException extends DataFeederException
         thread_name = Thread.currentThread().getName();
     }
     
+    
     public 
     DataFeederPanicException( Throwable cause )
     {
         super( cause );
+        thread_name = Thread.currentThread().getName();
+    }
+    
+    
+    public 
+    DataFeederPanicException( String message, Throwable cause )
+    {
+        super( message, cause );
         thread_name = Thread.currentThread().getName();
     }
     
