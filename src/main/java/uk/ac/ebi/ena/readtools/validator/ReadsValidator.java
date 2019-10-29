@@ -11,19 +11,19 @@ import java.util.stream.Collectors;
 
 import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.cram.CRAMException;
-import uk.ac.ebi.ena.readtools.validator.ReadsReporter.Severity;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.BamScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.FastqScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile.Filetype;
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage;
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.ScannerMessage.ScannerErrorMessage;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.refs.CramReferenceInfo;
 import uk.ac.ebi.ena.webin.cli.validator.api.ValidationResponse.status;
 import uk.ac.ebi.ena.webin.cli.validator.api.Validator;
 import uk.ac.ebi.ena.webin.cli.validator.file.SubmissionFile;
 import uk.ac.ebi.ena.webin.cli.validator.manifest.ReadsManifest;
 import uk.ac.ebi.ena.webin.cli.validator.manifest.ReadsManifest.FileType;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 import uk.ac.ebi.ena.webin.cli.validator.response.ReadsValidationResponse;
 
 public class ReadsValidator 
@@ -31,7 +31,6 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
 {
 
     private ReadsManifest manifest;
-    private ReadsReporter reporter = new ReadsReporter();
 
     @Override public ReadsValidationResponse 
     validate( ReadsManifest manifest )
@@ -39,7 +38,7 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
         this.manifest = manifest;
         if( manifest == null )
         {
-            throw new RuntimeException( "Manifest can not be null." );
+            throw new RuntimeException( "Manifest is missing." );
         }
         if( manifest.getReportFile() == null )
         {
@@ -47,33 +46,32 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
         }
         if( manifest.getProcessDir() == null )
         {
-            reporter.write( manifest.getReportFile(), Severity.ERROR, "", "Process directory is missing." );
             throw new RuntimeException( "Process directory is missing." );
         }
-
         return validateSubmissionForContext();
     }
 
-    
     private ReadsValidationResponse 
     validateSubmissionForContext()
     {
-        boolean valid = true;
+        ValidationResult result = new ValidationResult(manifest.getReportFile());
+
         AtomicBoolean paired = new AtomicBoolean();
 
         List<RawReadsFile> files = createReadFiles();
 
+        // TODO: remove for loop
         for( RawReadsFile rf : files )
         {
             if( Filetype.fastq.equals( rf.getFiletype() ) )
             {
-                valid = readFastqFile( files, paired );
+                readFastqFile( result, files, paired );
             } else if( Filetype.bam.equals( rf.getFiletype() ) )
             {
-                valid = readBamFile( files, paired );
+                readBamFile( result, files, paired );
             } else if( Filetype.cram.equals( rf.getFiletype() ) )
             {
-                valid = readCramFile( files, paired );
+                 readCramFile( result, files, paired );
             } else
             {
                 throw new RuntimeException( "Unsupported file type: " + rf.getFiletype().name() );
@@ -82,58 +80,56 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
         }
 
         ReadsValidationResponse resp = new ReadsValidationResponse();
-        resp.setStatus( valid ? status.VALIDATION_SUCCESS : status.VALIDATION_ERROR );
+        resp.setStatus( result.isValid() ? status.VALIDATION_SUCCESS : status.VALIDATION_ERROR );
         resp.setPaired( paired.get() );
         return resp;
     }
 
     
-    private boolean 
-    readCramFile( List<RawReadsFile> files, AtomicBoolean paired )
+    private void
+    readCramFile( ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
     {
-        boolean valid = true;
         CramReferenceInfo cri = new CramReferenceInfo();
         for( RawReadsFile rf : files )
         {
+            ValidationResult fileResult = result.create(new ValidationOrigin("file", rf.getFilename()));
+
             try
             {
                 Map<String, Boolean> ref_set = cri.confirmFileReferences( new File( rf.getFilename() ) );
                 if( !ref_set.isEmpty() && ref_set.containsValue( Boolean.FALSE ) )
                 {
-                    reporter.write( rf.getReportFile().toFile(), Severity.ERROR,
-                            "",
-                            "Unable to find reference sequence(s) from the CRAM reference registry: " +
+                    fileResult.add(ValidationMessage.error(
+                                    "Unable to find reference sequence(s) from the CRAM reference registry: " +
                                     ref_set.entrySet()
                                             .stream()
                                             .filter( e -> !e.getValue() )
                                             .map( e -> e.getKey() )
-                                            .collect( Collectors.toList() ) );
-                    valid = false;
+                                            .collect( Collectors.toList() ) ));
                 }
 
-            } catch( IOException ioe )
+            } catch( IOException ex )
             {
-                reporter.write( rf.getReportFile().toFile(), Severity.ERROR,
-                        "",
-                        ioe.getMessage() ); // RuntimeEx
-                valid = false;
+                fileResult.add(ValidationMessage.error(ex));
             }
         }
 
-        return valid && readBamFile( files, paired );
-    }
+        if (!result.isValid()) {
+            return;
+        }
 
+        readBamOrCramFile(result, files, paired);
+    }
     
-    private boolean 
-    readFastqFile( List<RawReadsFile> files, AtomicBoolean paired )
+    private void
+    readFastqFile( ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
     {
         try
         {
             if( files.size() > 2 )
             {
-                String msg = "Unable to validate unusual amount of files: " + files;
-                reportToFileList( files, msg );
-                return false;
+                result.add(ValidationMessage.error("More than two fastq files were provided: " + files.size()));
+                return;
             }
 
             FastqScanner fs = new FastqScanner( manifest.getPairingHorizon() ) 
@@ -143,8 +139,7 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
                 {
                     ReadsValidator.this.logProcessedReadNumber( count );
                 }
-                
-                
+
                 @Override protected void 
                 logFlushMsg( String msg )
                 {
@@ -153,14 +148,8 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
                 }
             };
 
-            List<ScannerMessage> list = fs.checkFiles( files.toArray( new RawReadsFile[files.size()] ) );
-
+            fs.checkFiles( result, files.toArray( new RawReadsFile[files.size()] ));
             paired.set( fs.getPaired() );
-            files.forEach( rf -> {
-                reporter.write( rf.getReportFile().toFile(), list );
-            } );
-
-            return isValid( list );
         } catch( Exception ex )
         {
             throw new RuntimeException( ex );
@@ -169,57 +158,50 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
             throw new RuntimeException( throwable );
         }
     }
-
     
-    private void 
-    reportToFileList( List<RawReadsFile> files, String msg )
+    private void
+    readBamFile(ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
     {
-        for( RawReadsFile rf : files )
-        {
-            reporter.write( rf.getReportFile().toFile(), Severity.ERROR, "", msg );
-        }
+        readBamOrCramFile(result, files, paired);
     }
 
-    
-    private boolean 
-    readBamFile( List<RawReadsFile> files, AtomicBoolean paired )
+    private void
+    readBamOrCramFile( ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
     {
         BamScanner scanner = new BamScanner()
         {
-            @Override protected void 
+            @Override protected void
             logProcessedReadNumber( long count )
             {
                 ReadsValidator.this.logProcessedReadNumber( count );
             }
         };
 
-
-        boolean valid = true;
         for( RawReadsFile rf : files )
         {
+            ValidationResult fileResult;
+            if( rf.getReportFile() == null ) {
+                fileResult = result.create(new ValidationOrigin("file", rf.getFilename()));
+            } else
+            {
+                fileResult = result.create(rf.getReportFile().toFile(), new ValidationOrigin("file", rf.getFilename()));
+            }
+
             try
             {
-                String msg = String.format( "Processing file %s\n", rf.getFilename() );
-                reporter.write( manifest.getReportFile(), Severity.INFO, "", msg );
+                fileResult.add(ValidationMessage.info("Processing file"));
+                scanner.readCramFile( fileResult, rf, paired );
 
-                List<ScannerMessage> list = Filetype.cram == rf.getFiletype() ? scanner.readCramFile( rf, paired )
-                        : scanner.readBamFile( rf, paired );
-                list.stream().forEachOrdered( m -> reporter.write( rf.getReportFile().toFile(), m ) );
-                valid = isValid( list );
-
-            } catch( SAMFormatException | CRAMException e )
+            } catch( SAMFormatException | CRAMException ex )
             {
-                reporter.write( rf.getReportFile().toFile(), Severity.ERROR, "", e.getMessage() );
-                valid = false;
+                fileResult.add(ValidationMessage.error(ex));
 
             } catch( IOException ex )
             {
                 throw new RuntimeException( ex );
             }
         }
-        return valid;
     }
-
 
     private List<RawReadsFile> 
     createReadFiles()
@@ -310,12 +292,5 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
     {
         System.out.print( msg );
         System.out.flush();
-    }
-    
-    
-    boolean 
-    isValid( List<ScannerMessage> list )
-    {
-        return !list.stream().anyMatch( e -> e instanceof ScannerErrorMessage );
     }
 }
