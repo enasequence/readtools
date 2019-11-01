@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -89,5 +91,23 @@ BamScannerTest
         bs.readBamFile( vr, rf, paired );
         Assert.assertTrue( vr.isValid() );
         Assert.assertFalse( paired.get() );
+    }
+    
+    
+    @Test public void
+    testIncorrectBAMHeader() throws IOException
+    {
+        URL url = BamScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/invalid.bam" );
+        File file = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
+        BamScanner bs = new MyScanner();
+        AtomicBoolean paired = new AtomicBoolean();
+        RawReadsFile rf = new RawReadsFile();
+        rf.setFilename( file.getPath() );
+        Path ofile = Files.createTempFile( "BAMSCANNENR", "TEST" );
+        ValidationResult vr = new ValidationResult( ofile.toFile() );
+        bs.readCramFile( vr, rf, paired );
+        Assert.assertFalse( vr.isValid() );
+        Assert.assertTrue( new String( Files.readAllBytes( ofile ), StandardCharsets.UTF_8 ), new String( Files.readAllBytes( ofile ), StandardCharsets.UTF_8 ).contains( "File contains no valid reads" ) );
+        
     }
 }

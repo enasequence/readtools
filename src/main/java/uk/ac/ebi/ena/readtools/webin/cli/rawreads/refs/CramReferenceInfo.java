@@ -210,6 +210,7 @@ CramReferenceInfo
         Log.setGlobalLogLevel( LogLevel.ERROR );
         SamReaderFactory.setDefaultValidationStringency( ValidationStringency.SILENT );
         SamReaderFactory factory = SamReaderFactory.make();
+        factory.validationStringency( ValidationStringency.SILENT );
         factory.referenceSource( new ReferenceSource( (File) null ) );
         SamInputResource ir = SamInputResource.of( file );
         File indexMaybe = SamFiles.findIndex( file );
