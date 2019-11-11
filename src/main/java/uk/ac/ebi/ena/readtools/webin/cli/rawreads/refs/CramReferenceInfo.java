@@ -224,6 +224,9 @@ CramReferenceInfo
             es.prestartAllCoreThreads();
             for( SAMSequenceRecord sequenceRecord : reader.getFileHeader().getSequenceDictionary().getSequences() )
             {
+                if( "*".equals( sequenceRecord.getSequenceName() ) )
+                    continue;
+                
                 es.getQueue().put(() -> {
                     count.incrementAndGet();
                     String md5 = sequenceRecord.getAttribute( SAMSequenceRecord.MD5_TAG );
