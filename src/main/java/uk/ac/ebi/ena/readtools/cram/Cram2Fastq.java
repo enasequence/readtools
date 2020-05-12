@@ -127,7 +127,7 @@ public class Cram2Fastq {
 
 	
 	private static abstract class Dumper implements Runnable {
-		protected InputStream cramIS;
+		protected SeekableFileStream cramIS;
 		protected byte[] ref = null;
 		protected CRAMReferenceSource referenceSource;
 		protected FileOutput[] outputs;
@@ -139,7 +139,7 @@ public class Cram2Fastq {
 		private boolean reverse = false;
 		protected AtomicBoolean brokenPipe;
 
-		public Dumper(InputStream cramIS, CRAMReferenceSource referenceSource, int nofStreams, String fastqBaseName,
+		public Dumper(SeekableFileStream cramIS, CRAMReferenceSource referenceSource, int nofStreams, String fastqBaseName,
 				boolean gzip, long maxRecords, boolean reverse, int defaultQS, AtomicBoolean brokenPipe)
 				throws IOException {
 
@@ -193,12 +193,13 @@ public class Cram2Fastq {
 					break;
 				DataReaderFactory f = new DataReaderFactory();
 
-				for (Slice s : container.slices) {
-					if (s.sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && s.sequenceId != -2) {
-						SAMSequenceRecord sequence = cramHeader.getSamFileHeader().getSequence(s.sequenceId);
+				for (Slice s : container.getSlices()) {
+					int sequenceId = s.getReferenceContext().getSequenceId();
+					if (sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && sequenceId != -2) {
+						SAMSequenceRecord sequence = cramHeader.getSamFileHeader().getSequence(sequenceId);
 
 						if (sequence == null)
-							throw new RuntimeException("Null sequence for id: " + s.sequenceId);
+							throw new RuntimeException("Null sequence for id: " + sequenceId);
 
 						ref = referenceSource.getReferenceBases(sequence, true);
 
@@ -207,17 +208,17 @@ public class Cram2Fastq {
 
 					Map<Integer, InputStream> inputMap = new HashMap<Integer, InputStream>();
 					for (Integer exId : s.external.keySet()) {
-						inputMap.put(exId, new ByteArrayInputStream(s.external.get(exId).getRawContent()));
+						inputMap.put(exId, new ByteArrayInputStream(s.external.get(exId).getUncompressedContent()));
 					}
 
 					reader.referenceSequence = ref;
 					reader.prevAlStart = s.alignmentStart;
-					reader.substitutionMatrix = container.header.substitutionMatrix;
+					reader.substitutionMatrix = container.compressionHeader.substitutionMatrix;
 					reader.recordCounter = 0;
 					try {
 						f.buildReader(reader,
-								new DefaultBitInputStream(new ByteArrayInputStream(s.coreBlock.getRawContent())),
-								inputMap, container.header, s.sequenceId);
+								new DefaultBitInputStream(new ByteArrayInputStream(s.coreBlock.getUncompressedContent())),
+								inputMap, container.compressionHeader, sequenceId);
 					} catch (IllegalArgumentException e) {
 						throw new RuntimeException(e);
 					}
@@ -260,7 +261,7 @@ public class Cram2Fastq {
 		private MultiFastqOutputter multiFastqOutputter;
 		private int defaultQS;
 
-		public CollatingDumper(InputStream cramIS, CRAMReferenceSource referenceSource, int nofStreams,
+		public CollatingDumper(SeekableFileStream cramIS, CRAMReferenceSource referenceSource, int nofStreams,
 				String fastqBaseName, boolean gzip, long maxRecords, boolean reverse, int defaultQS,
 				AtomicBoolean brokenPipe) throws IOException {
 			super(cramIS, referenceSource, nofStreams, fastqBaseName, gzip, maxRecords, reverse, defaultQS, brokenPipe);

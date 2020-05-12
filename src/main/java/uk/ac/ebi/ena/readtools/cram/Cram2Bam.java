@@ -79,7 +79,7 @@ public class Cram2Bam {
 		if (params.reference == null)
 			log.warn("No reference file specified, remote access over internet may be used to download public sequences. ");
 
-		InputStream is = null;
+		SeekableFileStream is = null;
 		try {
 			is = new SeekableFileStream(params.cramFile);			
 		} catch (Exception e2) {
@@ -159,9 +159,8 @@ public class Cram2Bam {
 			}
 
 			log.info(String
-					.format("CONTAINER READ: io %dms, parse %dms,convert %dms, BAM write %dms, %d bases in %d records",
-							c.readTime / 1000000, c.parseTime / 1000000, c2sTime / 1000000,
-							sWriteTime / 1000000, c.bases, c.nofRecords));
+					.format("CONTAINER READ: convert %dms, BAM write %dms, %d bases in %d records",
+							c2sTime / 1000000, sWriteTime / 1000000, c.bases, c.nofRecords));
 
 			if (enough || (params.outputFile == null && System.out.checkError()))
 				break;
