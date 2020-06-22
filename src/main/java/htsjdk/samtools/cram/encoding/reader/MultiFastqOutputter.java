@@ -13,6 +13,7 @@ package htsjdk.samtools.cram.encoding.reader;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,7 +52,7 @@ public class MultiFastqOutputter extends AbstractFastqReader {
 		this.cacheOverFlowStream = cacheOverFlowStream;
 		this.referenceSource = referenceSource2;
 		this.header = header;
-		super.counterOffset = counter;
+		//super.counterOffset = counter;
 	}
 
 	public byte[] getPrefix() {
@@ -131,7 +132,7 @@ public class MultiFastqOutputter extends AbstractFastqReader {
 
 	@Override
 	protected void writeRead(byte[] name, int flags, byte[] bases, byte[] scores) {
-		FastqRead read = new FastqRead(readLength, name, appendSegmentIndexToReadNames,
+		FastqRead read = new FastqRead(bases.length, name, appendSegmentIndexToReadNames,
 				getSegmentIndexInTemplate(flags), bases, scores);
 		read.generation = generation++;
 		if (read.templateIndex == 0) {
@@ -152,6 +153,10 @@ public class MultiFastqOutputter extends AbstractFastqReader {
 			if (readSet.size() > maxCacheSize)
 				purgeCache();
 		}
+	}
+
+	public void writeRead(String name, int flags, byte[] bases, byte[] baseQualities) {
+		writeRead(name.getBytes(StandardCharsets.UTF_8), flags, bases, baseQualities);
 	}
 
 	@Override

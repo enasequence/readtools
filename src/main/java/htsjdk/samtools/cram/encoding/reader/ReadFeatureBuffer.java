@@ -39,7 +39,7 @@ class ReadFeatureBuffer {
 	private ByteBuffer readFeatureBuffer = ByteBuffer.allocate(1024 * 1024);
 	private int readFeatureSize;
 
-	public final void readReadFeatures(AbstractReader reader) throws IOException {
+	/*public final void readReadFeatures(AbstractReader reader) throws IOException {
 		( (Buffer) readFeatureBuffer ).clear();
 		readFeatureSize = reader.numberOfReadFeaturesCodec.readData();
 		int prevPos = 0;
@@ -98,7 +98,7 @@ class ReadFeatureBuffer {
 			}
 		}
 		readFeatureBuffer.flip();
-	}
+	}*/
 
 	public final void restoreReadBases(int readLength, int prevAlStart, byte[] ref,
 			SubstitutionMatrix substitutionMatrix, byte[] bases) {

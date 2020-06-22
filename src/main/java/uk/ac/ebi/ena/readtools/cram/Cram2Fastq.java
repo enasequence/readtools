@@ -15,43 +15,36 @@
  ******************************************************************************/
 package uk.ac.ebi.ena.readtools.cram;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.zip.GZIPOutputStream;
-
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.converters.FileConverter;
-
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.encoding.reader.AbstractFastqReader;
-import htsjdk.samtools.cram.encoding.reader.DataReaderFactory;
 import htsjdk.samtools.cram.encoding.reader.MultiFastqOutputter;
-import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
+
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.GZIPOutputStream;
 
 public class Cram2Fastq {
 	private static Log log = Log.getInstance(Cram2Fastq.class);
@@ -182,7 +175,7 @@ public class Cram2Fastq {
 
 		protected abstract void containerHasBeenRead() throws IOException;
 
-		protected void doRun() throws IOException {
+		/*protected void doRun() throws IOException {
 			cramHeader = CramIO.readCramHeader(cramIS);			
 
 			reader = newReader();
@@ -235,6 +228,39 @@ public class Cram2Fastq {
 					containerHasBeenRead();
 				}
 			}
+			if (!brokenPipe.get())
+				reader.finish();
+		}*/
+
+		protected void doRun() throws IOException {
+			cramHeader = CramIO.readCramHeader(cramIS);
+
+			reader = newReader();
+			reader.reverseNegativeReads = reverse;
+
+			MultiFastqOutputter fastqOutputter = (MultiFastqOutputter) reader;
+
+			final SamReader samReader = SamReaderFactory.makeDefault()
+					.referenceSource(referenceSource)
+					.open(Paths.get(cramIS.getSource()));
+
+			for (final SAMRecord currentRecord : samReader) {
+
+				SAMRecord read = currentRecord;
+
+				String readName = read.getReadName();
+
+				byte[] readBases = Arrays.copyOf(read.getReadBases(), read.getReadBases().length);
+				byte[] baseQualities = read.getBaseQualityString().getBytes();
+
+				if (reverse && read.getReadNegativeStrandFlag()) {
+					SequenceUtil.reverseComplement(readBases);
+					SequenceUtil.reverseQualities(baseQualities);
+				}
+
+				fastqOutputter.writeRead(readName, read.getFlags(), readBases, baseQualities);
+			}
+
 			if (!brokenPipe.get())
 				reader.finish();
 		}

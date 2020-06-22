@@ -15,19 +15,13 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding.reader;
 
-import java.io.EOFException;
+import htsjdk.samtools.cram.structure.SubstitutionMatrix;
+
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import htsjdk.samtools.cram.encoding.reader.AbstractReader;
-import htsjdk.samtools.cram.encoding.reader.DataReader;
-import htsjdk.samtools.cram.structure.ReadTag;
-import htsjdk.samtools.cram.structure.SubstitutionMatrix;
-import htsjdk.samtools.util.SequenceUtil;
-
-public abstract class AbstractFastqReader extends AbstractReader {
+public abstract class AbstractFastqReader{// extends AbstractReader {
 	private ReadFeatureBuffer rfBuf = new ReadFeatureBuffer();
 	public boolean reverseNegativeReads = true;
 	public boolean appendSegmentIndexToReadNames = true;
@@ -73,7 +67,7 @@ public abstract class AbstractFastqReader extends AbstractReader {
 	protected abstract byte[] refSeqChanged(int seqID);
 
 	public void read() throws IOException {
-		int seqId = refId;
+		/*int seqId = refId;
 		readName = null;
 		try {
 			flags = bitFlagsCodec.readData();
@@ -179,7 +173,7 @@ public abstract class AbstractFastqReader extends AbstractReader {
 				System.err.println("read name: " + new String(readName));
 			throw new RuntimeException(e);
 		}
-	}
+	*/}
 
 	/**
 	 * Write the read. The read here is basically a fastq read with an addition
