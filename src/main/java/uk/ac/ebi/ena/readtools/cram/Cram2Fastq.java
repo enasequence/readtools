@@ -19,6 +19,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.converters.FileConverter;
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
@@ -31,6 +32,7 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
@@ -41,6 +43,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,6 +52,9 @@ import java.util.zip.GZIPOutputStream;
 public class Cram2Fastq {
 	private static Log log = Log.getInstance(Cram2Fastq.class);
 	public static final String COMMAND = "fastq";
+
+	public static boolean INCLUDE_NON_PRIMARY_ALIGNMENTS = false;
+	public static boolean INCLUDE_NON_PF_READS = false;
 
 	private static void printUsage(JCommander jc) {
 		StringBuilder sb = new StringBuilder();
@@ -240,26 +246,41 @@ public class Cram2Fastq {
 
 			MultiFastqOutputter fastqOutputter = (MultiFastqOutputter) reader;
 
+			SamReaderFactory.setDefaultValidationStringency(ValidationStringency.LENIENT);
+
+			String source = cramIS.getSource();
+			cramIS.close();
+
 			final SamReader samReader = SamReaderFactory.makeDefault()
 					.referenceSource(referenceSource)
-					.open(Paths.get(cramIS.getSource()));
+					.open(Paths.get(source));
 
 			for (final SAMRecord currentRecord : samReader) {
 
-				SAMRecord read = currentRecord;
+				if (currentRecord.isSecondaryOrSupplementary() && !INCLUDE_NON_PRIMARY_ALIGNMENTS) {
+					continue;
+				}
 
-				String readName = read.getReadName();
+				// Skip non-PF reads as necessary
+				if (currentRecord.getReadFailsVendorQualityCheckFlag() && !INCLUDE_NON_PF_READS) {
+					continue;
+				}
 
-				byte[] readBases = Arrays.copyOf(read.getReadBases(), read.getReadBases().length);
-				byte[] baseQualities = read.getBaseQualityString().getBytes();
+				String readName = currentRecord.getReadName();
 
-				if (reverse && read.getReadNegativeStrandFlag()) {
+				byte[] readBases = Arrays.copyOf(currentRecord.getReadBases(), currentRecord.getReadBases().length);
+				byte[] baseQualities = currentRecord.getBaseQualityString().getBytes(StandardCharsets.UTF_8);
+
+				if (reverse && currentRecord.getReadNegativeStrandFlag()) {
 					SequenceUtil.reverseComplement(readBases);
 					SequenceUtil.reverseQualities(baseQualities);
 				}
 
-				fastqOutputter.writeRead(readName, read.getFlags(), readBases, baseQualities);
+				fastqOutputter.writeRead(
+						readName.getBytes(StandardCharsets.UTF_8), currentRecord.getFlags(), readBases, baseQualities);
 			}
+
+			CloserUtil.close(samReader);
 
 			if (!brokenPipe.get())
 				reader.finish();

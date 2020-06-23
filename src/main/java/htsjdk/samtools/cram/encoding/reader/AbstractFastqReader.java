@@ -196,7 +196,7 @@ public abstract class AbstractFastqReader{// extends AbstractReader {
 	 * @param scores
 	 *            fastq quality scores (phred+33)
 	 */
-	protected abstract void writeRead(byte[] name, int flags, byte[] bases, byte[] scores);
+	public abstract void writeRead(byte[] name, int flags, byte[] bases, byte[] scores);
 
 	public abstract void finish();
 }

@@ -34,7 +34,7 @@ public class ReaderToFastq extends AbstractFastqReader {
 	}
 
 	@Override
-	protected void writeRead(byte[] name, int flags, byte[] bases, byte[] scores) {
+	public void writeRead(byte[] name, int flags, byte[] bases, byte[] scores) {
 		int indexInTemplate = getSegmentIndexInTemplate(flags);
 		ByteBuffer buf = bufs[indexInTemplate];
 

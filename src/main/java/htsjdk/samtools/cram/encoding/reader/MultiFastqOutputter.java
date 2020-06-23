@@ -131,7 +131,7 @@ public class MultiFastqOutputter extends AbstractFastqReader {
 	}
 
 	@Override
-	protected void writeRead(byte[] name, int flags, byte[] bases, byte[] scores) {
+	public void writeRead(byte[] name, int flags, byte[] bases, byte[] scores) {
 		FastqRead read = new FastqRead(bases.length, name, appendSegmentIndexToReadNames,
 				getSegmentIndexInTemplate(flags), bases, scores);
 		read.generation = generation++;
@@ -153,10 +153,6 @@ public class MultiFastqOutputter extends AbstractFastqReader {
 			if (readSet.size() > maxCacheSize)
 				purgeCache();
 		}
-	}
-
-	public void writeRead(String name, int flags, byte[] bases, byte[] baseQualities) {
-		writeRead(name.getBytes(StandardCharsets.UTF_8), flags, bases, baseQualities);
 	}
 
 	@Override
