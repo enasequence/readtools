@@ -14,15 +14,17 @@ import java.util.function.Function;
 
 /**
  * Contains a few quick tests to find and compare reads between fastq files produced with two Cram2Fasq versions i.e.<br/>
- *  - old/low-level version with older version of htsjdk<br/>
- *  - new/high-level version with newer version of htsjdk
+ *  - old low-level version with older version of htsjdk<br/>
+ *  - new high-level version with newer version of htsjdk
  */
 public class FastqReadHunterAndComparator {
 
+    //files created using the old low-level generator.
     private static final String SOURCE_UNPAIRED_PATH_STR = "C:\\Users\\mhaseeb\\Documents\\ebi\\ena\\data-files\\20357-peritoneum-synchr-metastasis-ready\\20357-peritoneum-synchr-metastasis-ready-rt.fastq";
     private static final String SOURCE_PAIRED01_PATH_STR = "C:\\Users\\mhaseeb\\Documents\\ebi\\ena\\data-files\\20357-peritoneum-synchr-metastasis-ready\\20357-peritoneum-synchr-metastasis-ready-rt_1.fastq";
     private static final String SOURCE_PAIRED02_PATH_STR = "C:\\Users\\mhaseeb\\Documents\\ebi\\ena\\data-files\\20357-peritoneum-synchr-metastasis-ready\\20357-peritoneum-synchr-metastasis-ready-rt_2.fastq";
 
+    //files created using the new high-level generator.
     private static final String TARGET_UNPAIRED_PATH_STR = "C:\\Users\\mhaseeb\\Documents\\ebi\\ena\\data-files\\20357-peritoneum-synchr-metastasis-ready\\20357-peritoneum-synchr-metastasis-ready-rtm.fastq";
     private static final String TARGET_PAIRED01_PATH_STR = "C:\\Users\\mhaseeb\\Documents\\ebi\\ena\\data-files\\20357-peritoneum-synchr-metastasis-ready\\20357-peritoneum-synchr-metastasis-ready-rtm_1.fastq";
     private static final String TARGET_PAIRED02_PATH_STR = "C:\\Users\\mhaseeb\\Documents\\ebi\\ena\\data-files\\20357-peritoneum-synchr-metastasis-ready\\20357-peritoneum-synchr-metastasis-ready-rtm_2.fastq";
@@ -72,6 +74,10 @@ public class FastqReadHunterAndComparator {
         Assert.assertEquals(srcCount, tgtCount);
     }
 
+    /**
+     * Iterate both sets of file comparing reads and qualities of the mates in the pairs with each other.<br/>
+     * The mates in the second pair are not searched. Comparison is based only on the order of the reads.
+     */
     @Test
     public void pairedReadsHunt() {
         FastqReader srcReader1 = new FastqReader(new File(SOURCE_PAIRED01_PATH_STR));
@@ -114,15 +120,15 @@ public class FastqReadHunterAndComparator {
 //                continue;
 //            }
 
-            if (tgtRead1.getReadString().equals(srcRead1.getReadString()) && tgtRead1.getBaseQualityString().equals(srcRead1.getBaseQualityString())) {
-                if (tgtRead2.getReadString().equals(srcRead2.getReadString()) && tgtRead2.getBaseQualityString().equals(srcRead2.getBaseQualityString())) {
-                    System.out.println(String.format("possible pair match. srcRead1 : %s, srcRead2 : %s, tgtRead1 : %s, tgtRead2 : %s",
-                            srcRead1.getReadName(), srcRead2.getReadName(), tgtRead1.getReadName(), tgtRead2.getReadName()));
+            //match first mates in the source and target pairs
+            if (tgtRead1.getReadString().equals(srcRead1.getReadString()) && tgtRead1.getBaseQualityString().equals(srcRead1.getBaseQualityString())
+                    && //match second mates in the source and target pairs
+                    tgtRead2.getReadString().equals(srcRead2.getReadString()) && tgtRead2.getBaseQualityString().equals(srcRead2.getBaseQualityString())) {
 
-                    ++matchCount;
-                } else {
-                    ++mismatchCount;
-                }
+                System.out.println(String.format("possible pair match. srcRead1 : %s, srcRead2 : %s, tgtRead1 : %s, tgtRead2 : %s",
+                        srcRead1.getReadName(), srcRead2.getReadName(), tgtRead1.getReadName(), tgtRead2.getReadName()));
+
+                ++matchCount;
             } else {
                 ++mismatchCount;
             }
@@ -136,45 +142,9 @@ public class FastqReadHunterAndComparator {
         System.out.println(String.format("matches : %d, mismatches : %d", matchCount, mismatchCount));
     }
 
-    @Test
-    public void readsPairingByOrder() {
-        BiConsumer<String, String> pairPathsConsumer = (pathStr1, pathStr2) -> {
-
-            FastqReader reader1 = new FastqReader(new File(pathStr1));
-            FastqReader reader2 = new FastqReader(new File(pathStr2));
-
-            int read1Num = 0;
-            int read2Num = 0;
-
-            for(FastqRecord read1 : reader1) {
-                ++read1Num;
-
-                FastqRecord read2 = null;
-                if (reader2.hasNext()) {
-                    read2 = reader2.next();
-                    ++read2Num;
-                } else {
-                    System.out.println("reader2 empty.");
-                    break;
-                }
-
-                if (read1Num % 10_000 != 0) {
-                    continue;
-                }
-
-                System.out.println(String.format("possible pair. read1Num : %d, read2Num : %d, read1 : %s, read2 : %s",
-                        read1Num, read2Num, read1.getReadName(), read2.getReadName()));
-            }
-            reader1.close();
-            reader2.close();
-
-            System.out.println(String.format("read1Count : %d, read2Count : %d", read1Num, read2Num));
-        };
-
-        pairPathsConsumer.accept(SOURCE_PAIRED01_PATH_STR, SOURCE_PAIRED02_PATH_STR);
-        //pairPathsConsumer.accept(TARGET_PAIRED01_PATH_STR, TARGET_PAIRED02_PATH_STR);
-    }
-
+    /**
+     * Compare read names of the pairs with each other to see if they match.
+     */
     @Test
     public void pairedReadsNameMismatches() {
         BiConsumer<String, String> pairPathsConsumer = (pathStr1, pathStr2) -> {
@@ -198,15 +168,20 @@ public class FastqReadHunterAndComparator {
                     break;
                 }
 
+                //remove the index from the end.
                 String read1Name = read1.getReadName();
                 read1Name = read1Name.substring(0, read1Name.length() - 1);
 
+                //remove the index from the end.
                 String read2Name = read2.getReadName();
                 read2Name = read2Name.substring(0, read2Name.length() - 1);
 
                 if (read1Name.equals(read2Name)) {
                     ++matchedNamesCount;
 
+                    // it would make sense that read names would never match with each other after the first mismatch because
+                    // of some problem that messed it up at the time of file generation but surprisingly, they continue
+                    // to match afterwards.
                     if (mismatchedNamesCount > 0) {
                         System.out.println(String.format("match after a mismatch. read1Num : %d, read2Num : %d, read1 : %s, read2 : %s, matchedNames : %d, mismatchedNames : %d",
                                 read1Num, read2Num, read1.getReadName(), read2.getReadName(), matchedNamesCount, mismatchedNamesCount));
