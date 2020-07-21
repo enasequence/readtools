@@ -181,6 +181,7 @@ public class Cram2Fastq {
 
 		protected abstract void containerHasBeenRead() throws IOException;
 
+		//todo remove following code
 		/*protected void doRun() throws IOException {
 			cramHeader = CramIO.readCramHeader(cramIS);			
 

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+//todo remove commented out and unused code.
 public abstract class AbstractFastqReader{// extends AbstractReader {
 	private ReadFeatureBuffer rfBuf = new ReadFeatureBuffer();
 	public boolean reverseNegativeReads = true;

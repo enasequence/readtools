@@ -52,7 +52,6 @@ public class MultiFastqOutputter extends AbstractFastqReader {
 		this.cacheOverFlowStream = cacheOverFlowStream;
 		this.referenceSource = referenceSource2;
 		this.header = header;
-		//super.counterOffset = counter;
 	}
 
 	public byte[] getPrefix() {
