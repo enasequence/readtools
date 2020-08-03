@@ -50,7 +50,7 @@ public class MultiFastqOutputter extends AbstractFastqReader {
 	private SAMFileHeader header;
 
 	public MultiFastqOutputter(OutputStream[] streams, OutputStream cacheOverFlowStream,
-			CRAMReferenceSource referenceSource2, SAMFileHeader header, long counter) {
+			CRAMReferenceSource referenceSource2, SAMFileHeader header) {
 		this.streams = streams;
 		this.cacheOverFlowStream = cacheOverFlowStream;
 		this.referenceSource = referenceSource2;
@@ -93,13 +93,7 @@ public class MultiFastqOutputter extends AbstractFastqReader {
 		}
 	}
 
-	private static Comparator<FastqRead> byGenerationComparator = new Comparator<FastqRead>() {
-
-		@Override
-		public int compare(FastqRead o1, FastqRead o2) {
-			return (int) (o1.generation - o2.generation);
-		}
-	};
+	private static Comparator<FastqRead> byGenerationComparator = (o1, o2) -> (int) (o1.generation - o2.generation);
 
 	protected void kickedFromCache(FastqRead read) {
 		if (writer == null) {

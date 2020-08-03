@@ -264,14 +264,9 @@ public class Cram2Fastq {
 
 		@Override
 		protected AbstractFastqReader newReader() {
-			if (multiFastqOutputter != null) {
-				counter = multiFastqOutputter.getCounter();
-			}
-			multiFastqOutputter = new MultiFastqOutputter(outputs, fo, referenceSource, cramHeader.getSamFileHeader(),
-					counter);
+			multiFastqOutputter = new MultiFastqOutputter(outputs, fo, referenceSource, cramHeader.getSamFileHeader());
 			if (prefix != null) {
 				multiFastqOutputter.setPrefix(prefix.getBytes());
-				// multiFastqOutputter.setCounter(counter);
 			}
 			multiFastqOutputter.defaultQS = this.defaultQS;
 			return multiFastqOutputter;

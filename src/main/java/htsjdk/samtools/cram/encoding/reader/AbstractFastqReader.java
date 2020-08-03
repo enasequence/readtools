@@ -19,13 +19,6 @@ public abstract class AbstractFastqReader{
 	public boolean reverseNegativeReads = true;
 	public boolean appendSegmentIndexToReadNames = true;
 
-	public int readLength;
-	public byte[] readName;
-
-	public static final int maxReadBufferLength = 1024 * 1024;
-	public byte[] bases = new byte[maxReadBufferLength];
-	public byte[] scores = new byte[maxReadBufferLength];
-
 	public int defaultQS = '?';
 
 	/**

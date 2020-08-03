@@ -39,21 +39,21 @@ public class ReaderToFastq extends AbstractFastqReader {
 		ByteBuffer buf = bufs[indexInTemplate];
 
 		buf.put((byte) '@');
-		buf.put(readName);
+		buf.put(name);
 		if (appendSegmentIndexToReadNames && indexInTemplate > 0) {
 			buf.put((byte) '/');
 			byte segmentIndex = (byte) (48 + indexInTemplate);
 			buf.put(segmentIndex);
 		}
 		buf.put((byte) '\n');
-		buf.put(bases, 0, readLength);
+		buf.put(bases, 0, bases.length);
 		buf.put((byte) '\n');
 		buf.put((byte) '+');
 		buf.put((byte) '\n');
 		if (scores != null)
-			buf.put(scores, 0, readLength);
+			buf.put(scores, 0, bases.length);
 		else
-			for (int i = 0; i < readLength; i++)
+			for (int i = 0; i < bases.length; i++)
 				buf.put((byte) 33);
 
 		buf.put((byte) '\n');
