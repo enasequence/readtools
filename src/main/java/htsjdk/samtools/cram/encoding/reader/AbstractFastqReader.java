@@ -15,37 +15,18 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding.reader;
 
-import htsjdk.samtools.cram.structure.SubstitutionMatrix;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-//todo remove commented out and unused code.
-public abstract class AbstractFastqReader{// extends AbstractReader {
-	private ReadFeatureBuffer rfBuf = new ReadFeatureBuffer();
+public abstract class AbstractFastqReader{
 	public boolean reverseNegativeReads = true;
 	public boolean appendSegmentIndexToReadNames = true;
 
-	public byte[] referenceSequence;
-	public int flags;
-	public int compressionFlags;
-	public int mateFlags;
 	public int readLength;
-	public int prevAlStart;
 	public byte[] readName;
 
 	public static final int maxReadBufferLength = 1024 * 1024;
 	public byte[] bases = new byte[maxReadBufferLength];
 	public byte[] scores = new byte[maxReadBufferLength];
-	private Map<Integer, Integer> nameCache = new HashMap<Integer, Integer>();
-	public long counterOffset = 0;
 
 	public int defaultQS = '?';
-
-	public int ignoreReadsWithFlags = 256 | 2048;
-	public SubstitutionMatrix substitutionMatrix;
-	public int recordCounter = 0;
 
 	/**
 	 * For now this is to identify the right buffer to use.
@@ -64,117 +45,6 @@ public abstract class AbstractFastqReader{// extends AbstractReader {
 		else
 			return 2;
 	}
-
-	protected abstract byte[] refSeqChanged(int seqID);
-
-	public void read() throws IOException {
-		/*int seqId = refId;
-		readName = null;
-		try {
-			flags = bitFlagsCodec.readData();
-
-			compressionFlags = compressionBitFlagsCodec.readData();
-			if (refId == -2) {
-				seqId = refIdCodec.readData();
-			}
-
-			readLength = readLengthCodec.readData();
-			if (APDelta)
-				prevAlStart += alignmentStartCodec.readData();
-			else
-				prevAlStart = alignmentStartCodec.readData();
-
-			readGroupCodec.readData();
-
-			if (captureReadNames)
-				readName = readNameCodec.readData();
-
-			// mate record:
-			if ((compressionFlags & CramFlags.DETACHED_FLAG) != 0) {
-				mateFlags = mateBitFlagCodec.readData();
-				if (!captureReadNames)
-					readName = readNameCodec.readData();
-
-				mateReferenceIdCodec.readData();
-				mateAlignmentStartCodec.readData();
-				insertSizeCodec.readData();
-				detachedCount++;
-			} else if ((compressionFlags & CramFlags.HAS_MATE_DOWNSTREAM_FLAG) != 0) {
-				int distance = distanceToNextFragmentCodec.readData();
-				nameCache.put(recordCounter + distance + 1, recordCounter);
-			}
-
-			if (readName == null) {
-				// check cache:
-				if (nameCache.containsKey(recordCounter)) {
-					int order = nameCache.remove(recordCounter);
-					readName = Long.toString(order + counterOffset).getBytes();
-				} else
-					readName = Long.toString(recordCounter + counterOffset).getBytes();
-			}
-
-			Integer tagIdList = tagIdListCodec.readData();
-			byte[][] ids = tagIdDictionary[tagIdList];
-			if (ids.length > 0) {
-				for (int i = 0; i < ids.length; i++) {
-					int id = ReadTag.name3BytesToInt(ids[i]);
-					DataReader<byte[]> dataReader = tagValueCodecs.get(id);
-					try {
-						dataReader.readData();
-					} catch (EOFException e) {
-						throw e;
-					}
-				}
-			}
-
-			if ((flags & CramFlags.SEGMENT_UNMAPPED_FLAG) == 0) {
-				byte[] refBases = referenceSequence;
-				if (seqId != refId)
-					refBases = refSeqChanged(seqId);
-				rfBuf.readReadFeatures(this);
-				rfBuf.restoreReadBases(readLength, prevAlStart, refBases, substitutionMatrix, bases);
-
-				mappingScoreCodec.readData();
-			} else {
-				for (int i=0; i<readLength; i++)
-					bases[i] = baseCodec.readData();
-
-			}
-
-			Arrays.fill(scores, 0, readLength, (byte) (defaultQS - 33));
-			if ((compressionFlags & CramFlags.FORCE_PRESERVE_QS_FLAG) != 0) {
-				for (int i=0; i<readLength; i++)
-					scores[i] = qualityScoreCodec.readData();
-			} else {
-				if ((flags & CramFlags.SEGMENT_UNMAPPED_FLAG) == 0) {
-					rfBuf.restoreQualityScores(readLength, prevAlStart, scores);
-				}
-			}
-
-			if ((flags & ignoreReadsWithFlags) != 0)
-				return;
-
-			for (int i = 0; i < readLength; i++)
-				if (scores[i] == -1)
-					scores[i] = (byte) defaultQS;
-				else
-					scores[i] += 33;
-
-			if (reverseNegativeReads && (flags & CramFlags.NEGATIVE_STRAND_FLAG) != 0) {
-				SequenceUtil.reverseComplement(bases, 0, readLength);
-				SequenceUtil.reverse(scores, 0, readLength);
-			}
-
-			writeRead(readName, flags, bases, scores);
-
-			recordCounter++;
-		} catch (Exception e) {
-			System.err.printf("Failed at record %d. \n", recordCounter);
-			if (readName != null)
-				System.err.println("read name: " + new String(readName));
-			throw new RuntimeException(e);
-		}
-	*/}
 
 	/**
 	 * Write the read. The read here is basically a fastq read with an addition

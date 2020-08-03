@@ -63,9 +63,4 @@ public class ReaderToFastq extends AbstractFastqReader {
 	public void finish() {
 
 	}
-
-	@Override
-	protected byte[] refSeqChanged(int seqID) {
-		throw new RuntimeException("not implemented.");
-	}
 }

@@ -11,9 +11,15 @@
 
 package htsjdk.samtools.cram.encoding.reader;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
+import htsjdk.samtools.util.Log;
+
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -21,14 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.cram.ref.CRAMReferenceSource;
-import htsjdk.samtools.util.Log;
-
+/**
+ * Note<br/>
+ * Makes use of a collection based caching implementation that may produce results in which a paired read is incorrectly written
+ * to the unpaired file if the two mates are located far away from each other in the collection.
+ */
 public class MultiFastqOutputter extends AbstractFastqReader {
 	private static final Log log = Log.getInstance(MultiFastqOutputter.class);
 	private Map<FastqRead, FastqRead> readSet = new TreeMap<FastqRead, FastqRead>();
@@ -163,11 +166,5 @@ public class MultiFastqOutputter extends AbstractFastqReader {
 		if (writer != null)
 			writer.close();
 		writer = null;
-	}
-
-	@Override
-	protected byte[] refSeqChanged(int seqID) {
-		SAMSequenceRecord sequence = header.getSequence(seqID);
-		return referenceSource.getReferenceBases(sequence, true);
 	}
 }

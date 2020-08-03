@@ -19,7 +19,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.converters.FileConverter;
-import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
@@ -180,64 +179,6 @@ public class Cram2Fastq {
 		protected abstract AbstractFastqReader newReader();
 
 		protected abstract void containerHasBeenRead() throws IOException;
-
-		//todo remove following code
-		/*protected void doRun() throws IOException {
-			cramHeader = CramIO.readCramHeader(cramIS);			
-
-			reader = newReader();
-			reader.reverseNegativeReads = reverse;
-			MAIN_LOOP: while (!brokenPipe.get()
-					&& (container = ContainerIO.readContainer(cramHeader.getVersion(), cramIS)) != null) {
-				if (container.isEOF())
-					break;
-				DataReaderFactory f = new DataReaderFactory();
-
-				for (Slice s : container.getSlices()) {
-					int sequenceId = s.getReferenceContext().getSequenceId();
-					if (sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && sequenceId != -2) {
-						SAMSequenceRecord sequence = cramHeader.getSamFileHeader().getSequence(sequenceId);
-
-						if (sequence == null)
-							throw new RuntimeException("Null sequence for id: " + sequenceId);
-
-						ref = referenceSource.getReferenceBases(sequence, true);
-
-					} else
-						ref = new byte[0];
-
-					Map<Integer, InputStream> inputMap = new HashMap<Integer, InputStream>();
-					for (Integer exId : s.external.keySet()) {
-						inputMap.put(exId, new ByteArrayInputStream(s.external.get(exId).getUncompressedContent()));
-					}
-
-					reader.referenceSequence = ref;
-					reader.prevAlStart = s.alignmentStart;
-					reader.substitutionMatrix = container.compressionHeader.substitutionMatrix;
-					reader.recordCounter = 0;
-					try {
-						f.buildReader(reader,
-								new DefaultBitInputStream(new ByteArrayInputStream(s.coreBlock.getUncompressedContent())),
-								inputMap, container.compressionHeader, sequenceId);
-					} catch (IllegalArgumentException e) {
-						throw new RuntimeException(e);
-					}
-
-					for (int i = 0; i < s.nofRecords; i++) {
-						reader.read();
-						if (maxRecords > -1) {
-							if (maxRecords == 0)
-								break MAIN_LOOP;
-							maxRecords--;
-						}
-					}
-
-					containerHasBeenRead();
-				}
-			}
-			if (!brokenPipe.get())
-				reader.finish();
-		}*/
 
 		protected void doRun() throws IOException {
 			cramHeader = CramIO.readCramHeader(cramIS);
