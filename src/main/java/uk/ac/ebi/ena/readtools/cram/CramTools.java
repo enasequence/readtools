@@ -29,6 +29,7 @@ import com.beust.jcommander.Parameters;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.util.Log;
+import uk.ac.ebi.ena.readtools.sam.Sam2Fastq;
 
 public class CramTools {	
 
@@ -96,8 +97,7 @@ public class CramTools {
 		JCommander jc = new JCommander(params);
 		jc.setProgramName("cramtools");
 
-		addProgram(jc, Cram2Bam.class);
-		addProgram(jc, Cram2Fastq.class);
+		addProgram(jc, Sam2Fastq.class);
 
 		jc.parse(args);
 
