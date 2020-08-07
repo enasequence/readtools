@@ -17,3 +17,5 @@ gradle-app.setting
 /.project
 
 /.idea
+
+pom.xml

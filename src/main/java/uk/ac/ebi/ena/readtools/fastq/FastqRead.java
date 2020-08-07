@@ -61,11 +61,14 @@ public class FastqRead implements IRead {
 
 		buf.put("+\n".getBytes());
 
-		if (scores != null)
-			buf.put(scores, 0, readLength);
-		else
-			for (int i = 0; i < readLength; i++)
+		//if there are no scores or there just a single '*' character (which also means unavailable score information)
+		if (scores == null || (scores.length == 1 && scores[0] == (byte)'*')) {
+			for (int i = 0; i < readLength; i++) {
 				buf.put((byte) 33);
+			}
+		} else {
+			buf.put(scores, 0, readLength);
+		}
 
 		buf.put((byte) '\n');
 	}
