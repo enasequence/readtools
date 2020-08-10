@@ -1,14 +1,13 @@
 /*
- * Copyright 2019 EMBL - European Bioinformatics Institute
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
- * file except in compliance with the License. You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
- */
-
+* Copyright 2010-2020 EMBL - European Bioinformatics Institute
+* Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+* file except in compliance with the License. You may obtain a copy of the License at
+* http://www.apache.org/licenses/LICENSE-2.0
+* Unless required by applicable law or agreed to in writing, software distributed under the
+* License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+* CONDITIONS OF ANY KIND, either express or implied. See the License for the
+* specific language governing permissions and limitations under the License.
+*/
 package uk.ac.ebi.ena.readtools.sam;
 
 import java.io.File;
@@ -29,8 +28,7 @@ public class
 Sam2FastqTest
 {
 	@Test
-	public void convertCram2Fastq() throws Exception
-	{
+	public void convertCram2Fastq() throws Exception {
 		File output = generateFastqFiles("SRR2989699.cram");
 
 		Assert.assertEquals( "@SRR2989699.5\n"
@@ -52,9 +50,8 @@ Sam2FastqTest
 				             new String( Files.readAllBytes( Paths.get( output.getPath() + ".fastq" ) ), StandardCharsets.UTF_8 ) );
 	}
 
-	@Test public void
-	convertCram2Fastq2Files() throws Exception
-	{
+	@Test
+	public void convertCram2Fastq2Files() throws Exception {
 		String baseDir = "cram2fastq/2fastq/";
 		String fileNamePrefix = "28239_1822";
 		String fileExt = ".cram";
@@ -65,9 +62,8 @@ Sam2FastqTest
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_2");
 	}
 
-	@Test public void
-	convertBam2Fastq1File() throws Exception
-	{
+	@Test
+	public void convertBam2Fastq1File() throws Exception {
 		String baseDir = "bam2fastq/1fastq/";
 		String fileNamePrefix = "S0567a_E1_L1__aln.sort.mapped.rmdupse_adna_v2";
 		String fileExt = ".bam";
@@ -77,9 +73,8 @@ Sam2FastqTest
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "");
 	}
 
-	@Test public void
-	convertBam2Fastq2Files() throws Exception
-	{
+	@Test
+	public void convertBam2Fastq2Files() throws Exception {
 		String baseDir = "bam2fastq/2fastq/";
 		String fileNamePrefix = "8855_124";
 		String fileExt = ".bam";
@@ -88,6 +83,19 @@ Sam2FastqTest
 
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_1");
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_2");
+	}
+
+	@Test
+	public void convertBam2Fastq3Files() throws Exception {
+		String baseDir = "bam2fastq/3fastq/";
+		String fileNamePrefix = "M2241_BLV_sense";
+		String fileExt = ".bam";
+
+		File output = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+
+		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_1");
+		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_2");
+		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "");
 	}
 
 	private File generateFastqFiles(String source) throws Exception {
