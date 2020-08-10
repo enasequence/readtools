@@ -23,7 +23,7 @@ RawReadsFile
     {
         fastq( "fastq" ),
         bam( "bam"),
-        cram("cram2fastq");
+        cram("cram");
 
         // TODO: remove
         public final String xml_name;
