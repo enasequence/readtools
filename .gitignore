@@ -15,3 +15,7 @@ gradle-app.setting
 /bin/
 /.classpath
 /.project
+
+/.idea
+
+pom.xml
