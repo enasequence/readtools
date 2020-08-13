@@ -16,6 +16,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPOutputStream;
@@ -107,6 +108,15 @@ public class Sam2Fastq {
 
 		if( d.exception != null )
 			throw d.exception;
+	}
+
+	public void run(String runId, File inputFile, File fastqDir) throws Exception {
+		Params params = new Params();
+		params.prefix = runId;
+		params.samFile = inputFile;
+		params.fastqBaseName = fastqDir.toPath().resolve(Paths.get(runId)).toString();
+		params.gzip = true;
+		create(params);
 	}
 	
 	private static abstract class Dumper implements Runnable {
@@ -365,45 +375,45 @@ public class Sam2Fastq {
 
 	@Parameters(commandDescription = "SAM to FastQ dump conversion. ")
 	public static class Params {
-		@Parameter(names = { "-l", "--log-level" }, description = "Change log level: DEBUG, INFO, WARNING, ERROR.", converter = CramTools.LevelConverter.class)
-		Log.LogLevel logLevel = Log.LogLevel.ERROR;
+		@Parameter(names = {"-l", "--log-level"}, description = "Change log level: DEBUG, INFO, WARNING, ERROR.", converter = CramTools.LevelConverter.class)
+		public Log.LogLevel logLevel = Log.LogLevel.ERROR;
 
-		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
+		@Parameter(names = {"-h", "--help"}, description = "Print help and quit")
 		boolean help = false;
 
-		@Parameter(names = { "--input-sam-file", "-I" }, converter = FileConverter.class, description = "The path to the SAM file to uncompress. Omit if standard input (pipe).")
-		File samFile;
+		@Parameter(names = {"--input-sam-file", "-I"}, converter = FileConverter.class, description = "The path to the SAM file to uncompress. Omit if standard input (pipe).")
+		public File samFile;
 
-//		@Parameter(names = { "--reference-fasta-file", "-R" }, converter = FileConverter.class, description = "Path to the reference fasta file, it must be uncompressed and indexed (use 'samtools faidx' for example). ")
+		//		@Parameter(names = { "--reference-fasta-file", "-R" }, converter = FileConverter.class, description = "Path to the reference fasta file, it must be uncompressed and indexed (use 'samtools faidx' for example). ")
 		File reference;
 
-		@Parameter(names = { "--fastq-base-name", "-F" }, description = "'_number.fastq[.gz] will be appended to this string to obtain output fastq file name. If this parameter is omitted then all reads are printed with no garanteed order.")
-		String fastqBaseName;
+		@Parameter(names = {"--fastq-base-name", "-F"}, description = "'_number.fastq[.gz] will be appended to this string to obtain output fastq file name. If this parameter is omitted then all reads are printed with no garanteed order.")
+		public String fastqBaseName;
 
-		@Parameter(names = { "--gzip", "-z" }, description = "Compress fastq files with gzip.")
-		boolean gzip;
+		@Parameter(names = {"--gzip", "-z"}, description = "Compress fastq files with gzip.")
+		public boolean gzip;
 
-		@Parameter(names = { "--reverse" }, description = "Re-reverse reads mapped to negative strand.")
-		boolean reverse = false;
+		@Parameter(names = {"--reverse"}, description = "Re-reverse reads mapped to negative strand.")
+		public boolean reverse = false;
 
-		@Parameter(names = { "--enumerate" }, description = "Append read names with read index (/1 for first in pair, /2 for second in pair).")
-		boolean appendSegmentIndexToReadNames;
+		@Parameter(names = {"--enumerate"}, description = "Append read names with read index (/1 for first in pair, /2 for second in pair).")
+		public boolean appendSegmentIndexToReadNames;
 
-		@Parameter(names = { "--max-records" }, description = "Stop after reading this many records.")
-		long maxRecords = -1;
+		@Parameter(names = {"--max-records"}, description = "Stop after reading this many records.")
+		public long maxRecords = -1;
 
-		@Parameter(names = { "--read-name-prefix" }, description = "Replace read names with this prefix and a sequential integer.")
-		String prefix = null;
+		@Parameter(names = {"--read-name-prefix"}, description = "Replace read names with this prefix and a sequential integer.")
+		public String prefix = null;
 
-		@Parameter(names = { "--default-quality-score" }, description = "Use this quality score (decimal representation of ASCII symbol) as a default value when the original quality score was lost due to compression. Minimum is 33.")
-		int defaultQS = '?';
+		@Parameter(names = {"--default-quality-score"}, description = "Use this quality score (decimal representation of ASCII symbol) as a default value when the original quality score was lost due to compression. Minimum is 33.")
+		public int defaultQS = '?';
 
-		@Parameter(names = { "--ignore-md5-mismatch" }, description = "Issue a warning on sequence MD5 mismatch and continue. This does not garantee the data will be read succesfully. ")
+		@Parameter(names = {"--ignore-md5-mismatch"}, description = "Issue a warning on sequence MD5 mismatch and continue. This does not garantee the data will be read succesfully. ")
 		public boolean ignoreMD5Mismatch = false;
 
-		@Parameter(names = { "--skip-md5-check" }, description = "Skip MD5 checks when reading the header.")
+		@Parameter(names = {"--skip-md5-check"}, description = "Skip MD5 checks when reading the header.")
 		public boolean skipMD5Checks = false;
-		
+
 		public int nofStreams = 3;
 	}
 }
