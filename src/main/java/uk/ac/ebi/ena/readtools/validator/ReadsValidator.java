@@ -201,7 +201,11 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
             try
             {
                 fileResult.add(ValidationMessage.info("Processing file"));
-                scanner.readCramFile( fileResult, rf, paired );
+                if (rf.getFiletype().equals(Filetype.cram)) {
+                    scanner.readCramFile( fileResult, rf, paired );
+                } else {
+                    scanner.readBamFile( fileResult, rf, paired );
+                }
 
             } catch( SAMFormatException | CRAMException ex )
             {
