@@ -29,7 +29,7 @@ public class Utils {
      * Generates a new Fastq file that has all of the U bases inside it replaced with T ones.
      *
      * @param inputFastq - Path to the input fastq file.
-     * @param outputFastq - Path to the output fastq file.
+     * @param outputFastq - Path to the output fastq file. File extension determines compression.
      * @throws IOException
      */
     public static void replaceUracilBasesInFastq(String inputFastq, String outputFastq) throws IOException {
