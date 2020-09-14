@@ -40,11 +40,16 @@ public class Utils {
 
         FastqReader reader = new FastqReader(inp);
         for (FastqRecord record : reader) {
-            Matcher matcher = URACIL_PATTERN.matcher(record.getReadString());
+            String result = record.getReadString();
 
-            String fixed = matcher.replaceAll("T");
+            Matcher matcher = URACIL_PATTERN.matcher(result);
+            if (matcher.find()) {
+                String replacement = matcher.group().equals("U") ? "T" : "t";
 
-            writer.write(new FastqRecord(record.getReadName(), fixed, record.getBaseQualityHeader(), record.getBaseQualityString()));
+                result = matcher.replaceAll(replacement);
+            }
+
+            writer.write(new FastqRecord(record.getReadName(), result, record.getBaseQualityHeader(), record.getBaseQualityString()));
         }
 
         reader.close();

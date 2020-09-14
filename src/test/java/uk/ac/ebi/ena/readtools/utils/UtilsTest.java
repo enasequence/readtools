@@ -24,7 +24,8 @@ public class UtilsTest {
 
     @Test
     public void testSingleFastqTest() throws IOException {
-        String expected = "GACGGATCTATAGCAAAACT";
+        String expectedUpper = "GACGGATCTATAGCAAAACT";
+        String expectedLower = "gacggatctatagcaaaact";
 
         File output = File.createTempFile( "FASTQ", "FASTQ" );
         output.delete();
@@ -34,11 +35,13 @@ public class UtilsTest {
         Utils.replaceUracilBasesInFastq(url.getFile(), output.getAbsolutePath());
 
         FastqReader reader = new FastqReader(output);
-        for (FastqRecord record : reader) {
-            Assert.assertEquals(expected, record.getReadString());
-            break;
-        }
+
+        String recReadString1 = reader.next().getReadString();
+        String recReadString2 = reader.next().getReadString();
 
         reader.close();
+
+        Assert.assertEquals(expectedUpper, recReadString1);
+        Assert.assertEquals(expectedLower, recReadString2);
     }
 }
