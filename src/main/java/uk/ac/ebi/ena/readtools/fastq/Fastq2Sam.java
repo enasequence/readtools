@@ -22,6 +22,8 @@ public class Fastq2Sam {
 
     private final String outputFile;
 
+    private final String tempDir;
+
     /**
      *
      * @param sampleName - Must not be null or empty. Used as the value of SAM header 'SM'.
@@ -41,10 +43,23 @@ public class Fastq2Sam {
      * @param outputFile - Path to output SAM file.  File extension determines SAM format.
      */
     public Fastq2Sam(String sampleName, String inputFile1, String inputFile2, String outputFile) {
+        this(sampleName, inputFile1, inputFile2, outputFile, null);
+    }
+
+    /**
+     * For paired Fastq files.
+     *
+     * @param sampleName - Must not be null or empty. Used as the value of SAM header 'SM'
+     * @param inputFile1 - Path to input Fastq file. File compression is determined automatically.
+     * @param inputFile2 - Path to input Fastq file. File compression is determined automatically.
+     * @param outputFile - Path to output SAM file.  File extension determines SAM format.
+     */
+    public Fastq2Sam(String sampleName, String inputFile1, String inputFile2, String outputFile, String tempDir) {
         this.sampleName = sampleName;
         this.inputFile1 = inputFile1;
         this.inputFile2 = inputFile2;
         this.outputFile = outputFile;
+        this.tempDir = tempDir;
 
         if (sampleName == null || sampleName.trim().isEmpty()) {
             throw new IllegalArgumentException("Sample name must not be null or empty.");
@@ -56,7 +71,9 @@ public class Fastq2Sam {
                 "SM=" + sampleName,
                 "F1=" + inputFile1,
                 "F2=" + inputFile2,
-                "O=" + outputFile
+                "O=" + outputFile,
+                "TMP_DIR=" + tempDir,
+                "ALLOW_AND_IGNORE_EMPTY_LINES=true"
         });
     }
 }
