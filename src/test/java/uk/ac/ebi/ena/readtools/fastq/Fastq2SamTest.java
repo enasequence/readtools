@@ -30,7 +30,7 @@ public class Fastq2SamTest {
         URL url1 = Fastq2SamTest.class.getClassLoader().getResource( "fastq2sam/fastq2sam1.fastq");
         URL url2 = Fastq2SamTest.class.getClassLoader().getResource( "fastq2sam/fastq2sam2.fastq");
 
-        Fastq2Sam fastq2Sam = new Fastq2Sam("sample001", url1.getFile(), url2.getFile(), output.getAbsolutePath());
+        Fastq2Sam fastq2Sam = new Fastq2Sam("sample001", url1.getFile(), url2.getFile(), output.getAbsolutePath(), null);
         fastq2Sam.convert();
 
         byte[] expected = Files.readAllBytes(Paths.get(Fastq2SamTest.class.getClassLoader().getResource("fastq2sam/fastq2sam.sam").toURI()));
