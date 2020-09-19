@@ -29,9 +29,10 @@ public class Fastq2Sam {
      * @param sampleName - Must not be null or empty. Used as the value of SAM header 'SM'.
      * @param inputFile - Path to input Fastq file. File compression is determined automatically.
      * @param outputFile - Path to output SAM file. File extension determines SAM format.
+     * @param tempDir - Path to the temporary directory to be used during the process. Pass null to use system default.
      */
-    public Fastq2Sam(String sampleName, String inputFile, String outputFile) {
-        this(sampleName, inputFile, null, outputFile);
+    public Fastq2Sam(String sampleName, String inputFile, String outputFile, String tempDir) {
+        this(sampleName, inputFile, null, outputFile, tempDir);
     }
 
     /**
@@ -41,19 +42,7 @@ public class Fastq2Sam {
      * @param inputFile1 - Path to input Fastq file. File compression is determined automatically.
      * @param inputFile2 - Path to input Fastq file. File compression is determined automatically.
      * @param outputFile - Path to output SAM file.  File extension determines SAM format.
-     */
-    public Fastq2Sam(String sampleName, String inputFile1, String inputFile2, String outputFile) {
-        this(sampleName, inputFile1, inputFile2, outputFile, null);
-    }
-
-    /**
-     * For paired Fastq files.
-     *
-     * @param sampleName - Must not be null or empty. Used as the value of SAM header 'SM'
-     * @param inputFile1 - Path to input Fastq file. File compression is determined automatically.
-     * @param inputFile2 - Path to input Fastq file. File compression is determined automatically.
-     * @param outputFile - Path to output SAM file.  File extension determines SAM format.
-     * @param tempDir - Path to the temporary directory to be used during the process.
+     * @param tempDir - Path to the temporary directory to be used during the process.. Pass null to use system default.
      */
     public Fastq2Sam(String sampleName, String inputFile1, String inputFile2, String outputFile, String tempDir) {
         this.sampleName = sampleName;
