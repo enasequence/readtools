@@ -53,6 +53,7 @@ public class Fastq2Sam {
      * @param inputFile1 - Path to input Fastq file. File compression is determined automatically.
      * @param inputFile2 - Path to input Fastq file. File compression is determined automatically.
      * @param outputFile - Path to output SAM file.  File extension determines SAM format.
+     * @param tempDir - Path to the temporary directory to be used during the process.
      */
     public Fastq2Sam(String sampleName, String inputFile1, String inputFile2, String outputFile, String tempDir) {
         this.sampleName = sampleName;
