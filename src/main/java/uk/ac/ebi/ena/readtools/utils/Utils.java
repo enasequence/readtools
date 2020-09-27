@@ -33,6 +33,8 @@ public class Utils {
      * @throws IOException
      */
     public static void replaceUracilBasesInFastq(String inputFastq, String outputFastq) throws IOException {
+        Matcher matcher = URACIL_PATTERN.matcher("");
+
         File inp = new File(inputFastq);
         File out = new File(outputFastq);
 
@@ -42,8 +44,7 @@ public class Utils {
         for (FastqRecord record : reader) {
             String result = record.getReadString();
 
-            Matcher matcher = URACIL_PATTERN.matcher(result);
-            if (matcher.find()) {
+            if (matcher.reset(result).find()) {
                 String replacement = matcher.group().equals("U") ? "T" : "t";
 
                 result = matcher.replaceAll(replacement);

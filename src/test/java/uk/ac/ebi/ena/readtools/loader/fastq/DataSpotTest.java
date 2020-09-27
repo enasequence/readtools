@@ -12,14 +12,17 @@ package uk.ac.ebi.ena.readtools.loader.fastq;
 
 import org.junit.Assert;
 import org.junit.Test;
+import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class
-DataSpotTest 
-{
-	@Test public void
-	testCASAVA1_8()
-	{
+DataSpotTest {
+
+	@Test
+	public void testCASAVA1_8() {
 		//CASAVA 1.8
 		Assert.assertTrue( DataSpot.p_casava_1_8_name.matcher( "@EAS139:136:FC706VJ:2:2104:15343:197393 1:Y:18:ATCACG" ).matches() );
 		Assert.assertTrue( DataSpot.p_casava_1_8_name.matcher( "@EAS139:136:FC706VJ:2:2104:15343:197393 2:Y:18:ATCACG" ).matches() );
@@ -30,5 +33,24 @@ DataSpotTest
 		
 		Assert.assertTrue( DataSpot.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 1:N:0:331 COMMENT" ).matches() );
 	}
-	
+
+	@Test
+	public void testInvalidBaseCharactersException() throws Exception {
+		String basesInput = "AGCTUagctuAGCTUagctu";
+
+		InvalidBaseCharacterException ex = null;
+
+		//DataSpot keeps reading until it sees '+' symbol on a new line which is in compliance with Fastq standard.
+		try(InputStream is = new ByteArrayInputStream((basesInput + "\n+").getBytes(StandardCharsets.UTF_8))) {
+			DataSpot ds = new DataSpot(100);
+			ds.feedBases(is);
+		} catch (InvalidBaseCharacterException e) {
+			ex = e;
+		} catch (Exception e) {
+			throw e;
+		}
+
+		Assert.assertEquals(basesInput, ex.getBases());
+		Assert.assertArrayEquals(new Character[]{'U', 'u'}, ex.getInvalidCharacters().toArray());
+	}
 }
