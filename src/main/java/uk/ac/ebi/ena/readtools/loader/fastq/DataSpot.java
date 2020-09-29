@@ -14,9 +14,12 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer.QualityNormaizationException;
 import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
@@ -261,7 +264,7 @@ SPACE HERE
             line = readLine( is, -1, base_stopper );
 
         if( !params.m_bases.reset( line ).find() )
-            throw new DataFeederException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
+            handleInvalidBases(line);
             
         String value = params.m_bases.group( 1 );
 
@@ -521,5 +524,20 @@ out:    for( int i = 0; len == -1 || i < len; )
             .append( "], length = " )
             .append( null == quals ? "null" : quals.length() )
             .toString();
+    }
+
+    private void handleInvalidBases(String bases) {
+        Matcher matcher = p_bases.matcher("");
+
+        //remove the trailing '+' symbol.
+        bases = bases.substring(0, bases.length() - 1);
+
+        Set<Character> invalidBaseChars = bases.chars()
+                .mapToObj(intChar -> (char)intChar)
+                // '+' symbol is added because its present in the regex pattern.
+                .filter(base -> !matcher.reset(String.valueOf(base) + "+").matches())
+                .collect(Collectors.toSet());
+
+        throw new InvalidBaseCharacterException(bases, invalidBaseChars);
     }
 }
