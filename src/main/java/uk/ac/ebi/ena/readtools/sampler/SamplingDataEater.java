@@ -13,12 +13,12 @@ package uk.ac.ebi.ena.readtools.sampler;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer.QualityNormaizationException;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 
 public class 
-SamplingDataEater<T1 extends DataSpot, T2> implements DataEater<T1, T2>
+SamplingDataEater<T1 extends DataSpot, T2> implements DataConsumer<T1, T2>
 {
     final protected int lbound = 33;  //!
     final protected int hbound = 126; //~;
@@ -39,7 +39,7 @@ SamplingDataEater<T1 extends DataSpot, T2> implements DataEater<T1, T2>
     
     @Override
     public void 
-    cascadeErrors() throws DataEaterException
+    cascadeErrors() throws DataConsumerException
     {
         throw new UnsupportedOperationException();
     }
@@ -63,8 +63,8 @@ SamplingDataEater<T1 extends DataSpot, T2> implements DataEater<T1, T2>
 
     
     @Override
-    public void 
-    eat( T1 object ) throws DataEaterException
+    public void
+    consume(T1 object ) throws DataConsumerException
     {
         try
         {
@@ -94,8 +94,8 @@ SamplingDataEater<T1 extends DataSpot, T2> implements DataEater<T1, T2>
 
 
     @Override
-    public void 
-    setEater( DataEater<T2, ?> dataEater )
+    public void
+    setConsumer(DataConsumer<T2, ?> dataConsumer)
     {
         throw new UnsupportedOperationException();
     }

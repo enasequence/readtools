@@ -15,14 +15,14 @@ import java.util.List;
 
 import htsjdk.samtools.SAMRecord;
 
-import uk.ac.ebi.ena.readtools.loader.common.eater.AbstractPagedDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.AbstractPagedDataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaSpot;
 
 public class 
-BamEater extends AbstractPagedDataEater<BamSpot, IlluminaSpot> 
-         implements DataEater<BamSpot, IlluminaSpot>
+BamEater extends AbstractPagedDataConsumer<BamSpot, IlluminaSpot>
+         implements DataConsumer<BamSpot, IlluminaSpot>
 {
     private static final Object BAM_STAR = "*"; 
     private boolean paired_fetched = false;
@@ -43,7 +43,7 @@ BamEater extends AbstractPagedDataEater<BamSpot, IlluminaSpot>
     
     @Override
     public void
-    eat( BamSpot object ) throws DataEaterException
+    consume(BamSpot object ) throws DataConsumerException
     {
         //do not load supplementary reads
         if( object.spot.getSupplementaryAlignmentFlag() )
@@ -70,7 +70,7 @@ BamEater extends AbstractPagedDataEater<BamSpot, IlluminaSpot>
         if( allow_paired )
             paired_fetched |= object.spot.getReadPairedFlag();
   
-        super.eat( object );
+        super.consume( object );
     }
     
     
@@ -238,7 +238,7 @@ BamEater extends AbstractPagedDataEater<BamSpot, IlluminaSpot>
 
     
     public synchronized void
-    cascadeErrors() throws DataEaterException
+    cascadeErrors() throws DataConsumerException
     {
         super.cascadeErrors();
         

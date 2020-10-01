@@ -18,9 +18,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer.QualityNormaizationException;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.FeedableData;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.FeedableDataChecker;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.ProducibleData;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.ProducibleDataChecker;
 
 public class 
 CompleteGenomicsMap3 extends CompleteGenomicsBase implements Serializable 
@@ -37,7 +37,7 @@ CompleteGenomicsMap3 extends CompleteGenomicsBase implements Serializable
 
     //flags chromosome offsetInChr gap1 gap2 gap3 weight mateRec
     
-    @FeedableData( method = "feedLine" )
+    @ProducibleData( method = "feedLine" )
     public int flags; 
     public String chromosome;
     public int offset; 
@@ -49,7 +49,7 @@ CompleteGenomicsMap3 extends CompleteGenomicsBase implements Serializable
     
     
 
-    @FeedableDataChecker
+    @ProducibleDataChecker
     public void
     checkFeed() throws QualityNormaizationException
     {
@@ -79,12 +79,12 @@ CompleteGenomicsMap3 extends CompleteGenomicsBase implements Serializable
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void 
-    feedLine( InputStream is ) throws IOException, DataFeederException
+    feedLine( InputStream is ) throws IOException, DataProducerException
     {
         String line = readLine( is );
         Matcher m   = p_line.matcher( line );
         if( !m.find() )
-            throw new DataFeederException( line_no, String.format( "Line [%s] does not match regexp", line ) );
+            throw new DataProducerException( line_no, String.format( "Line [%s] does not match regexp", line ) );
 
 
         flags      = m.group( 1 ).charAt( 0 ) - '0';

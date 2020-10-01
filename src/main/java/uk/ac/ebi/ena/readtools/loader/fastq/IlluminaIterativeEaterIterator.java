@@ -23,15 +23,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataFeeder;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeEater.READ_TYPE;
 
 public class 
-IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataEater<IlluminaSpot, Object>
+IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataConsumer<IlluminaSpot, Object>
 {
     private static final long CYCLE_TIMEFRAME = 0L;
     private BlockingQueue<IlluminaSpot>   queue = new SynchronousQueue<IlluminaSpot>();
@@ -44,20 +44,20 @@ IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataEater<Illu
                             int spill_page_size, //only for paired 
                             READ_TYPE read_type, 
                             File[] files, 
-                            final QualityNormalizer normalizers[]  ) throws SecurityException, FileNotFoundException, DataFeederException, NoSuchMethodException, IOException
+                            final QualityNormalizer normalizers[]  ) throws SecurityException, FileNotFoundException, DataProducerException, NoSuchMethodException, IOException
     {
-        DataEater<DataSpot, IlluminaSpot> eater = null;
+        DataConsumer<DataSpot, IlluminaSpot> eater = null;
         
         
         switch( read_type )
         {
         
         case SINGLE:
-            eater = (DataEater<DataSpot, IlluminaSpot>)new IlluminaSingleDataEater();
+            eater = (DataConsumer<DataSpot, IlluminaSpot>)new IlluminaSingleDataConsumer();
             break;
             
         case PAIRED:
-            eater = (DataEater<DataSpot, IlluminaSpot>) new IlluminaPairedDataEater( tmp_folder, spill_page_size );
+            eater = (DataConsumer<DataSpot, IlluminaSpot>) new IlluminaPairedDataConsumer( tmp_folder, spill_page_size );
             break;
             
         default:
@@ -67,9 +67,9 @@ IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataEater<Illu
         
         //IterativeEater vdb2  = new IterativeEater();//type, read_type, p.data_folder_name, p.use_md5 );
         
-        eater.setEater( this );
+        eater.setConsumer( this );
         
-        ArrayList<AbstractDataFeeder<?>> feeders = new ArrayList<AbstractDataFeeder<?>>();
+        ArrayList<AbstractDataProducer<?>> feeders = new ArrayList<AbstractDataProducer<?>>();
         
 
         int attr = 1;
@@ -79,18 +79,18 @@ IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataEater<Illu
             final String default_attr = Integer.toString( attr ++ );
             final int nindex = normalizers.length == files.length ? attr - 2 : 0;
             
-            AbstractDataFeeder<?> feeder = 
-            new AbstractDataFeeder<DataSpot>( FileCompression.open( file ), DataSpot.class ) 
+            AbstractDataProducer<?> feeder =
+            new AbstractDataProducer<DataSpot>( FileCompression.open( file ), DataSpot.class )
             {
                 final DataSpotParams params = DataSpot.defaultParams();
                 
                 @Override
-                protected DataSpot 
-                newFeedable()
+                protected DataSpot
+                newProducible()
                 {
                     return new DataSpot( normalizers[ nindex ], default_attr, params );
                 }
-            }.setEater( eater );
+            }.setConsumer( eater );
             
             feeder.setName( file.getPath() );
             feeders.add( feeder );
@@ -102,8 +102,8 @@ IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataEater<Illu
     
     
     private Runnable
-    lifecycle( final ArrayList<AbstractDataFeeder<?>> feeders, 
-               final DataEater<?, ?> eater_root )
+    lifecycle( final ArrayList<AbstractDataProducer<?>> feeders,
+               final DataConsumer<?, ?> eater_root )
     {
         return new Runnable()
                {
@@ -115,7 +115,7 @@ IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataEater<Illu
                             boolean again = false;
                             do
                             {
-                                for( AbstractDataFeeder<?> feeder : feeders )
+                                for( AbstractDataProducer<?> feeder : feeders )
                                 {
                                     if( feeder.isAlive() )
                                     {
@@ -129,16 +129,16 @@ IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataEater<Illu
                                         }
                                     }else if( !feeder.isOk() )
                                     {
-                                        throw new DataFeederException( feeder.getStoredException() );
+                                        throw new DataProducerException( feeder.getStoredException() );
                                     }
                                 }
                             }while( again );
                            
-                            for( AbstractDataFeeder<?> feeder : feeders )
+                            for( AbstractDataProducer<?> feeder : feeders )
                             {
                                 if( !feeder.isOk() )
                                 {
-                                    throw new DataFeederException( feeder.getStoredException() );
+                                    throw new DataProducerException( feeder.getStoredException() );
                                 }
                             }
                     
@@ -155,15 +155,15 @@ IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataEater<Illu
     
     @Override
     public void 
-    cascadeErrors() throws DataEaterException
+    cascadeErrors() throws DataConsumerException
     {
         was_cascade_errors.lazySet( true );
     }
 
     
     @Override
-    public void 
-    eat( IlluminaSpot object ) throws DataEaterException
+    public void
+    consume(IlluminaSpot object ) throws DataConsumerException
     {
         try
         {
@@ -177,8 +177,8 @@ IlluminaIterativeEaterIterator implements Iterator<IlluminaSpot>, DataEater<Illu
 
     
     @Override
-    public void 
-    setEater( DataEater<Object, ?> dataEater )
+    public void
+    setConsumer(DataConsumer<Object, ?> dataConsumer)
     {
         throw new RuntimeException( "N07 iMPl3m3nt3D" );
     }

@@ -21,8 +21,8 @@ import org.junit.Before;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.eater.PrintDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataFeeder;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
 
 public class 
 TestMap
@@ -43,20 +43,20 @@ TestMap
     
 
     boolean 
-    read( InputStream is ) throws SecurityException, DataFeederException, NoSuchMethodException, IOException
+    read( InputStream is ) throws SecurityException, DataProducerException, NoSuchMethodException, IOException
     {
         final ReadHeader h = ReadHeader( is );
-        AbstractDataFeeder<CompleteGenomicsMap3> df = new AbstractDataFeeder<CompleteGenomicsMap3>( is, CompleteGenomicsMap3.class ) 
+        AbstractDataProducer<CompleteGenomicsMap3> df = new AbstractDataProducer<CompleteGenomicsMap3>( is, CompleteGenomicsMap3.class )
         {
 
             @Override
-            protected CompleteGenomicsMap3 newFeedable()
+            protected CompleteGenomicsMap3 newProducible()
             {
                 return new CompleteGenomicsMap3( h );
             }
         };
         
-        df.setEater( new PrintDataEater<CompleteGenomicsMap3, Object>() );
+        df.setConsumer( new PrintDataEater<CompleteGenomicsMap3, Object>() );
         df.run();
         return df.isOk();
     }

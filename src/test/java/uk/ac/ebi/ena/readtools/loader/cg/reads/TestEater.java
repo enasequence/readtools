@@ -23,11 +23,11 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.eater.PrintDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataFeeder;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
 
 public class 
 TestEater
@@ -49,30 +49,30 @@ TestEater
 
     boolean 
     read( InputStream read_stream, 
-          InputStream map_stream ) throws SecurityException, DataFeederException, NoSuchMethodException, IOException, DataEaterException
+          InputStream map_stream ) throws SecurityException, DataProducerException, NoSuchMethodException, IOException, DataConsumerException
     {
         final ReadHeader read_header = ReadHeader( read_stream );
         final ReadHeader map_header  = ReadHeader( map_stream );
         if( !read_header.getFileProrerty( ReadHeader.PropertyName.BATCH_FILE_NUMBER ).equals( map_header.getFileProrerty( ReadHeader.PropertyName.BATCH_FILE_NUMBER ) ) )
                 throw new IOException( "Batches did not match!" );
         
-        AbstractDataFeeder<CompleteGenomicsMap3> mf = new AbstractDataFeeder<CompleteGenomicsMap3>( map_stream, CompleteGenomicsMap3.class ) 
+        AbstractDataProducer<CompleteGenomicsMap3> mf = new AbstractDataProducer<CompleteGenomicsMap3>( map_stream, CompleteGenomicsMap3.class )
         {
 
             @Override
-            protected CompleteGenomicsMap3 
-            newFeedable()
+            protected CompleteGenomicsMap3
+            newProducible()
             {
                 return new CompleteGenomicsMap3( map_header );
             }
         };
 
-        AbstractDataFeeder<CompleteGenomicsRead> rf = new AbstractDataFeeder<CompleteGenomicsRead>( read_stream, CompleteGenomicsRead.class ) 
+        AbstractDataProducer<CompleteGenomicsRead> rf = new AbstractDataProducer<CompleteGenomicsRead>( read_stream, CompleteGenomicsRead.class )
         {
 
             @Override
-            protected CompleteGenomicsRead 
-            newFeedable()
+            protected CompleteGenomicsRead
+            newProducible()
             {
                 return new CompleteGenomicsRead( read_header );
             }
@@ -80,10 +80,10 @@ TestEater
         
 
         
-        DataEater<? extends CompleteGenomicsBase, ?> eater = new CompleteGenomicsPairedEater();
-        eater.setEater( new PrintDataEater() );        
-        mf.setEater( (DataEater<CompleteGenomicsMap3, ?>) eater );
-        rf.setEater( (DataEater<CompleteGenomicsRead, ?>) eater );
+        DataConsumer<? extends CompleteGenomicsBase, ?> eater = new CompleteGenomicsPairedEater();
+        eater.setConsumer( new PrintDataEater() );
+        mf.setConsumer( (DataConsumer<CompleteGenomicsMap3, ?>) eater );
+        rf.setConsumer( (DataConsumer<CompleteGenomicsRead, ?>) eater );
         
         rf.run();
         mf.run();

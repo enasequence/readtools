@@ -13,13 +13,13 @@ package uk.ac.ebi.ena.readtools.loader.common.eater;
 
 
 public class 
-PrintDataEater<T1, T2> implements DataEater<T1, T2>
+PrintDataEater<T1, T2> implements DataConsumer<T1, T2>
 {
     volatile boolean lock;
     
     @Override
     public void 
-    cascadeErrors() throws DataEaterException
+    cascadeErrors() throws DataConsumerException
     {
         ;
     }
@@ -42,15 +42,15 @@ PrintDataEater<T1, T2> implements DataEater<T1, T2>
     }
 
     
-    @Override public void 
-    eat( T1 object ) throws DataEaterException
+    @Override public void
+    consume(T1 object ) throws DataConsumerException
     {
         System.out.println( object ); 
     }
 
     
-    @Override public void 
-    setEater( DataEater<T2, ?> dataEater )
+    @Override public void
+    setConsumer(DataConsumer<T2, ?> dataConsumer)
     {
         throw new UnsupportedOperationException();
     }

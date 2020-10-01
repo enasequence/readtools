@@ -10,26 +10,23 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.eater;
 
-public class 
-DataEaterException extends Exception
+public class
+DataConsumerException extends Exception
 {
     private static final long serialVersionUID = 1L;
 
-    public 
-    DataEaterException( String value )
+    public DataConsumerException(String value )
     {
         super( value );
     }
 
-    public 
-    DataEaterException()
+    public DataConsumerException()
     {
         super();
     }
 
     
-    public 
-    DataEaterException( Throwable cause )
+    public DataConsumerException(Throwable cause )
     {
         super( cause );
     }

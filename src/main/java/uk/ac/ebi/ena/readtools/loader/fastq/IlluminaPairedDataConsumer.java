@@ -15,12 +15,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import uk.ac.ebi.ena.readtools.loader.common.eater.AbstractPagedDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.AbstractPagedDataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 
 
-public class 
-IlluminaPairedDataEater extends AbstractPagedDataEater<DataSpot, IlluminaSpot>
+public class
+IlluminaPairedDataConsumer extends AbstractPagedDataConsumer<DataSpot, IlluminaSpot>
 {
     // Provided readname structure is @{readkey}{separator:1(.|/|:|_)}{index:1(0:1:2)}
         
@@ -29,21 +29,20 @@ IlluminaPairedDataEater extends AbstractPagedDataEater<DataSpot, IlluminaSpot>
     static public final int INDEX = 2;
     
     
-    public
-    IlluminaPairedDataEater( File tmp_root, int spill_page_size )
+    public IlluminaPairedDataConsumer(File tmp_root, int spill_page_size )
     {
         super( tmp_root, spill_page_size );
     }
     
     
     public static String 
-    getReadnamePart( String readname, int group ) throws DataEaterException
+    getReadnamePart( String readname, int group ) throws DataConsumerException
     {
         Matcher m = split_regexp.matcher( readname );
         if( m.find() )
             return m.group( group );
         
-        throw new DataEaterException( String.format( "Readname [%s] does not match regexp", readname ) );
+        throw new DataConsumerException( String.format( "Readname [%s] does not match regexp", readname ) );
         
     }
     
@@ -53,7 +52,7 @@ IlluminaPairedDataEater extends AbstractPagedDataEater<DataSpot, IlluminaSpot>
     {
         try
         {   return getReadnamePart( object.bname, KEY );
-        } catch (DataEaterException de )
+        } catch (DataConsumerException de )
         {
             return object.bname;
         }
@@ -71,13 +70,13 @@ IlluminaPairedDataEater extends AbstractPagedDataEater<DataSpot, IlluminaSpot>
     
     
     public void
-    append( List<DataSpot> list, DataSpot object ) throws DataEaterException
+    append( List<DataSpot> list, DataSpot object ) throws DataConsumerException
     {
         String index_part;
         try
         {
             index_part = getReadnamePart( object.bname, INDEX );
-        } catch ( DataEaterException de )
+        } catch ( DataConsumerException de )
         {
             index_part = object.getStreamKey();
         }
@@ -92,7 +91,7 @@ IlluminaPairedDataEater extends AbstractPagedDataEater<DataSpot, IlluminaSpot>
     
     @Override
     public IlluminaSpot 
-    assemble( final Object key, List<DataSpot> list ) throws DataEaterException
+    assemble( final Object key, List<DataSpot> list ) throws DataConsumerException
     {
         IlluminaSpot i_spot = IlluminaSpot.initPaired();
         
@@ -137,7 +136,7 @@ IlluminaPairedDataEater extends AbstractPagedDataEater<DataSpot, IlluminaSpot>
 
     @Override
     public IlluminaSpot 
-    handleErrors( final Object key, List<DataSpot> list ) throws DataEaterException
+    handleErrors( final Object key, List<DataSpot> list ) throws DataConsumerException
     {   
         return assemble( key, list );
     }

@@ -10,15 +10,14 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.feeder;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumer;
 
-@Retention( RetentionPolicy.RUNTIME )
-@Target( {ElementType.FIELD } )
-public @interface
-FeedableData
+
+public interface
+DataProducer<T>
 {
-    String method();
+    public T produce() throws DataProducerEOFException, DataProducerException, DataProducerPanicException;
+    public DataProducer<T> setConsumer(DataConsumer<T, ?> consumer );
+    public boolean isOk();
+    public Throwable getStoredException();
 }

@@ -35,15 +35,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.eater.NullDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataFeeder;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeEater;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeEater.READ_TYPE;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaPairedDataEater;
+import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaPairedDataConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaSpot;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
@@ -147,7 +147,7 @@ FastqScanner
     }
     
     
-    private DataFeederException 
+    private DataProducerException
     read( RawReadsFile rf,
           Set<String>  labels,
           BloomWrapper pairing,
@@ -159,12 +159,12 @@ FastqScanner
             String stream_name = rf.getFilename();
             final QualityNormalizer normalizer = getQualityNormalizer( rf );
             
-            AbstractDataFeeder<DataSpot> df = new AbstractDataFeeder<DataSpot>( is, DataSpot.class ) 
+            AbstractDataProducer<DataSpot> df = new AbstractDataProducer<DataSpot>( is, DataSpot.class )
             {
                 final DataSpotParams params = DataSpot.defaultParams();
                 
-                @Override protected DataSpot 
-                newFeedable()
+                @Override protected DataSpot
+                newProducible()
                 {
                     return new DataSpot( normalizer, "", params );
                 }
@@ -172,19 +172,19 @@ FastqScanner
             
             df.setName( stream_name );
             
-            df.setEater( new NullDataEater<DataSpot>() 
+            df.setConsumer(new NullDataEater<DataSpot>()
             {
                 @Override public void
-                eat( DataSpot spot ) 
+                consume(DataSpot spot )
                 {
                 	String name  = null;
                 	String label = null;
                 			
                 	try
                 	{
-                		name = IlluminaPairedDataEater.getReadnamePart( spot.bname, IlluminaPairedDataEater.KEY );
-                		label = IlluminaPairedDataEater.getReadnamePart( spot.bname, IlluminaPairedDataEater.INDEX );
-                	} catch ( DataEaterException dee )
+                		name = IlluminaPairedDataConsumer.getReadnamePart( spot.bname, IlluminaPairedDataConsumer.KEY );
+                		label = IlluminaPairedDataConsumer.getReadnamePart( spot.bname, IlluminaPairedDataConsumer.INDEX );
+                	} catch ( DataConsumerException dee )
                 	{
                     	name  = spot.bname;
                     	label = stream_name;
@@ -209,19 +209,19 @@ FastqScanner
             logProcessedReadNumber( count.get() );
             logFlushMsg( String.format( ", result: %s\n", null == df.getStoredException() ? "OK" : String.valueOf( df.getStoredException() ) ) );
 
-            if( !df.isOk() && !( df.getStoredException() instanceof DataFeederException ) && !( df.getStoredException() instanceof InvocationTargetException ) )
+            if( !df.isOk() && !( df.getStoredException() instanceof DataProducerException) && !( df.getStoredException() instanceof InvocationTargetException ) )
                 throw df.getStoredException();
             
-            Throwable t = df.isOk() ? df.getFieldFeedCount() > 0 ? null : new DataFeederException( 0, "Empty file" ) 
+            Throwable t = df.isOk() ? df.getFieldFeedCount() > 0 ? null : new DataProducerException( 0, "Empty file" )
                                     : df.getStoredException();
             if( df.isOk() && null == t )
                 return null;
             
-            t = null == t ? new DataFeederException( -1, "Unknown failure" ) : t;
+            t = null == t ? new DataProducerException( -1, "Unknown failure" ) : t;
             t = t instanceof InvocationTargetException ? t.getCause() : t;
-            t = t instanceof DataFeederException ? t : new DataFeederException( t );
+            t = t instanceof DataProducerException ? t : new DataProducerException( t );
             
-            DataFeederException result = (DataFeederException) t;
+            DataProducerException result = (DataProducerException) t;
             return result;
         }
     }
@@ -235,7 +235,7 @@ FastqScanner
                      BloomWrapper duplications ) throws Throwable
     {
         AtomicLong count = new AtomicLong();
-        DataFeederException t = read( rf, labelset, pairing, duplications, count );
+        DataProducerException t = read( rf, labelset, pairing, duplications, count );
                         
         if( null != t )
         {

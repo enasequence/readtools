@@ -8,16 +8,11 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.feeder;
+package uk.ac.ebi.ena.readtools.loader.common.eater;
 
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
-
-
-public interface 
-DataFeeder<T>
-{
-    public T feed() throws DataFeederEOFException, DataFeederException, DataFeederPanicException;
-    public DataFeeder<T> setEater( DataEater<T, ?> eater );
-    public boolean isOk();
-    public Throwable getStoredException();
+public interface DataConsumer<T1, T2> {
+    void cascadeErrors() throws DataConsumerException;
+    void consume(T1 object ) throws DataConsumerException;
+    void setConsumer(DataConsumer<T2, ?> dataConsumer);
+    boolean isOk();
 }

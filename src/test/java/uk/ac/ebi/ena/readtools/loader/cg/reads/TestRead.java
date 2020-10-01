@@ -21,8 +21,8 @@ import org.junit.Before;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.eater.PrintDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataFeeder;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
 
 public class 
 TestRead
@@ -43,21 +43,21 @@ TestRead
     
 
     boolean 
-    read( InputStream is ) throws SecurityException, DataFeederException, NoSuchMethodException, IOException
+    read( InputStream is ) throws SecurityException, DataProducerException, NoSuchMethodException, IOException
     {
         final ReadHeader h = ReadHeader( is );
         
-        AbstractDataFeeder<CompleteGenomicsRead> df = new AbstractDataFeeder<CompleteGenomicsRead>( is, CompleteGenomicsRead.class ) 
+        AbstractDataProducer<CompleteGenomicsRead> df = new AbstractDataProducer<CompleteGenomicsRead>( is, CompleteGenomicsRead.class )
         {
 
             @Override
-            protected CompleteGenomicsRead newFeedable()
+            protected CompleteGenomicsRead newProducible()
             {
                 return new CompleteGenomicsRead( h );
             }
         };
         
-        df.setEater( new PrintDataEater<CompleteGenomicsRead, Object>() );
+        df.setConsumer( new PrintDataEater<CompleteGenomicsRead, Object>() );
         df.run();
         return df.isOk();
     }

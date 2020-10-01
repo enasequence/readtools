@@ -8,13 +8,17 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.eater;
+package uk.ac.ebi.ena.readtools.loader.common.feeder;
 
-public interface 
-DataEater<T1, T2>
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention( RetentionPolicy.RUNTIME )
+@Target( {ElementType.FIELD } )
+public @interface
+ProducibleData
 {
-    void    cascadeErrors() throws DataEaterException;
-    void    eat( T1 object ) throws DataEaterException;
-    void    setEater( DataEater<T2, ?> dataEater );
-    boolean isOk();
+    String method();
 }

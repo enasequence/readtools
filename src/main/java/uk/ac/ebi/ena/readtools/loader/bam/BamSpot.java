@@ -17,14 +17,14 @@ import java.io.Serializable;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 
-import uk.ac.ebi.ena.readtools.loader.common.feeder.FeedableData;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.ProducibleData;
 
 public class 
 BamSpot implements Serializable
 {
     private static final SAMFileHeader header = new SAMFileHeader();
     private static final long serialVersionUID = 5495870024344305947L;
-    @FeedableData( method = "readSAMSpot" )
+    @ProducibleData( method = "readSAMSpot" )
     MySAMRecord spot;
     
     
