@@ -19,27 +19,26 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 
 
 
-public abstract class 
-AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
+public abstract class
+AbstractDataProducer<T> extends Thread implements DataProducer<T>
 {
-    protected List<Method> feedables = new ArrayList<Method>();
+    protected List<Method> producibles = new ArrayList<Method>();
     protected Method       checker;
     protected InputStream  istream;
     protected boolean      is_ok = true;
-    protected DataEater<T, ?> dataEater;
+    protected DataConsumer<T, ?> dataConsumer;
     protected Throwable    stored_exception;
     private long           field_feed_count;
     static final int       YIELD_CYCLES = 362;//16384;
     
     
-    protected 
-    AbstractDataFeeder( InputStream istream, 
-                        Class<T>    sample ) throws DataFeederException, SecurityException, NoSuchMethodException
+    protected AbstractDataProducer(InputStream istream,
+                                   Class<T>    sample ) throws DataProducerException, SecurityException, NoSuchMethodException
     {
         this.istream = new BufferedInputStream( istream, 1024 * 1024 );
         Class<?> c = sample;
@@ -47,15 +46,15 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
         {
             for( Field f : c.getDeclaredFields() )
             {
-               FeedableData a = f.getAnnotation( FeedableData.class );
+               ProducibleData a = f.getAnnotation( ProducibleData.class );
                if( null != a )
-                   feedables.add( sample.getDeclaredMethod( a.method(), InputStream.class ) );
+                   producibles.add( sample.getDeclaredMethod( a.method(), InputStream.class ) );
             }
             
             if( null == checker )
                 for( Method m : c.getDeclaredMethods() )
                 {
-                    FeedableDataChecker a = m.getAnnotation( FeedableDataChecker.class );
+                    ProducibleDataChecker a = m.getAnnotation( ProducibleDataChecker.class );
                     if( null != a )
                     {
                         checker = m;
@@ -66,15 +65,15 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
         }
         
         
-        if( feedables.size() == 0 )
-            throw new DataFeederException( -1, "Sample structure does not contains public members annotated with @FeedableData" );
+        if( producibles.size() == 0 )
+            throw new DataProducerException( -1, "Sample structure does not contains public members annotated with @FeedableData" );
         
     }
     
     
     //Re-implement to instantiate feedable type of yours 
     protected abstract T
-    newFeedable();
+    newProducible();
     
     public long
     getFieldFeedCount()
@@ -84,15 +83,15 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
     
     //Re-implement if you need special type of feeding
     public T
-    feed() throws DataFeederException 
+    produce() throws DataProducerException
     {
-        T object = newFeedable();
+        T object = newProducible();
         boolean record_started = false;
         try
         {
             try
             {   
-                for( Method m : feedables )
+                for( Method m : producibles)
                 {
                     m.invoke( object, new Object[] { istream } );
                     field_feed_count++;
@@ -110,13 +109,13 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
                             checker.invoke( object, (Object [])null );
                         } else
                         {
-                            throw new DataFeederException( field_feed_count, "EOF while reading fields" );
+                            throw new DataProducerException( field_feed_count, "EOF while reading fields" );
                         }
                     }
-                	throw new DataFeederEOFException( field_feed_count );
-                } else if( cause instanceof DataFeederException )
+                	throw new DataProducerEOFException( field_feed_count );
+                } else if( cause instanceof DataProducerException)
                 {
-                	throw (DataFeederException) cause;
+                	throw (DataProducerException) cause;
                 	
                 } else
                 {
@@ -131,15 +130,15 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
 
         } catch( IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
         {
-            throw new DataFeederPanicException( String.valueOf( object ), e );
+            throw new DataProducerPanicException( String.valueOf( object ), e );
         }
     }
  
     
-    public AbstractDataFeeder<T>
-    setEater( DataEater<T, ?> eater )
+    public AbstractDataProducer<T>
+    setConsumer(DataConsumer<T, ?> consumer)
     {
-        this.dataEater = eater;
+        this.dataConsumer = consumer;
         return this;
     }
     
@@ -152,27 +151,27 @@ AbstractDataFeeder<T> extends Thread implements DataFeeder<T>
             int yield = YIELD_CYCLES;
             for( ; ; )
             {
-                synchronized( dataEater )
+                synchronized(dataConsumer)
                 {
                     for( yield = YIELD_CYCLES; yield > 0; --yield )
-                        dataEater.eat( feed() );
+                        dataConsumer.consume( produce() );
                 }
                 
-                if( !dataEater.isOk() )
-                    throw new DataFeederPanicException();
+                if( !dataConsumer.isOk() )
+                    throw new DataProducerPanicException();
                 
                 Thread.sleep( 1 );
             }
             
-        } catch( DataEaterException e )
+        } catch( DataConsumerException e )
         {
             //e.printStackTrace();
             this.stored_exception = e;
             is_ok = false;
-        } catch( DataFeederEOFException e )
+        } catch( DataProducerEOFException e )
         {
             //e.printStackTrace();
-        } catch( DataFeederPanicException e )
+        } catch( DataProducerPanicException e )
         {
             //e.printStackTrace();
             is_ok = false;

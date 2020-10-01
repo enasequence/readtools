@@ -10,45 +10,40 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.feeder;
 
-public class 
-DataFeederException extends Exception
+public class
+DataProducerException extends Exception
 {
     private static final long serialVersionUID = 1L;
     private long   line_no = -1;
     private final  String thread_name = Thread.currentThread().getName();
     
-    public 
-    DataFeederException( long line_no, String value )
+    public DataProducerException(long line_no, String value )
     {
         super( value );
         this.line_no = line_no;
     }
 
-    public 
-    DataFeederException( long line_no )
+    public DataProducerException(long line_no )
     {
         super();
         this.line_no = line_no;
     }
 
     
-    public 
-    DataFeederException( long line_no, Throwable cause )
+    public DataProducerException(long line_no, Throwable cause )
     {
         super( cause );
         this.line_no = line_no;
     }
 
 
-    public 
-    DataFeederException( String message, Throwable cause )
+    public DataProducerException(String message, Throwable cause )
     {
         super( message, cause );
     }
     
     
-    public 
-    DataFeederException( Throwable cause )
+    public DataProducerException(Throwable cause )
     {
         super( cause );
     }

@@ -19,9 +19,9 @@ import java.io.InputStream;
 import org.junit.After;
 import org.junit.Before;
 
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.eater.PrintDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaSpot;
 
 public class 
@@ -43,17 +43,17 @@ LoaderTest
     
 
     boolean 
-    read( InputStream is, String name ) throws SecurityException, DataFeederException, NoSuchMethodException, IOException, InterruptedException
+    read( InputStream is, String name ) throws SecurityException, DataProducerException, NoSuchMethodException, IOException, InterruptedException
     {
         BamEater eater = new BamEater( new File( "." ), 
                                        false, //read_type == IlluminaVDB2Eater.READ_TYPE.PAIRED, 
                                        true, 
                                        2 );
         eater.setVerbose( true );
-        eater.setEater( new PrintDataEater<IlluminaSpot, Object>() );
+        eater.setConsumer( new PrintDataEater<IlluminaSpot, Object>() );
         BamFeeder feeder = new BamFeeder( is ); 
         feeder.setName( name );
-        feeder.setEater( eater );
+        feeder.setConsumer( eater );
         feeder.start();
         
         feeder.join();
@@ -64,18 +64,18 @@ LoaderTest
     boolean 
     read( InputStream is1, 
           InputStream is2, 
-          String name ) throws SecurityException, DataFeederException, NoSuchMethodException, IOException, InterruptedException, DataEaterException
+          String name ) throws SecurityException, DataProducerException, NoSuchMethodException, IOException, InterruptedException, DataConsumerException
     {
         BamEater eater = new BamEater( new File( "." ), 
                                        true, 
                                        true, 
                                        2 );
         //eater.setVerbose( true );
-        eater.setEater( new PrintDataEater<IlluminaSpot, Object>() );
+        eater.setConsumer( new PrintDataEater<IlluminaSpot, Object>() );
         
         BamFeeder feeder1 = new BamFeeder( is1 ); 
         feeder1.setName( name + ".1" );
-        feeder1.setEater( eater );
+        feeder1.setConsumer( eater );
         feeder1.start();
         /*
         BamFeeder feeder2 = new BamFeeder( is2 ); 

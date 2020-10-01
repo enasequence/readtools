@@ -19,8 +19,8 @@ import java.nio.ByteBuffer;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.sampler.bits.BaseDict;
 import uk.ac.ebi.ena.readtools.sampler.bits.BitOutputStream;
@@ -28,7 +28,7 @@ import uk.ac.ebi.ena.readtools.sampler.bits.DictionaryOutputStream;
 import uk.ac.ebi.ena.readtools.sampler.bits.ScoreDict;
 
 public class 
-StripesDataEater<T1 extends DataSpot, T2> implements DataEater<T1, T2>
+StripesDataEater<T1 extends DataSpot, T2> implements DataConsumer<T1, T2>
 {
     final static ByteBuffer reads_buf = ByteBuffer.allocateDirect( 4096 );
     final static ByteBuffer scores_buf = ByteBuffer.allocateDirect( 4096 );
@@ -80,7 +80,7 @@ StripesDataEater<T1 extends DataSpot, T2> implements DataEater<T1, T2>
 
     @Override
     public void 
-    cascadeErrors() throws DataEaterException
+    cascadeErrors() throws DataConsumerException
     {
         try
         {        
@@ -99,7 +99,7 @@ StripesDataEater<T1 extends DataSpot, T2> implements DataEater<T1, T2>
 
         } catch( IOException e )
         {
-            throw new DataEaterException( e );
+            throw new DataConsumerException( e );
         }
     }
 
@@ -122,8 +122,8 @@ StripesDataEater<T1 extends DataSpot, T2> implements DataEater<T1, T2>
 
 
     @Override
-    public void 
-    eat( T1 object ) throws DataEaterException
+    public void
+    consume(T1 object ) throws DataConsumerException
     {
         try
         {        
@@ -160,7 +160,7 @@ StripesDataEater<T1 extends DataSpot, T2> implements DataEater<T1, T2>
             
         } catch( IOException e )
         {
-            throw new DataEaterException( e );
+            throw new DataConsumerException( e );
         }
         
         ++read_count;
@@ -168,8 +168,8 @@ StripesDataEater<T1 extends DataSpot, T2> implements DataEater<T1, T2>
 
 
     @Override
-    public void 
-    setEater( DataEater<T2, ?> dataEater )
+    public void
+    setConsumer(DataConsumer<T2, ?> dataConsumer)
     {
         throw new UnsupportedOperationException();
     }

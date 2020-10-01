@@ -31,8 +31,8 @@ import java.util.zip.GZIPOutputStream;
 
 import uk.ac.ebi.ena.readtools.loader.common.Pair;
 
-public abstract class 
-AbstractPagedDataEater<T1, T2> extends AbstractDataEater<T1, T2>
+public abstract class
+AbstractPagedDataConsumer<T1, T2> extends AbstractDataConsumer<T1, T2>
 {
     private static final int OUTPUT_BUFFER_SIZE = 8192;
     private boolean use_spill = true;
@@ -42,17 +42,15 @@ AbstractPagedDataEater<T1, T2> extends AbstractDataEater<T1, T2>
     final private File tmp_root;
     
     
-    public
-    AbstractPagedDataEater()
+    public AbstractPagedDataConsumer()
     {
         this( new File( "." ), 
               (int) ( ( Runtime.getRuntime().maxMemory() - Runtime.getRuntime().freeMemory() ) / 5120 ) );
     }
 
     
-    public
-    AbstractPagedDataEater( File tmp_root, 
-                            int  spill_page_size )
+    public AbstractPagedDataConsumer(File tmp_root,
+                                     int  spill_page_size )
     {
         super( spill_page_size );
         this.tmp_root = tmp_root;
@@ -199,7 +197,7 @@ AbstractPagedDataEater<T1, T2> extends AbstractDataEater<T1, T2>
     
     
     public synchronized void
-    cascadeErrors() throws DataEaterException
+    cascadeErrors() throws DataConsumerException
     {
         if( use_spill && files.size() > 0 )
         {
@@ -238,7 +236,7 @@ AbstractPagedDataEater<T1, T2> extends AbstractDataEater<T1, T2>
                                 {
                                     for( T1 object : entry.value )
                                         if( null != object )
-                                            eat( object );
+                                            consume( object );
                                 } else
                                 {
                                     if( null == oos )

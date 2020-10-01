@@ -18,11 +18,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 
-public abstract class 
-AbstractDataEater<T1, T2> implements DataEater<T1, T2>
+public abstract class
+AbstractDataConsumer<T1, T2> implements DataConsumer<T1, T2>
 {
     protected Map<Object, List<T1>> objects = null; 
-    protected DataEater<T2, ?> dataEater;
+    protected DataConsumer<T2, ?> dataConsumer;
     
     private long log_time =  System.currentTimeMillis();
     private long log_interval = 60 * 1000;
@@ -43,11 +43,11 @@ AbstractDataEater<T1, T2> implements DataEater<T1, T2>
     public boolean 
     isOk()
     {
-        return null == dataEater ? is_ok : is_ok && dataEater.isOk();
+        return null == dataConsumer ? is_ok : is_ok && dataConsumer.isOk();
     }
     
     
-    public AbstractDataEater<T1, T2>
+    public AbstractDataConsumer<T1, T2>
     setVerbose( boolean verbose )
     {
         this.verbose = verbose;
@@ -55,39 +55,37 @@ AbstractDataEater<T1, T2> implements DataEater<T1, T2>
     }
     
     
-    public
-    AbstractDataEater()
+    public AbstractDataConsumer()
     {
         this( 1024 * 1024 ); 
     }
 
 
-    protected
-    AbstractDataEater( int map_size )    
+    protected AbstractDataConsumer(int map_size )
     {
         objects = new HashMap<Object, List<T1>>( map_size );
     }
     
     
     @Override
-    public void 
-    setEater( DataEater<T2, ?> dataEater )
+    public void
+    setConsumer(DataConsumer<T2, ?> dataConsumer)
     {
-        if( !dataEater.equals( this ) )
-            this.dataEater = dataEater;
+        if( !dataConsumer.equals( this ) )
+            this.dataConsumer = dataConsumer;
     }
 
     
     public abstract Object
-    getKey( T1 object ) throws DataEaterException;
+    getKey( T1 object ) throws DataConsumerException;
     
     
     public abstract T2
-    assemble( final Object key, List<T1> list ) throws DataEaterException;
+    assemble( final Object key, List<T1> list ) throws DataConsumerException;
     
     
     public void 
-    append( List<T1> list, T1 obj ) throws DataEaterException
+    append( List<T1> list, T1 obj ) throws DataConsumerException
     {
         list.add( obj );
     }
@@ -105,27 +103,27 @@ AbstractDataEater<T1, T2> implements DataEater<T1, T2>
     
     
     public synchronized void
-    cascadeErrors() throws DataEaterException
+    cascadeErrors() throws DataConsumerException
     {
         for( Entry<Object, List<T1>> entry : objects.entrySet() )
         {
-            if( null != dataEater )
-                dataEater.eat( handleErrors( entry.getKey(), entry.getValue() ) );
+            if( null != dataConsumer)
+                dataConsumer.consume( handleErrors( entry.getKey(), entry.getValue() ) );
             else 
                 System.out.println( "<?> " + handleErrors( entry.getKey(), entry.getValue() ) );
         }
         
-        if( null != dataEater )
-            dataEater.cascadeErrors();
+        if( null != dataConsumer)
+            dataConsumer.cascadeErrors();
     }
     
     
     public abstract T2
-    handleErrors( final Object key, List<T1> list ) throws DataEaterException;
+    handleErrors( final Object key, List<T1> list ) throws DataConsumerException;
     
     
     public void
-    eat( T1 object ) throws DataEaterException
+    consume(T1 object ) throws DataConsumerException
     {
         //System.out.println( object );
         
@@ -155,8 +153,8 @@ AbstractDataEater<T1, T2> implements DataEater<T1, T2>
                     objects.remove( key );
                 }
                 
-                if( null != dataEater )
-                    dataEater.eat( assembly );
+                if( null != dataConsumer)
+                    dataConsumer.consume( assembly );
                 else
                     System.out.println( assembly );
             }

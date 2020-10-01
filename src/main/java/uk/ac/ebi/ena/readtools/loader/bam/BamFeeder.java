@@ -24,19 +24,19 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
 
 import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.eater.PrintDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeeder;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederEOFException;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederPanicException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerEOFException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerPanicException;
 
 public class 
-BamFeeder extends Thread implements DataFeeder<BamSpot>
+BamFeeder extends Thread implements DataProducer<BamSpot>
 {
     SamReader           reader = null;
     Iterator<SAMRecord> it     = null;
-    DataEater<BamSpot, ?> eater = new PrintDataEater<BamSpot, Void>();
+    DataConsumer<BamSpot, ?> eater = new PrintDataEater<BamSpot, Void>();
     volatile boolean    is_ok = true;
     Throwable           stored_exception;
     
@@ -67,8 +67,8 @@ BamFeeder extends Thread implements DataFeeder<BamSpot>
 
 
     @Override
-    public BamSpot 
-    feed() throws DataFeederPanicException, DataFeederEOFException 
+    public BamSpot
+    produce() throws DataProducerPanicException, DataProducerEOFException
     {
         while( it.hasNext() ) 
             return new BamSpot( it.next() );
@@ -77,18 +77,18 @@ BamFeeder extends Thread implements DataFeeder<BamSpot>
             reader.close();
         } catch( IOException ioe )
         {
-            throw new DataFeederPanicException( ioe );
+            throw new DataProducerPanicException( ioe );
         }
         
-        throw new DataFeederEOFException();
+        throw new DataProducerEOFException();
     }
 
     
     @Override
-    public DataFeeder<BamSpot> 
-    setEater( DataEater<BamSpot, ?> eater )
+    public DataProducer<BamSpot>
+    setConsumer(DataConsumer<BamSpot, ?> consumer)
     {
-        this.eater = eater;
+        this.eater = consumer;
         return this;
     }
 
@@ -102,16 +102,16 @@ BamFeeder extends Thread implements DataFeeder<BamSpot>
         {
             do
             {
-                record = feed();
+                record = produce();
                 ++ i;
-                eater.eat( record );
+                eater.consume( record );
             }while( true );
             
-        } catch( DataFeederEOFException eof )
+        } catch( DataProducerEOFException eof )
         {
             System.out.println( "EOF. Records: " + i );
             
-        } catch( DataEaterException | IllegalArgumentException e )
+        } catch( DataConsumerException | IllegalArgumentException e )
         {
             
             e.printStackTrace();

@@ -10,29 +10,29 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 
-public class 
-IlluminaSingleDataEater implements DataEater<DataSpot, IlluminaSpot>
+public class
+IlluminaSingleDataConsumer implements DataConsumer<DataSpot, IlluminaSpot>
 {
-    DataEater<IlluminaSpot, ?> dataEater;
+    DataConsumer<IlluminaSpot, ?> dataConsumer;
     boolean is_ok = true;
     
     @Override
     public void 
-    cascadeErrors() throws DataEaterException
+    cascadeErrors() throws DataConsumerException
     {
         //empty, no errors here
         
-        if( null != dataEater )
-            dataEater.cascadeErrors();
+        if( null != dataConsumer)
+            dataConsumer.cascadeErrors();
     }
 
     
     @Override
-    public void 
-    eat( DataSpot spot ) throws DataEaterException
+    public void
+    consume(DataSpot spot ) throws DataConsumerException
     {
         
         IlluminaSpot ispot = IlluminaSpot.initSingle();
@@ -44,18 +44,18 @@ IlluminaSingleDataEater implements DataEater<DataSpot, IlluminaSpot>
         ispot.read_start[ IlluminaSpot.FORWARD ] = 0;
         ispot.read_length[ IlluminaSpot.FORWARD ] = spot.bases.length();
         ispot.read_name[ IlluminaSpot.FORWARD ] = spot.bname;
-        if( null != dataEater )
-            dataEater.eat( ispot );
+        if( null != dataConsumer)
+            dataConsumer.consume( ispot );
         else
             System.out.println( ispot );
     }
 
 
     @Override
-    public void 
-    setEater( DataEater<IlluminaSpot, ?> dataEater )
+    public void
+    setConsumer(DataConsumer<IlluminaSpot, ?> dataConsumer)
     {
-        this.dataEater = dataEater;
+        this.dataConsumer = dataConsumer;
     }
 
 
@@ -63,6 +63,6 @@ IlluminaSingleDataEater implements DataEater<DataSpot, IlluminaSpot>
     public boolean 
     isOk()
     {
-        return null == dataEater ? is_ok : is_ok && dataEater.isOk();
+        return null == dataConsumer ? is_ok : is_ok && dataConsumer.isOk();
     }
 }

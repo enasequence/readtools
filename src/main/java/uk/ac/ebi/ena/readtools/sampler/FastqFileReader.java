@@ -24,8 +24,8 @@ import java.util.Map.Entry;
 import java.util.zip.GZIPInputStream;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataFeeder;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 import uk.ac.ebi.ena.readtools.sampler.intervals.QualInterval;
@@ -48,21 +48,21 @@ FastqFileReader
     private boolean 
     read( InputStream             is, 
           final QualityNormalizer normalizer,
-          final String stream_marker ) throws SecurityException, DataFeederException, NoSuchMethodException, IOException
+          final String stream_marker ) throws SecurityException, DataProducerException, NoSuchMethodException, IOException
     {
-        AbstractDataFeeder<DataSpot> df = new AbstractDataFeeder<DataSpot>( is, DataSpot.class ) 
+        AbstractDataProducer<DataSpot> df = new AbstractDataProducer<DataSpot>( is, DataSpot.class )
         {
             final DataSpotParams params = DataSpot.defaultParams(); 
             
             @Override
-            protected DataSpot 
-            newFeedable()
+            protected DataSpot
+            newProducible()
             {
                 return new DataSpot( normalizer, stream_marker, params );
             }
         };
         
-        df.setEater( eater );
+        df.setConsumer( eater );
         df.run();
         return df.isOk();
     }

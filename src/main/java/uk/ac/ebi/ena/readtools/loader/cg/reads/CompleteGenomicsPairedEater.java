@@ -13,16 +13,16 @@ package uk.ac.ebi.ena.readtools.loader.cg.reads;
 import java.util.List;
 
 import uk.ac.ebi.ena.readtools.loader.cg.reads.CGSpot.CGMapping;
-import uk.ac.ebi.ena.readtools.loader.common.eater.AbstractDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataEaterException;
+import uk.ac.ebi.ena.readtools.loader.common.eater.AbstractDataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
 
 public class 
-CompleteGenomicsPairedEater extends AbstractDataEater<CompleteGenomicsBase, CGSpot>
+CompleteGenomicsPairedEater extends AbstractDataConsumer<CompleteGenomicsBase, CGSpot>
 {
 
     @Override
     public Object 
-    getKey( CompleteGenomicsBase object ) throws DataEaterException
+    getKey( CompleteGenomicsBase object ) throws DataConsumerException
     {
         return object.getKey();
     }
@@ -56,7 +56,7 @@ CompleteGenomicsPairedEater extends AbstractDataEater<CompleteGenomicsBase, CGSp
     
     @Override
     public CGSpot 
-    assemble( final Object key, List<CompleteGenomicsBase> list ) throws DataEaterException
+    assemble( final Object key, List<CompleteGenomicsBase> list ) throws DataConsumerException
     {
         CGSpot spot = new CGSpot();
         spot.mappings = new CGSpot.CGMapping[ list.size() - 1 ];  
@@ -67,7 +67,7 @@ CompleteGenomicsPairedEater extends AbstractDataEater<CompleteGenomicsBase, CGSp
             else if( l instanceof CompleteGenomicsMap3 )
                 fillMaps( (CompleteGenomicsMap3) l, spot.mappings );
             else
-                throw new DataEaterException();
+                throw new DataConsumerException();
         }
         
         return spot;
@@ -103,7 +103,7 @@ CompleteGenomicsPairedEater extends AbstractDataEater<CompleteGenomicsBase, CGSp
 
     @Override
     public CGSpot 
-    handleErrors( final Object key, List<CompleteGenomicsBase> list ) throws DataEaterException
+    handleErrors( final Object key, List<CompleteGenomicsBase> list ) throws DataConsumerException
     {
         // TODO Auto-generated method stub
         return null;

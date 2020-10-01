@@ -13,13 +13,13 @@ package uk.ac.ebi.ena.readtools.loader.common.eater;
 
 
 public class 
-NullDataEater<T1> implements DataEater<T1, Void>
+NullDataEater<T1> implements DataConsumer<T1, Void>
 {
     volatile boolean lock;
     
     @Override
     public void 
-    cascadeErrors() throws DataEaterException
+    cascadeErrors() throws DataConsumerException
     {
         ;
     }
@@ -42,15 +42,15 @@ NullDataEater<T1> implements DataEater<T1, Void>
     }
 
     
-    @Override public void 
-    eat( T1 object ) throws DataEaterException
+    @Override public void
+    consume(T1 object ) throws DataConsumerException
     {
         //do nothing, this is null data eater
     }
 
     
-    @Override public void 
-    setEater( DataEater<Void, ?> dataEater )
+    @Override public void
+    setConsumer(DataConsumer<Void, ?> dataConsumer)
     {
         throw new RuntimeException( "Not implemented" );
     }

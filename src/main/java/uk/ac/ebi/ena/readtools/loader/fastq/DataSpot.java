@@ -22,9 +22,9 @@ import java.util.stream.Collectors;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer.QualityNormaizationException;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.FeedableData;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.FeedableDataChecker;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.ProducibleData;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.ProducibleDataChecker;
 
 public class 
 DataSpot implements Serializable
@@ -70,28 +70,28 @@ DataSpot implements Serializable
     static final long serialVersionUID = 1L;
     static final protected char[] line_separator = System.getProperty ( "line.separator" ).toCharArray();
     
-    @FeedableData( method = "feedBaseName" )
+    @ProducibleData( method = "feedBaseName" )
     public String bname; // name for bases 
         
-    @FeedableData( method = "feedBases" )
+    @ProducibleData( method = "feedBases" )
     public String bases;// bases
         
-    @FeedableData( method = "feedQualName" )
+    @ProducibleData( method = "feedQualName" )
     public String qname; // name for qualities // no + here, it will be in stop symbols
 
-    @FeedableData( method = "feedQuals" )
+    @ProducibleData( method = "feedQuals" )
     public String quals;
 
     
-    @FeedableDataChecker
+    @ProducibleDataChecker
     public void
-    checkFeed() throws QualityNormaizationException, DataFeederException
+    checkFeed() throws QualityNormaizationException, DataProducerException
     {
         if( !params.allow_empty )
         {
             if( null == bases || null == quals 
                 || 0 == bases.length() || 0 == quals.length() )
-                throw new DataFeederException( params.line_no, "Empty lines not allowed" );
+                throw new DataProducerException( params.line_no, "Empty lines not allowed" );
         }
         normailzer.normalize( quals );
     }
@@ -218,7 +218,7 @@ SPACE HERE
     //feeding methods. NOTE: always use "public" access modifier because of method accession performance issues!
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void 
-    feedBaseName( InputStream is ) throws IOException, DataFeederException
+    feedBaseName( InputStream is ) throws IOException, DataProducerException
     {
         String line = readLine( is );
         while( line.trim().length() == 0 )
@@ -238,26 +238,26 @@ SPACE HERE
         {
             case CASAVA18:
                 if( !params.m_casava_1_8_name.reset( line ).find() )
-                    throw new DataFeederException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, ReadStyle.CASAVA18 ) );
+                    throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, ReadStyle.CASAVA18 ) );
                 bname = String.format( "%s/%s", params.m_casava_1_8_name.group( 1 ), params.m_casava_1_8_name.group( 2 ) );
                 break;
             
             case FASTQ:
                 if( !params.m_base_name.reset( line ).find() )
-                    throw new DataFeederException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, ReadStyle.FASTQ ) );
+                    throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, ReadStyle.FASTQ ) );
                 
                 bname = params.m_base_name.group( 1 );
                 break;
                 
             default:
-                throw new DataFeederException( params.line_no, String.format( "Line [%s] has no read style defined!", line ) );
+                throw new DataProducerException( params.line_no, String.format( "Line [%s] has no read style defined!", line ) );
         }
     }
     
     
     // get bases
     public void 
-    feedBases( InputStream is ) throws IOException, DataFeederException
+    feedBases( InputStream is ) throws IOException, DataProducerException
     {
         String line = readLine( is, -1, base_stopper );
         while( line.trim().length() == 0 )
@@ -271,7 +271,7 @@ SPACE HERE
         //check against expected, if any
         if( -1 < expected_base_length 
             && expected_base_length != value.length() )
-            throw new DataFeederException( params.line_no, String.format( "Expected base length [%d] does not match readed one[%d]", expected_base_length, value.length() ) );    
+            throw new DataProducerException( params.line_no, String.format( "Expected base length [%d] does not match readed one[%d]", expected_base_length, value.length() ) );
                 
         expected_qual_length = 0 == value.length() ? -1 : value.length();
         bases = value;
@@ -280,17 +280,17 @@ SPACE HERE
     
     // get name of quality line
     public void 
-    feedQualName( InputStream is ) throws IOException, DataFeederException
+    feedQualName( InputStream is ) throws IOException, DataProducerException
     {
         String line = readLine( is );        
         if( !params.m_qname.reset( line ).find() )
-            throw new DataFeederException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
+            throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
         qname = params.m_qname.group( 1 );
     }
 
     
     public void 
-    feedQuals( InputStream is ) throws IOException, QualityNormaizationException, DataFeederException
+    feedQuals( InputStream is ) throws IOException, QualityNormaizationException, DataProducerException
     {
         String line = readLine( is, expected_qual_length );
         while( expected_qual_length >= 0 && line.trim().length() == 0 )
@@ -301,13 +301,13 @@ SPACE HERE
         if( !params.m_quals.reset( line ).find() )
         {
             if( !params.m_quals_sd.reset( line ).matches() )
-                throw new DataFeederException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
+                throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
             else
             {
                 line += readLine( is );
 
                 if( !params.m_quals_sd.reset( line ).matches() )
-                    throw new DataFeederException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
+                    throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
                 
                 String[] scores = line.split( " +" );
                 StringBuilder sb = new StringBuilder( scores.length );
@@ -316,7 +316,7 @@ SPACE HERE
                 value = sb.toString();
                 
                 if( expected_qual_length != value.length() )
-                    throw new DataFeederException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of readed one[%d]", 
+                    throw new DataProducerException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of readed one[%d]",
                                                                                  bname, 
                                                                                  expected_qual_length, 
                                                                                  value.length() ) );    
@@ -328,7 +328,7 @@ SPACE HERE
         
             //check against expected
             if( expected_qual_length >= 0 && expected_qual_length != value.length() )
-                throw new DataFeederException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of readed one[%d]", 
+                throw new DataProducerException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of readed one[%d]",
                                                                              bname, 
                                                                              expected_qual_length, 
                                                                              value.length() ) );    
@@ -340,7 +340,7 @@ SPACE HERE
                 {
                     line = readLine( is );
                     if( line.trim().length() > 0 )
-                        throw new DataFeederException( params.line_no, String.format( "Trailing character(s) [%s] after expected number of quals [%d]", 
+                        throw new DataProducerException( params.line_no, String.format( "Trailing character(s) [%s] after expected number of quals [%d]",
                                                                                      line, 
                                                                                     expected_qual_length ) );
                 } catch( IOException e )

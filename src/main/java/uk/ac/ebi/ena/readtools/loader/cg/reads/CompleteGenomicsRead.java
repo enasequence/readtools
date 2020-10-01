@@ -18,9 +18,9 @@ import java.util.regex.Pattern;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer.QualityNormaizationException;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.FeedableData;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.FeedableDataChecker;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.ProducibleData;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.ProducibleDataChecker;
 
 public class 
 CompleteGenomicsRead extends CompleteGenomicsBase implements Serializable 
@@ -36,14 +36,14 @@ CompleteGenomicsRead extends CompleteGenomicsBase implements Serializable
     
     static final long serialVersionUID = 1L;
     
-    @FeedableData( method = "feedLine" )
+    @ProducibleData( method = "feedLine" )
     public ReadFlags flags; // Mapping characteristics of the DNBs, represented in bits within an integer. Individual flags described below. 
     public String    reads;// The base calls read from a single DNB, in an order specified in lib_DNB_[LIBRARY-ID].tsv. Base positions for which no information is available are denoted by "N" in the reads field.
     public String    scores; //Quality scores for reads. Each score is a Phred-like transformation of the error probability associated with a single base read. Base positions for which no information is available are assigned a score of 0.
     public long      index;
     public long      key;
     
-    @FeedableDataChecker
+    @ProducibleDataChecker
     public void
     checkFeed() throws QualityNormaizationException
     {
@@ -81,12 +81,12 @@ CompleteGenomicsRead extends CompleteGenomicsBase implements Serializable
     //feeding methods. NOTE: always use "public" access modifier because of method accession speed issues!
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void 
-    feedLine( InputStream is ) throws IOException, DataFeederException
+    feedLine( InputStream is ) throws IOException, DataProducerException
     {
         String line = readLine( is );
         Matcher m   = p_line.matcher( line );
         if( !m.find() )
-            throw new DataFeederException( line_no - 1, String.format( "Line [%s] does not match regexp", line ) );
+            throw new DataProducerException( line_no - 1, String.format( "Line [%s] does not match regexp", line ) );
         
         flags  = ReadFlags.forString( m.group( 1 ) );
         reads  = m.group( 2 );
@@ -94,7 +94,7 @@ CompleteGenomicsRead extends CompleteGenomicsBase implements Serializable
         
         int read_flags = getFlags( m.group( 1 ) );
         if( -1 == read_flags ) 
-            throw new DataFeederException( line_no - 1, String.format( "Flags: %d", read_flags ) );
+            throw new DataProducerException( line_no - 1, String.format( "Flags: %d", read_flags ) );
         
         if( ( read_flags & ( Flags.LeftHalfDnbMapOverflow | Flags.RightHalfDnbMapOverflow ) ) == ( Flags.LeftHalfDnbMapOverflow | Flags.RightHalfDnbMapOverflow )  
             || ( read_flags & ( Flags.LeftHalfDnbMapOverflow | Flags.RightHalfDnbNoMatches ) ) == ( Flags.LeftHalfDnbMapOverflow | Flags.RightHalfDnbNoMatches )   

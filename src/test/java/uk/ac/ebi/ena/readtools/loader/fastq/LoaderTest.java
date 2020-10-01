@@ -24,8 +24,8 @@ import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.eater.PrintDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataFeeder;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataFeederException;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 
 public class 
@@ -47,21 +47,21 @@ LoaderTest
     
 
     boolean 
-    read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, DataFeederException, NoSuchMethodException, IOException, InterruptedException
+    read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, DataProducerException, NoSuchMethodException, IOException, InterruptedException
     {
-        AbstractDataFeeder<DataSpot> df = new AbstractDataFeeder<DataSpot>( is, DataSpot.class ) 
+        AbstractDataProducer<DataSpot> df = new AbstractDataProducer<DataSpot>( is, DataSpot.class )
         {
             final AtomicLong line_no = new AtomicLong( 1 );
             final AtomicReference<DataSpot.ReadStyle> read_style = new AtomicReference<DataSpot.ReadStyle>();
             DataSpotParams params = DataSpot.defaultParams();
             @Override
-            protected DataSpot newFeedable()
+            protected DataSpot newProducible()
             {
                 return new DataSpot( normalizer, "", params );
             }
         };
         df.setName( name );
-        df.setEater( new PrintDataEater<DataSpot, Object>() );
+        df.setConsumer( new PrintDataEater<DataSpot, Object>() );
         df.start();
         df.join();
         return df.isOk();
