@@ -11,10 +11,8 @@
 package uk.ac.ebi.ena.readtools.utils;
 
 import htsjdk.samtools.fastq.FastqReader;
-import htsjdk.samtools.fastq.FastqRecord;
 import org.junit.Assert;
 import org.junit.Test;
-import uk.ac.ebi.ena.readtools.fastq.Fastq2Sam;
 
 import java.io.File;
 import java.io.IOException;

@@ -22,12 +22,13 @@ import java.util.stream.Collectors;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer.QualityNormaizationException;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.ProducibleData;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.ProducibleDataChecker;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.common.producer.ProducibleData;
+import uk.ac.ebi.ena.readtools.loader.common.producer.ProducibleDataChecker;
 
 public class 
-DataSpot implements Serializable
+DataSpot implements Serializable, DataConsumable
 {
     public static class 
     DataSpotParams
@@ -93,7 +94,9 @@ DataSpot implements Serializable
                 || 0 == bases.length() || 0 == quals.length() )
                 throw new DataProducerException( params.line_no, "Empty lines not allowed" );
         }
-        normailzer.normalize( quals );
+
+        if (normailzer != null)
+            normailzer.normalize( quals );
     }
     
 
@@ -109,7 +112,6 @@ DataSpot implements Serializable
     {
         expected_base_length = -1;
         expected_qual_length = -1;
-        normailzer = QualityNormalizer.SANGER;
         stream_key = null;
     }
     
