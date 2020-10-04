@@ -11,9 +11,10 @@
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
 
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
 
-public class 
-IlluminaSpot
+public class
+IlluminaSpot implements DataConsumable
 {
     //Must be private. DO NOT USE!
     private 

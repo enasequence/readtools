@@ -23,9 +23,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.eater.PrintDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataProducer;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.PrintDataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 
 public class 
@@ -61,7 +62,7 @@ LoaderTest
             }
         };
         df.setName( name );
-        df.setConsumer( new PrintDataEater<DataSpot, Object>() );
+        df.setConsumer( new PrintDataConsumer<DataSpot, DataConsumable>() );
         df.start();
         df.join();
         return df.isOk();

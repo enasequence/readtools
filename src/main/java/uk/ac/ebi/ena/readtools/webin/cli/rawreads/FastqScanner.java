@@ -10,6 +10,25 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
+import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
+import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
+import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeConsumer;
+import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeConsumer.READ_TYPE;
+import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
+import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaSpot;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -29,25 +48,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
-
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.eater.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.eater.NullDataEater;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.AbstractDataProducer;
-import uk.ac.ebi.ena.readtools.loader.common.feeder.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeEater;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeEater.READ_TYPE;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaPairedDataConsumer;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaSpot;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
 public abstract class 
@@ -172,8 +172,11 @@ FastqScanner
             
             df.setName( stream_name );
             
-            df.setConsumer(new NullDataEater<DataSpot>()
+            df.setConsumer(new DataConsumer<DataSpot, DataConsumable>()
             {
+                @Override
+                public void cascadeErrors() throws DataConsumerException { }
+
                 @Override public void
                 consume(DataSpot spot )
                 {
@@ -182,8 +185,8 @@ FastqScanner
                 			
                 	try
                 	{
-                		name = IlluminaPairedDataConsumer.getReadnamePart( spot.bname, IlluminaPairedDataConsumer.KEY );
-                		label = IlluminaPairedDataConsumer.getReadnamePart( spot.bname, IlluminaPairedDataConsumer.INDEX );
+                		name = PairedFastqConsumer.getReadnamePart( spot.bname, PairedFastqConsumer.KEY );
+                		label = PairedFastqConsumer.getReadnamePart( spot.bname, PairedFastqConsumer.INDEX );
                 	} catch ( DataConsumerException dee )
                 	{
                     	name  = spot.bname;
@@ -199,7 +202,17 @@ FastqScanner
                     
                     if( 0 == count.get() % print_freq )
                         logProcessedReadNumber( count.get() );
-                }  
+                }
+
+                @Override
+                public void setConsumer(DataConsumer<DataConsumable, ?> dataConsumer) {
+                    throw new RuntimeException( "Not implemented" );
+                }
+
+                @Override
+                public boolean isOk() {
+                    return true;
+                }
             } );
 
 
@@ -341,7 +354,7 @@ FastqScanner
 
             long index = 1;
 
-            IlluminaIterativeEater wrapper = new IlluminaIterativeEater();
+            IlluminaIterativeConsumer wrapper = new IlluminaIterativeConsumer();
             wrapper.setFiles( new File[] { new File( rf.getFilename() ) } );  
             wrapper.setNormalizers( new QualityNormalizer[] { QualityNormalizer.SANGER } );
             wrapper.setReadType( READ_TYPE.SINGLE );

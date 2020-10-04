@@ -1,0 +1,169 @@
+/*
+* Copyright 2010-2020 EMBL - European Bioinformatics Institute
+* Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+* file except in compliance with the License. You may obtain a copy of the License at
+* http://www.apache.org/licenses/LICENSE-2.0
+* Unless required by applicable law or agreed to in writing, software distributed under the
+* License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+* CONDITIONS OF ANY KIND, either express or implied. See the License for the
+* specific language governing permissions and limitations under the License.
+*/
+package uk.ac.ebi.ena.readtools.loader.common.consumer;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+
+public abstract class
+AbstractDataConsumer<T1 extends DataConsumable, T2 extends DataConsumable> implements DataConsumer<T1, T2>
+{
+    protected Map<Object, List<T1>> objects = null; 
+    protected DataConsumer<T2, ?> dataConsumer;
+    
+    private long log_time =  System.currentTimeMillis();
+    private long log_interval = 60 * 1000;
+    private long assembled = 0;
+    private long ate     = 0;
+    protected boolean verbose = false;
+    private volatile boolean is_ok = true;
+    
+    
+    @Override
+    public boolean 
+    isOk()
+    {
+        return null == dataConsumer ? is_ok : is_ok && dataConsumer.isOk();
+    }
+    
+    
+    public AbstractDataConsumer<T1, T2>
+    setVerbose( boolean verbose )
+    {
+        this.verbose = verbose;
+        return this;
+    }
+    
+    
+    public AbstractDataConsumer()
+    {
+        this( 1024 * 1024 ); 
+    }
+
+
+    protected AbstractDataConsumer(int map_size )
+    {
+        objects = new HashMap<Object, List<T1>>( map_size );
+    }
+    
+    
+    @Override
+    public void
+    setConsumer(DataConsumer<T2, ?> dataConsumer)
+    {
+        if( !dataConsumer.equals( this ) )
+            this.dataConsumer = dataConsumer;
+    }
+
+    
+    public abstract Object
+    getKey( T1 object ) throws DataConsumerException;
+    
+    
+    public abstract T2
+    assemble( final Object key, List<T1> list ) throws DataConsumerException;
+    
+    
+    public void 
+    append( List<T1> list, T1 obj ) throws DataConsumerException
+    {
+        list.add( obj );
+    }
+    
+    
+    public List<T1>
+    newListBucket()
+    {
+        return Collections.synchronizedList( new ArrayList<T1>() );
+    }
+    
+    
+    public abstract boolean
+    isCollected( List<T1> list );
+    
+    
+    public synchronized void
+    cascadeErrors() throws DataConsumerException
+    {
+        for( Entry<Object, List<T1>> entry : objects.entrySet() )
+        {
+            if( null != dataConsumer)
+                dataConsumer.consume( handleErrors( entry.getKey(), entry.getValue() ) );
+            else 
+                System.out.println( "<?> " + handleErrors( entry.getKey(), entry.getValue() ) );
+        }
+        
+        if( null != dataConsumer)
+            dataConsumer.cascadeErrors();
+    }
+    
+    
+    public abstract T2
+    handleErrors( final Object key, List<T1> list ) throws DataConsumerException;
+    
+    
+    public void
+    consume(T1 object ) throws DataConsumerException
+    {
+        //System.out.println( object );
+        
+        Object key = getKey( object );
+        List<T1> list = null;
+        
+        synchronized( objects )
+        {
+            if( !objects.containsKey( key )  )
+            {
+                list = newListBucket();
+                objects.put( key, list );
+            } else
+            {
+                list = objects.get( key );
+            }
+
+            ate ++;
+            append( list, object );
+        
+            if( isCollected( list ) )
+            {
+                T2 assembly = assemble( key, list );
+                assembled ++;
+ //               synchronized( objects )
+                {
+                    objects.remove( key );
+                }
+                
+                if( null != dataConsumer)
+                    dataConsumer.consume( assembly );
+                else
+                    System.out.println( assembly );
+            }
+        }
+        
+        
+        if( verbose )
+        {
+            long time = System.currentTimeMillis();
+        
+            if( time > log_time )
+            {
+                log_time = time + log_interval;
+                System.out.println( String.format( "Ate: %d,\tAssembled: %d,\tDiff: %d", ate, assembled, ate - ( assembled << 1 ) ) );
+            }
+        }
+
+    }
+}
