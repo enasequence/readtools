@@ -11,7 +11,6 @@
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -29,36 +28,36 @@ import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeConsumer.READ_TYPE;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
 
 public class
-IlluminaIterativeConsumerIterator implements Iterator<IlluminaSpot>, DataConsumer<IlluminaSpot, DataConsumable>
+FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<FastqSpot, DataConsumable>
 {
     private static final long CYCLE_TIMEFRAME = 0L;
-    private BlockingQueue<IlluminaSpot>   queue = new SynchronousQueue<IlluminaSpot>();
-    private AtomicReference<IlluminaSpot> current_element = new AtomicReference<IlluminaSpot>();
+    private BlockingQueue<FastqSpot>   queue = new SynchronousQueue<FastqSpot>();
+    private AtomicReference<FastqSpot> current_element = new AtomicReference<FastqSpot>();
     private AtomicBoolean was_cascade_errors = new AtomicBoolean( false );
     private Exception storedException;    
     
 
-    IlluminaIterativeConsumerIterator(File tmp_folder,
-                                      int spill_page_size, //only for paired
-                                      READ_TYPE read_type,
-                                      File[] files,
-                                      final QualityNormalizer normalizers[]  ) throws SecurityException, FileNotFoundException, DataProducerException, NoSuchMethodException, IOException
+    FastqIterativeConsumerIterator(File tmp_folder,
+                                   int spill_page_size, //only for paired
+                                   READ_TYPE read_type,
+                                   File[] files,
+                                   final QualityNormalizer normalizers[]  ) throws SecurityException, NoSuchMethodException, IOException
     {
-        DataConsumer<DataSpot, IlluminaSpot> eater = null;
+        DataConsumer<DataSpot, FastqSpot> eater = null;
         
         
         switch( read_type )
         {
         
         case SINGLE:
-            eater = (DataConsumer<DataSpot, IlluminaSpot>)new SingleFastqConsumer();
+            eater = (DataConsumer<DataSpot, FastqSpot>)new SingleFastqConsumer();
             break;
             
         case PAIRED:
-            eater = (DataConsumer<DataSpot, IlluminaSpot>) new PairedFastqConsumer( tmp_folder, spill_page_size );
+            eater = (DataConsumer<DataSpot, FastqSpot>) new PairedFastqConsumer( tmp_folder, spill_page_size );
             break;
             
         default:
@@ -80,8 +79,8 @@ IlluminaIterativeConsumerIterator implements Iterator<IlluminaSpot>, DataConsume
             final String default_attr = Integer.toString( attr ++ );
             final int nindex = normalizers.length == files.length ? attr - 2 : 0;
             
-            AbstractDataProducer<?> feeder =
-            new AbstractDataProducer<DataSpot>( FileCompression.open( file ), DataSpot.class )
+            AbstractDataProducer<DataSpot> producer =
+            new AbstractDataProducer<DataSpot>( FileCompression.open( file ))
             {
                 final DataSpotParams params = DataSpot.defaultParams();
                 
@@ -91,11 +90,12 @@ IlluminaIterativeConsumerIterator implements Iterator<IlluminaSpot>, DataConsume
                 {
                     return new DataSpot( normalizers[ nindex ], default_attr, params );
                 }
-            }.setConsumer( eater );
-            
-            feeder.setName( file.getPath() );
-            feeders.add( feeder );
-            feeder.start();
+            };
+
+            producer.setConsumer( eater );
+            producer.setName( file.getPath() );
+            feeders.add( producer );
+            producer.start();
         }
         
         new Thread( lifecycle( feeders, eater ), "lifecycle" ).start();
@@ -164,7 +164,7 @@ IlluminaIterativeConsumerIterator implements Iterator<IlluminaSpot>, DataConsume
     
     @Override
     public void
-    consume(IlluminaSpot object ) throws DataConsumerException
+    consume(FastqSpot object ) throws DataConsumerException
     {
         try
         {
@@ -206,7 +206,7 @@ IlluminaIterativeConsumerIterator implements Iterator<IlluminaSpot>, DataConsume
     
     
     @Override
-    public IlluminaSpot 
+    public FastqSpot
     next()
     {
         if( null != storedException )

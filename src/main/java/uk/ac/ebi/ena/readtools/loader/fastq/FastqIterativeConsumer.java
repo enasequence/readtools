@@ -16,7 +16,7 @@ import java.util.Iterator;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 
 public class
-IlluminaIterativeConsumer implements Iterable<IlluminaSpot>
+FastqIterativeConsumer implements Iterable<FastqSpot>
 {
     public enum
     READ_TYPE
@@ -34,12 +34,12 @@ IlluminaIterativeConsumer implements Iterable<IlluminaSpot>
     
     
     @Override
-    public Iterator<IlluminaSpot> 
+    public Iterator<FastqSpot>
     iterator()
     {
         try
         {
-            return (Iterator<IlluminaSpot>) new IlluminaIterativeConsumerIterator( tmp_folder,
+            return (Iterator<FastqSpot>) new FastqIterativeConsumerIterator( tmp_folder,
                                                                         spill_page_size, 
                                                                         read_type, 
                                                                         files,

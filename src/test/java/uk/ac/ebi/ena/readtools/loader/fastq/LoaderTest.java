@@ -50,7 +50,7 @@ LoaderTest
     boolean 
     read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, DataProducerException, NoSuchMethodException, IOException, InterruptedException
     {
-        AbstractDataProducer<DataSpot> df = new AbstractDataProducer<DataSpot>( is, DataSpot.class )
+        AbstractDataProducer<DataSpot> df = new AbstractDataProducer<DataSpot>( is )
         {
             final AtomicLong line_no = new AtomicLong( 1 );
             final AtomicReference<DataSpot.ReadStyle> read_style = new AtomicReference<DataSpot.ReadStyle>();
@@ -133,7 +133,7 @@ LoaderTest
 
         if( read( "fastq_spot_incorrect5.txt", QualityNormalizer.ILLUMINA_1_3 ) )
             throw new Exception( "fail!" );
-        
+
         if( read( "fastq_spot_incorrect6.txt", QualityNormalizer.SANGER ) )
             throw new Exception( "fail!" );
 

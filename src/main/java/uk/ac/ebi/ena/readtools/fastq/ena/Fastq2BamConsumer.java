@@ -21,20 +21,20 @@ import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaSpot;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Accepts Illumina spot data and writes them out to a BAM file.
+ * Accepts Fastq spot data and writes them out to a BAM file.
  */
-public class Fastq2BamConsumer implements DataConsumer<IlluminaSpot, DataConsumable> {
+public class Fastq2BamConsumer implements DataConsumer<FastqSpot, DataConsumable> {
 
     private static final String DEFAULT_READ_GROUP_NAME = "A";
 
@@ -49,7 +49,7 @@ public class Fastq2BamConsumer implements DataConsumer<IlluminaSpot, DataConsuma
 
     private volatile boolean isOk = true;
 
-    public Fastq2BamConsumer(QualityNormalizer qualityNormalizer, String sampleName, String outputFilePath) {
+    public Fastq2BamConsumer(QualityNormalizer qualityNormalizer, String sampleName, String outputFilePath, String tempDir) {
         this.qualityNormalizer = qualityNormalizer;
         this.sampleName = sampleName;
 
@@ -57,12 +57,12 @@ public class Fastq2BamConsumer implements DataConsumer<IlluminaSpot, DataConsuma
             throw new IllegalArgumentException("Sample name is either null or empty.");
         }
 
-        writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(
+        writer = new SAMFileWriterFactory().setTempDirectory(new File(tempDir)).makeSAMOrBAMWriter(
                 createHeader(), false, Paths.get(outputFilePath));
     }
 
     @Override
-    public void consume(IlluminaSpot iSpot) throws DataConsumerException {
+    public void consume(FastqSpot iSpot) throws DataConsumerException {
         try {
             Matcher matcher = VALID_DNA_CHARSET_PATTERN.matcher(iSpot.bases);
             if( !matcher.matches() )
@@ -133,10 +133,10 @@ public class Fastq2BamConsumer implements DataConsumer<IlluminaSpot, DataConsuma
         throw new InvalidBaseCharacterException(bases, invalidBaseChars);
     }
 
-    private boolean isPaired(IlluminaSpot iSpot) {
+    private boolean isPaired(FastqSpot iSpot) {
         return iSpot.read_name.length == 2
-                && iSpot.read_name[IlluminaSpot.FORWARD] != null
-                && iSpot.read_name[IlluminaSpot.REVERSE] != null;
+                && iSpot.read_name[FastqSpot.FORWARD] != null
+                && iSpot.read_name[FastqSpot.REVERSE] != null;
     }
 
     private SAMRecord createSamRecord(boolean paired, String baseName, String read, String qualities) {
@@ -158,28 +158,28 @@ public class Fastq2BamConsumer implements DataConsumer<IlluminaSpot, DataConsuma
         return rec;
     }
 
-    private String getForwardBases(IlluminaSpot iSpot) {
-        int start = iSpot.read_start[IlluminaSpot.FORWARD];
-        int end = iSpot.read_length[IlluminaSpot.FORWARD];
+    private String getForwardBases(FastqSpot iSpot) {
+        int start = iSpot.read_start[FastqSpot.FORWARD];
+        int end = iSpot.read_length[FastqSpot.FORWARD];
 
         return iSpot.bases.substring(start, end);
     }
 
-    private String getForwardQualities(IlluminaSpot iSpot) {
-        int start = iSpot.read_start[IlluminaSpot.FORWARD];
-        int end = iSpot.read_length[IlluminaSpot.FORWARD];
+    private String getForwardQualities(FastqSpot iSpot) {
+        int start = iSpot.read_start[FastqSpot.FORWARD];
+        int end = iSpot.read_length[FastqSpot.FORWARD];
 
         return iSpot.quals.substring(start, end);
     }
 
-    private String getReverseBases(IlluminaSpot iSpot) {
-        int start = iSpot.read_start[IlluminaSpot.REVERSE];
+    private String getReverseBases(FastqSpot iSpot) {
+        int start = iSpot.read_start[FastqSpot.REVERSE];
 
         return iSpot.bases.substring(start);
     }
 
-    private String getReverseQualities(IlluminaSpot iSpot) {
-        int start = iSpot.read_start[IlluminaSpot.REVERSE];
+    private String getReverseQualities(FastqSpot iSpot) {
+        int start = iSpot.read_start[FastqSpot.REVERSE];
 
         return iSpot.quals.substring(start);
     }
