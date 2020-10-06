@@ -10,6 +10,12 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
+import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
+import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer.QualityNormaizationException;
+import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducible;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,18 +25,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
-import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer.QualityNormaizationException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.common.producer.ProducibleData;
-import uk.ac.ebi.ena.readtools.loader.common.producer.ProducibleDataChecker;
+public class DataSpot implements Serializable, DataProducible {
 
-public class 
-DataSpot implements Serializable, DataConsumable
-{
-    public static class 
+    public static class
     DataSpotParams
     {
         public Long      line_no;
@@ -70,35 +67,11 @@ DataSpot implements Serializable, DataConsumable
 
     static final long serialVersionUID = 1L;
     static final protected char[] line_separator = System.getProperty ( "line.separator" ).toCharArray();
-    
-    @ProducibleData( method = "feedBaseName" )
-    public String bname; // name for bases 
-        
-    @ProducibleData( method = "feedBases" )
+
+    public String bname; // name for bases
     public String bases;// bases
-        
-    @ProducibleData( method = "feedQualName" )
     public String qname; // name for qualities // no + here, it will be in stop symbols
-
-    @ProducibleData( method = "feedQuals" )
     public String quals;
-
-    
-    @ProducibleDataChecker
-    public void
-    checkFeed() throws QualityNormaizationException, DataProducerException
-    {
-        if( !params.allow_empty )
-        {
-            if( null == bases || null == quals 
-                || 0 == bases.length() || 0 == quals.length() )
-                throw new DataProducerException( params.line_no, "Empty lines not allowed" );
-        }
-
-        if (normailzer != null)
-            normailzer.normalize( quals );
-    }
-    
 
     private String stream_key;
     transient private int expected_base_length;
@@ -215,12 +188,32 @@ SPACE HERE
         FASTQ,
         CASAVA18
     }
-    
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //feeding methods. NOTE: always use "public" access modifier because of method accession performance issues!
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public void 
-    feedBaseName( InputStream is ) throws IOException, DataProducerException
+
+    @Override
+    public void read(InputStream inputStream) throws IOException, QualityNormaizationException {
+        boolean record_started = false;
+
+        try {
+            readBaseName(inputStream);
+
+            record_started = true;
+
+            readBases(inputStream);
+            readQualName(inputStream);
+            readQuals(inputStream);
+
+            checkReadData();
+        } catch (EOFException e) {
+            // Read data must always be checked even when the end of stream has been reached.
+            if( record_started ) {
+                checkReadData();
+            }
+
+            throw e;
+        }
+    }
+
+    private void readBaseName(InputStream is ) throws IOException
     {
         String line = readLine( is );
         while( line.trim().length() == 0 )
@@ -256,10 +249,8 @@ SPACE HERE
         }
     }
     
-    
     // get bases
-    public void 
-    feedBases( InputStream is ) throws IOException, DataProducerException
+    private void readBases(InputStream is ) throws IOException
     {
         String line = readLine( is, -1, base_stopper );
         while( line.trim().length() == 0 )
@@ -279,10 +270,8 @@ SPACE HERE
         bases = value;
     }
     
-    
     // get name of quality line
-    public void 
-    feedQualName( InputStream is ) throws IOException, DataProducerException
+    private void readQualName(InputStream is ) throws IOException
     {
         String line = readLine( is );        
         if( !params.m_qname.reset( line ).find() )
@@ -290,9 +279,7 @@ SPACE HERE
         qname = params.m_qname.group( 1 );
     }
 
-    
-    public void 
-    feedQuals( InputStream is ) throws IOException, QualityNormaizationException, DataProducerException
+    private void readQuals(InputStream is ) throws IOException
     {
         String line = readLine( is, expected_qual_length );
         while( expected_qual_length >= 0 && line.trim().length() == 0 )
@@ -354,6 +341,19 @@ SPACE HERE
         quals = value;
     }
 
+    private void checkReadData() throws QualityNormaizationException
+    {
+        if( !params.allow_empty )
+        {
+            if( null == bases || null == quals
+                    || 0 == bases.length() || 0 == quals.length() )
+                throw new DataProducerException( params.line_no, "Empty lines not allowed" );
+        }
+
+        if (normailzer != null)
+            normailzer.normalize( quals );
+    }
+
     
     // reads stream line till line separator
     protected String
@@ -369,84 +369,6 @@ SPACE HERE
               long len ) throws IOException
     {
             return readLine( istream, len, -1 );
-    }
-        
-
-    // reads stream line till either the length or in case of len = -1 till line separator
-    // here is unfair checking of stop_seq ( only 1 symbol is allowed!!! )
-    // TODO - split and simplyfy
-    protected String
-    __readLine( InputStream istream, 
-                int       len,
-                int       stop ) throws IOException
-    {
-        assert istream.markSupported();
-        StringBuilder b = new StringBuilder( 1024 );
-        
-        int space_cnt = 0;
-out:    for( int i = 0; len == -1 || i < len; )
-        {
-            //try to read at least len bytes
-            byte buf[] = new byte[ 1024 ];
-            int read_len = -1 == len ? buf.length : len - i;
-            istream.mark( read_len );
-            read_len = istream.read( buf, 0, read_len );
-            if( -1 == read_len )
-                throw new EOFException();
-            for( int real_i = 0; real_i < read_len; ++ i, ++real_i )
-            {
-                int c = buf[ real_i ];
-                if( c == ' ' )
-                {
-                    space_cnt++;
-                } else if( c == '\r' )
-                {
-                    --i;
-                    continue;
-                } else if( c == '\n' )
-                {   
-                    params.line_no++;
-                    //get rid of trailing spaces;
-                    if( space_cnt > 0 )
-                    {
-                        b.delete( b.length() - space_cnt, b.length() );
-                        i -= space_cnt;
-                        space_cnt -= space_cnt;
-                    }
-                    
-                    //return if no actual stop symbol and len is infinite
-                    if( -1 == stop && -1 == len ) 
-                    {
-                        istream.reset();
-                        istream.skip( real_i + 1 );
-                        break out;
-                    }
-                    --i;
-                    continue;
-                } else if( c == -1 )
-                {
-                    //TODO: should remove trailing spaces?
-                    if( b.length() > 0 )
-                    {
-                        istream.reset();
-                        istream.skip( real_i + 1 );
-                        return b.toString();
-                    }
-                } else
-                {
-                    space_cnt -= space_cnt;
-                }
-                
-                b.append( (char)c );
-                if( c == stop )
-                {
-                    istream.reset();
-                    istream.skip( real_i + 1 );
-                    break out;
-                }
-            }
-        } 
-        return b.toString();
     }
 
     

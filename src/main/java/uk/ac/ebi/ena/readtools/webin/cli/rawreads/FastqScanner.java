@@ -21,10 +21,10 @@ import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeConsumer;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeConsumer.READ_TYPE;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaSpot;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
@@ -159,7 +159,7 @@ FastqScanner
             String stream_name = rf.getFilename();
             final QualityNormalizer normalizer = getQualityNormalizer( rf );
             
-            AbstractDataProducer<DataSpot> df = new AbstractDataProducer<DataSpot>( is, DataSpot.class )
+            AbstractDataProducer<DataSpot> dp = new AbstractDataProducer<DataSpot>( is )
             {
                 final DataSpotParams params = DataSpot.defaultParams();
                 
@@ -170,9 +170,9 @@ FastqScanner
                 }
             };
             
-            df.setName( stream_name );
+            dp.setName( stream_name );
             
-            df.setConsumer(new DataConsumer<DataSpot, DataConsumable>()
+            dp.setConsumer(new DataConsumer<DataSpot, DataConsumable>()
             {
                 @Override
                 public void cascadeErrors() throws DataConsumerException { }
@@ -217,17 +217,17 @@ FastqScanner
 
 
             log.info( "Processing file " + rf.getFilename() );
-            df.start();
-            df.join();
+            dp.start();
+            dp.join();
             logProcessedReadNumber( count.get() );
-            logFlushMsg( String.format( ", result: %s\n", null == df.getStoredException() ? "OK" : String.valueOf( df.getStoredException() ) ) );
+            logFlushMsg( String.format( ", result: %s\n", null == dp.getStoredException() ? "OK" : String.valueOf( dp.getStoredException() ) ) );
 
-            if( !df.isOk() && !( df.getStoredException() instanceof DataProducerException) && !( df.getStoredException() instanceof InvocationTargetException ) )
-                throw df.getStoredException();
+            if( !dp.isOk() && !( dp.getStoredException() instanceof DataProducerException) && !( dp.getStoredException() instanceof InvocationTargetException ) )
+                throw dp.getStoredException();
             
-            Throwable t = df.isOk() ? df.getFieldFeedCount() > 0 ? null : new DataProducerException( 0, "Empty file" )
-                                    : df.getStoredException();
-            if( df.isOk() && null == t )
+            Throwable t = dp.isOk() ? dp.getReadRecordCount() > 0 ? null : new DataProducerException( 0, "Empty file" )
+                                    : dp.getStoredException();
+            if( dp.isOk() && null == t )
                 return null;
             
             t = null == t ? new DataProducerException( -1, "Unknown failure" ) : t;
@@ -354,15 +354,15 @@ FastqScanner
 
             long index = 1;
 
-            IlluminaIterativeConsumer wrapper = new IlluminaIterativeConsumer();
+            FastqIterativeConsumer wrapper = new FastqIterativeConsumer();
             wrapper.setFiles( new File[] { new File( rf.getFilename() ) } );  
             wrapper.setNormalizers( new QualityNormalizer[] { QualityNormalizer.SANGER } );
             wrapper.setReadType( READ_TYPE.SINGLE );
 
-            Iterator<String> read_name_iterator = new DelegateIterator<IlluminaSpot, String>( wrapper.iterator() ) {
-                @Override public String convert( IlluminaSpot obj )
+            Iterator<String> read_name_iterator = new DelegateIterator<FastqSpot, String>( wrapper.iterator() ) {
+                @Override public String convert( FastqSpot obj )
                 {
-                    return obj.read_name[ IlluminaSpot.FORWARD ];
+                    return obj.read_name[ FastqSpot.FORWARD ];
                 }
             };
             

@@ -36,15 +36,14 @@ import java.util.Map;
 
 public class Fastq2SamTest {
     @Test
-    public void testCorrectUnpaired() throws IOException, DataProducerException, DataConsumerException, NoSuchMethodException {
+    public void testCorrectUnpaired() throws IOException, DataProducerException, DataConsumerException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
-        params.quality_type = FastqQualityFormat.Standard.name();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
         params.data_file = Files.createTempFile(null, ".bam").toString();
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct.txt").getFile());
+                Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile());
 
         new Fastq2Sam().create(params);
 
@@ -52,14 +51,13 @@ public class Fastq2SamTest {
     }
 
     @Test
-    public void testCorrectPairedWithUnpaired() throws IOException, DataProducerException, DataConsumerException, NoSuchMethodException {
+    public void testCorrectPairedWithUnpaired() throws IOException, DataProducerException, DataConsumerException {
         File inpFile1 = new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile());
         File inpFile2 = new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile());
 
         File outFile = Files.createTempFile(null, ".bam").toFile();
 
         Fastq2Sam.Params params = new Fastq2Sam.Params();
-        params.quality_type = FastqQualityFormat.Standard.name();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
         params.data_file = outFile.getAbsolutePath();

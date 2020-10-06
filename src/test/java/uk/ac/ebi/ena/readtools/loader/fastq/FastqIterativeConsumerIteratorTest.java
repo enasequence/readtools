@@ -20,12 +20,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaIterativeConsumer.READ_TYPE;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
 
 
 
 public class
-IlluminaIterativeConsumerIteratorTest
+FastqIterativeConsumerIteratorTest
 {
     @Before
     public void
@@ -47,7 +47,7 @@ IlluminaIterativeConsumerIteratorTest
     public void 
     iteratorPairedTest1()
     {
-        IlluminaIterativeConsumer wrapper = new IlluminaIterativeConsumer();
+        FastqIterativeConsumer wrapper = new FastqIterativeConsumer();
         
         wrapper.setFiles( new File[] { new File( "resources/T966_R1.fastq.gz" ),  
                                        new File( "resources/T966_R2.fastq.gz" ) } );
@@ -68,9 +68,9 @@ IlluminaIterativeConsumerIteratorTest
         picked_reads.put( 3829, "CATACACACTATAACAATAATGTCTATACTCACTAATTTTAGAATAAAACTTTAAACATTTATCACATACAGCATATGGATTCCCATCTCTATATACTATGCCAGAAAGTTACCACAGTTATGCACAGAGCTGCAAACAACTATACATGATATAATATTAGAATGTGTGTACTGCAAGC" );
 
         
-        for( Iterator<IlluminaSpot> i = wrapper.iterator(); i.hasNext(); )
+        for(Iterator<FastqSpot> i = wrapper.iterator(); i.hasNext(); )
         {
-            IlluminaSpot is = i.next();
+            FastqSpot is = i.next();
             base_count += is.bases.length();
             spot_count += 1;
             if( picked_reads.containsKey( spot_count ) )
@@ -89,7 +89,7 @@ IlluminaIterativeConsumerIteratorTest
     public void 
     iteratorPairedTest2()
     {
-        IlluminaIterativeConsumer wrapper = new IlluminaIterativeConsumer();
+        FastqIterativeConsumer wrapper = new FastqIterativeConsumer();
         
         wrapper.setFiles( new File[] { new File( "resources/fastq_spots_correct2_1.txt" ),  
                                        new File( "resources/fastq_spots_correct2_2.txt" ) } );
@@ -100,9 +100,9 @@ IlluminaIterativeConsumerIteratorTest
         int spot_count = 0;
         int base_count = 0;
         
-        for( Iterator<IlluminaSpot> i = wrapper.iterator(); i.hasNext(); )
+        for(Iterator<FastqSpot> i = wrapper.iterator(); i.hasNext(); )
         {
-            IlluminaSpot is = i.next();
+            FastqSpot is = i.next();
             base_count += is.bases.length();
             spot_count += 1;
         }

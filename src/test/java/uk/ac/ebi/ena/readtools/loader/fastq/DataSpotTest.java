@@ -38,12 +38,18 @@ DataSpotTest {
 	public void testInvalidBaseCharactersException() throws Exception {
 		String basesInput = "AGCTUagctuAGCTUagctu";
 
+		String fullInput = String.format("%s\n%s\n%s\n%s",
+				"@RN-001",
+				basesInput,
+				"+",
+				"FFFFFFFFFFFFFFFFFFFF");
+
 		InvalidBaseCharacterException ex = null;
 
 		//DataSpot keeps reading until it sees '+' symbol on a new line which is in compliance with Fastq standard.
-		try(InputStream is = new ByteArrayInputStream((basesInput + "\n+").getBytes(StandardCharsets.UTF_8))) {
+		try(InputStream is = new ByteArrayInputStream((fullInput).getBytes(StandardCharsets.UTF_8))) {
 			DataSpot ds = new DataSpot(100);
-			ds.feedBases(is);
+			ds.read(is);
 		} catch (InvalidBaseCharacterException e) {
 			ex = e;
 		} catch (Exception e) {

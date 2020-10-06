@@ -15,6 +15,8 @@ import htsjdk.samtools.fastq.BasicFastqWriter;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
+import htsjdk.samtools.util.FastqQualityFormat;
+import htsjdk.samtools.util.QualityEncodingDetector;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,5 +57,34 @@ public class Utils {
 
         reader.close();
         writer.close();
+    }
+
+    /**
+     * Detects Fastq quality format by looking at the passed files. Second argument is optional but can be useful
+     * when dealing with paired files.
+     *
+     * @param fastqFile1 - Path to fastq file. Cannot be null.
+     * @param fastqFile2 - Path to fastq file. Optional.
+     * @return
+     */
+    public static FastqQualityFormat detectFastqQualityFormat(String fastqFile1, String fastqFile2) {
+        FastqReader reader1 = new FastqReader(new File(fastqFile1), true);
+        FastqReader reader2 = fastqFile2 == null ? null : new FastqReader(new File(fastqFile2), true);
+
+        final QualityEncodingDetector detector = new QualityEncodingDetector();
+
+        if (reader2 == null) {
+            detector.add(QualityEncodingDetector.DEFAULT_MAX_RECORDS_TO_ITERATE, reader1);
+        } else {
+            detector.add(QualityEncodingDetector.DEFAULT_MAX_RECORDS_TO_ITERATE, reader1, reader2);
+            reader2.close();
+        }
+
+        reader1.close();
+
+        final FastqQualityFormat qualityFormat =  detector.generateBestGuess(
+                QualityEncodingDetector.FileContext.FASTQ, null);
+
+        return qualityFormat;
     }
 }

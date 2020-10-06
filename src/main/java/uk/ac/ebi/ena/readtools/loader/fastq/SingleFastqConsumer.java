@@ -14,9 +14,9 @@ import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 
 public class
-SingleFastqConsumer implements DataConsumer<DataSpot, IlluminaSpot>
+SingleFastqConsumer implements DataConsumer<DataSpot, FastqSpot>
 {
-    DataConsumer<IlluminaSpot, ?> dataConsumer;
+    DataConsumer<FastqSpot, ?> dataConsumer;
     boolean is_ok = true;
     
     @Override
@@ -35,15 +35,15 @@ SingleFastqConsumer implements DataConsumer<DataSpot, IlluminaSpot>
     consume(DataSpot spot ) throws DataConsumerException
     {
         
-        IlluminaSpot ispot = IlluminaSpot.initSingle();
+        FastqSpot ispot = FastqSpot.initSingle();
         int slash_idx = spot.bname.lastIndexOf( '/' );
         ispot.name = slash_idx == -1 ? spot.bname 
                                      : spot.bname.substring( 0, slash_idx );
         ispot.bases = spot.bases;
         ispot.quals = spot.quals;
-        ispot.read_start[ IlluminaSpot.FORWARD ] = 0;
-        ispot.read_length[ IlluminaSpot.FORWARD ] = spot.bases.length();
-        ispot.read_name[ IlluminaSpot.FORWARD ] = spot.bname;
+        ispot.read_start[ FastqSpot.FORWARD ] = 0;
+        ispot.read_length[ FastqSpot.FORWARD ] = spot.bases.length();
+        ispot.read_name[ FastqSpot.FORWARD ] = spot.bname;
         if( null != dataConsumer)
             dataConsumer.consume( ispot );
         else
@@ -53,7 +53,7 @@ SingleFastqConsumer implements DataConsumer<DataSpot, IlluminaSpot>
 
     @Override
     public void
-    setConsumer(DataConsumer<IlluminaSpot, ?> dataConsumer)
+    setConsumer(DataConsumer<FastqSpot, ?> dataConsumer)
     {
         this.dataConsumer = dataConsumer;
     }

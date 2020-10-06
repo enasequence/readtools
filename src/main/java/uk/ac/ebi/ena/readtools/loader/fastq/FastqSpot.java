@@ -14,11 +14,10 @@ package uk.ac.ebi.ena.readtools.loader.fastq;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
 
 public class
-IlluminaSpot implements DataConsumable
+FastqSpot implements DataConsumable
 {
     //Must be private. DO NOT USE!
-    private 
-    IlluminaSpot()
+    private FastqSpot()
     {
         ;
     }
@@ -37,10 +36,10 @@ IlluminaSpot implements DataConsumable
     public String name  = "";
     
     
-    public static IlluminaSpot 
+    public static FastqSpot
     initPaired()
     {
-        IlluminaSpot result = new IlluminaSpot();
+        FastqSpot result = new FastqSpot();
         result.read_start   = new int[] { -1, -1 };
         result.read_length  = new int[] { -1, -1 };
         result.read_name    = new String[ 2 ]; 
@@ -48,10 +47,10 @@ IlluminaSpot implements DataConsumable
     }
     
     
-    public static IlluminaSpot 
+    public static FastqSpot
     initSingle()
     {
-        IlluminaSpot result = new IlluminaSpot();
+        FastqSpot result = new FastqSpot();
         result.read_start   = new int[] { -1 };
         result.read_length  = new int[] { -1 };
         result.read_name    = new String[ 1 ];

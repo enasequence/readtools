@@ -20,7 +20,7 @@ import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 
 
 public class
-PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, IlluminaSpot>
+PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
 {
     // Provided readname structure is @{readkey}{separator:1(.|/|:|_)}{index:1(0:1:2)}
         
@@ -90,16 +90,16 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, IlluminaSpot>
     
     
     @Override
-    public IlluminaSpot 
+    public FastqSpot
     assemble( final Object key, List<DataSpot> list ) throws DataConsumerException
     {
-        IlluminaSpot i_spot = IlluminaSpot.initPaired();
+        FastqSpot i_spot = FastqSpot.initPaired();
         
-        i_spot.read_start[ IlluminaSpot.FORWARD ] = 0;
-        i_spot.read_start[ IlluminaSpot.REVERSE ] = 0;
+        i_spot.read_start[ FastqSpot.FORWARD ] = 0;
+        i_spot.read_start[ FastqSpot.REVERSE ] = 0;
 
-        i_spot.read_length[ IlluminaSpot.FORWARD ] = 0;
-        i_spot.read_length[ IlluminaSpot.REVERSE ] = 0;
+        i_spot.read_length[ FastqSpot.FORWARD ] = 0;
+        i_spot.read_length[ FastqSpot.REVERSE ] = 0;
         
         StringBuilder bases = new StringBuilder();
         StringBuilder quals = new StringBuilder();
@@ -119,7 +119,7 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, IlluminaSpot>
 
         i_spot.bases = bases.toString();
         i_spot.quals = quals.toString();
-        i_spot.read_start[ IlluminaSpot.REVERSE ] = i_spot.read_length[ IlluminaSpot.FORWARD ];
+        i_spot.read_start[ FastqSpot.REVERSE ] = i_spot.read_length[ FastqSpot.FORWARD ];
         
         return i_spot;
     }
@@ -135,7 +135,7 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, IlluminaSpot>
 
 
     @Override
-    public IlluminaSpot 
+    public FastqSpot
     handleErrors( final Object key, List<DataSpot> list ) throws DataConsumerException
     {   
         return assemble( key, list );

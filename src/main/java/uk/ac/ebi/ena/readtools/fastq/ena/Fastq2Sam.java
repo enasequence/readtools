@@ -14,7 +14,9 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
+import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.util.FastqQualityFormat;
+import htsjdk.samtools.util.QualityEncodingDetector;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.IlluminaQualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.SolexaQualityNormalizer;
@@ -27,7 +29,8 @@ import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqConsumer;
-import uk.ac.ebi.ena.readtools.loader.fastq.IlluminaSpot;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
+import uk.ac.ebi.ena.readtools.utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,14 +64,14 @@ public class Fastq2Sam {
         }
     }
     
-    public void create( Params p ) throws NoSuchMethodException, IOException {
-        DataConsumer<DataSpot, IlluminaSpot> spotToIlluminaSpotConsumer = null;
+    public void create( Params p ) throws IOException {
+        DataConsumer<DataSpot, FastqSpot> dataSpotToFastqSpotConsumer = null;
 
         if( null == p.files || p.files.size() < 1 || p.files.size() > 2) {
             throw new IllegalArgumentException("Invalid number of input files : " + p.files.size());
         } else if( 1 == p.files.size() ) {
             //single
-            spotToIlluminaSpotConsumer = (DataConsumer<DataSpot, IlluminaSpot>)new SingleFastqConsumer();
+            dataSpotToFastqSpotConsumer = (DataConsumer<DataSpot, FastqSpot>)new SingleFastqConsumer();
         } else if( 2 == p.files.size() ) {
             //same file names;
             if( p.files.get( 0 ).equals( p.files.get( 1 ) ) ) {
@@ -76,7 +79,7 @@ public class Fastq2Sam {
                         "Paired files cannot be same. File1 : " + p.files.get(0) + ", File2 : " + p.files.get(1));
             }
 
-            spotToIlluminaSpotConsumer = (DataConsumer<DataSpot, IlluminaSpot>) new PairedFastqConsumer(
+            dataSpotToFastqSpotConsumer = (DataConsumer<DataSpot, FastqSpot>) new PairedFastqConsumer(
                     new File( p.tmp_root ), p.spill_page_size );
         }
         
@@ -86,10 +89,13 @@ public class Fastq2Sam {
                 System.out.println( " " + f_name );
         }
 
-        Fastq2BamConsumer illuminaSpotToBamConsumer = new Fastq2BamConsumer(
-                determineQualityNormalizer(p.quality_type), p.sample_name, p.data_file);
+        FastqQualityFormat qualityFormat = Utils.detectFastqQualityFormat(p.files.get(0),
+                p.files.size() == 2 ? p.files.get(0) : null);
+
+        Fastq2BamConsumer fastqSpotToBamConsumer = new Fastq2BamConsumer(
+                determineQualityNormalizer(qualityFormat), p.sample_name, p.data_file, p.tmp_root);
         
-        spotToIlluminaSpotConsumer.setConsumer( illuminaSpotToBamConsumer );
+        dataSpotToFastqSpotConsumer.setConsumer( fastqSpotToBamConsumer );
         
         ArrayList<AbstractDataProducer<?>> producers = new ArrayList<AbstractDataProducer<?>>();
 
@@ -97,8 +103,8 @@ public class Fastq2Sam {
         for( String f_name: p.files ) {
             final String default_attr = Integer.toString( attr ++ );
 
-            AbstractDataProducer<?> producer = new AbstractDataProducer<DataSpot>(
-                    FileCompression.valueOf( p.compression ).open( f_name, p.use_tar ), DataSpot.class ) {
+            AbstractDataProducer<DataSpot> producer = new AbstractDataProducer<DataSpot>(
+                    FileCompression.valueOf( p.compression ).open( f_name, p.use_tar )) {
                 final DataSpotParams params = DataSpot.defaultParams();
                 
                 @Override
@@ -107,8 +113,9 @@ public class Fastq2Sam {
                 {
                     return new DataSpot( null, default_attr, params );
                 }
-            }.setConsumer( spotToIlluminaSpotConsumer );
-            
+            };
+
+            producer.setConsumer( dataSpotToFastqSpotConsumer );
             producer.setName( f_name );
             producers.add( producer );
             producer.start();
@@ -135,16 +142,13 @@ public class Fastq2Sam {
             }
         }
 
-        spotToIlluminaSpotConsumer.cascadeErrors();
-        illuminaSpotToBamConsumer.unwind();
+        dataSpotToFastqSpotConsumer.cascadeErrors();
+        fastqSpotToBamConsumer.unwind();
         System.out.println( "DONE" );
     }
 
-    private QualityNormalizer determineQualityNormalizer(String qualityType) {
-        if( qualityType == null || qualityType.isEmpty())
-            throw new IllegalArgumentException("Quality type must be provided.");
-
-        switch (FastqQualityFormat.valueOf(qualityType))  {
+    private QualityNormalizer determineQualityNormalizer(FastqQualityFormat qualityType) {
+        switch (qualityType)  {
             case Standard:
                 return new StandardQualityNormalizer();
             case Solexa:
@@ -175,9 +179,6 @@ public class Fastq2Sam {
         @Parameter( names = { "-o", "--output-data-file" }, description = "Output file" )
         public String data_file = "data.tmp";
 
-        @Parameter( names = { "-q", "--quality-type" }, description = "types: Standard, Solexa, Illumina" )
-        public String quality_type = null;
-
         @Parameter( names = { "-v", "--verbose" }, description = "Verbose" )
         public boolean verbose = false;
 
@@ -194,11 +195,10 @@ public class Fastq2Sam {
         public String sample_name = null;
 
         public String toString() {
-            return String.format( "CommonParams:\nfiles: %s\ncompression: %s\ndata_file: %s\nquality_type: %s",
+            return String.format( "CommonParams:\nfiles: %s\ncompression: %s\ndata_file: %s",
                     files,
                     compression,
-                    data_file,
-                    quality_type);
+                    data_file);
         }
     }
 }

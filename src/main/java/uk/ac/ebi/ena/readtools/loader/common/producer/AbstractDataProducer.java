@@ -13,134 +13,75 @@ package uk.ac.ebi.ena.readtools.loader.common.producer;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 
 
 
 public abstract class
-AbstractDataProducer<T extends DataConsumable> extends Thread implements DataProducer<T>
+AbstractDataProducer<T extends DataProducible> extends Thread implements DataProducer<T>
 {
-    protected List<Method> producibles = new ArrayList<Method>();
-    protected Method       checker;
     protected InputStream  istream;
     protected boolean      is_ok = true;
     protected DataConsumer<T, ?> dataConsumer;
     protected Throwable    stored_exception;
-    private long           field_feed_count;
+    private long readRecordCount;
     static final int       YIELD_CYCLES = 362;//16384;
     
     
-    protected AbstractDataProducer(InputStream istream,
-                                   Class<T>    sample ) throws DataProducerException, SecurityException, NoSuchMethodException
+    protected AbstractDataProducer(InputStream istream)
     {
         this.istream = new BufferedInputStream( istream, 1024 * 1024 );
-        Class<?> c = sample;
-        while ( c != Object.class )
-        {
-            for( Field f : c.getDeclaredFields() )
-            {
-               ProducibleData a = f.getAnnotation( ProducibleData.class );
-               if( null != a )
-                   producibles.add( sample.getDeclaredMethod( a.method(), InputStream.class ) );
-            }
-            
-            if( null == checker )
-                for( Method m : c.getDeclaredMethods() )
-                {
-                    ProducibleDataChecker a = m.getAnnotation( ProducibleDataChecker.class );
-                    if( null != a )
-                    {
-                        checker = m;
-                        break;
-                    }
-                }
-            c = c.getSuperclass();
-        }
-        
-        
-        if( producibles.size() == 0 )
-            throw new DataProducerException( -1, "Sample structure does not contains public members annotated with @FeedableData" );
-        
     }
     
     
     //Re-implement to instantiate feedable type of yours 
     protected abstract T
     newProducible();
-    
+
+    /**
+     * Get the total number of records that were read.
+     *
+     * @return
+     */
     public long
-    getFieldFeedCount()
+    getReadRecordCount()
     {
-        return field_feed_count;
+        return readRecordCount;
     }
-    
+
     //Re-implement if you need special type of feeding
     public T
     produce() throws DataProducerException
     {
         T object = newProducible();
-        boolean record_started = false;
+
         try
         {
             try
-            {   
-                for( Method m : producibles)
-                {
-                    m.invoke( object, new Object[] { istream } );
-                    field_feed_count++;
-                    record_started = true;
-                }
-            } catch( InvocationTargetException ite )
             {
-                Throwable cause = ite.getCause();
-                if( cause instanceof EOFException )
-                {
-                	if( record_started )
-                    {
-                        if( null != checker )
-                        {
-                            checker.invoke( object, (Object [])null );
-                        } else
-                        {
-                            throw new DataProducerException( field_feed_count, "EOF while reading fields" );
-                        }
-                    }
-                	throw new DataProducerEOFException( field_feed_count );
-                } else if( cause instanceof DataProducerException)
-                {
-                	throw (DataProducerException) cause;
-                	
-                } else
-                {
-                	throw ite;
-                }
-            } 
-            
-            if( null != checker )
-                checker.invoke( object, (Object [])null );
-            
-            return object;        
+                object.read(istream);
+                ++readRecordCount;
+            } catch( EOFException e ){
+                throw new DataProducerEOFException(readRecordCount);
+            } catch( DataProducerException e ){
+                throw e;
+            } catch( Throwable cause ) {
+                throw new DataProducerException(cause);
+            }
 
-        } catch( IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
-        {
+            return object;
+
+        } catch( IllegalArgumentException e) {
             throw new DataProducerPanicException( String.valueOf( object ), e );
         }
     }
  
     
-    public AbstractDataProducer<T>
-    setConsumer(DataConsumer<T, ?> consumer)
+    public void setConsumer(DataConsumer<T, ?> consumer)
     {
         this.dataConsumer = consumer;
-        return this;
     }
     
     //TODO: scheduler should be fair and based on different principle
