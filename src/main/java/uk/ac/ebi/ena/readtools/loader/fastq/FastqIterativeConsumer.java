@@ -39,11 +39,11 @@ FastqIterativeConsumer implements Iterable<FastqSpot>
     {
         try
         {
-            return (Iterator<FastqSpot>) new FastqIterativeConsumerIterator( tmp_folder,
-                                                                        spill_page_size, 
-                                                                        read_type, 
-                                                                        files,
-                                                                        normalizers );
+            return new FastqIterativeConsumerIterator( tmp_folder,
+                                                        spill_page_size,
+                                                        read_type,
+                                                        files,
+                                                        normalizers );
         } catch( Throwable t )
         {
             t.printStackTrace();

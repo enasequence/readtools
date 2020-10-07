@@ -48,21 +48,18 @@ LoaderTest
     
 
     boolean 
-    read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, DataProducerException, NoSuchMethodException, IOException, InterruptedException
+    read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, DataProducerException, InterruptedException
     {
         AbstractDataProducer<DataSpot> df = new AbstractDataProducer<DataSpot>( is )
         {
-            final AtomicLong line_no = new AtomicLong( 1 );
-            final AtomicReference<DataSpot.ReadStyle> read_style = new AtomicReference<DataSpot.ReadStyle>();
-            DataSpotParams params = DataSpot.defaultParams();
             @Override
             protected DataSpot newProducible()
             {
-                return new DataSpot( normalizer, "", params );
+                return new DataSpot( normalizer, "" );
             }
         };
         df.setName( name );
-        df.setConsumer( new PrintDataConsumer<DataSpot, DataConsumable>() );
+        df.setConsumer( new PrintDataConsumer<>() );
         df.start();
         df.join();
         return df.isOk();

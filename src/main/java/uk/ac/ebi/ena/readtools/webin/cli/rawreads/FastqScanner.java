@@ -20,7 +20,6 @@ import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
@@ -161,12 +160,10 @@ FastqScanner
             
             AbstractDataProducer<DataSpot> dp = new AbstractDataProducer<DataSpot>( is )
             {
-                final DataSpotParams params = DataSpot.defaultParams();
-                
                 @Override protected DataSpot
                 newProducible()
                 {
-                    return new DataSpot( normalizer, "", params );
+                    return new DataSpot( normalizer, "" );
                 }
             };
             
@@ -180,24 +177,24 @@ FastqScanner
                 @Override public void
                 consume(DataSpot spot )
                 {
-                	String name  = null;
-                	String label = null;
-                			
+                	String readKey;
+                	String readIndex;
+
                 	try
                 	{
-                		name = PairedFastqConsumer.getReadnamePart( spot.bname, PairedFastqConsumer.KEY );
-                		label = PairedFastqConsumer.getReadnamePart( spot.bname, PairedFastqConsumer.INDEX );
+                		readKey = PairedFastqConsumer.getReadKey( spot.bname );
+                		readIndex = PairedFastqConsumer.getReadIndex( spot.bname );
                 	} catch ( DataConsumerException dee )
                 	{
-                    	name  = spot.bname;
-                    	label = stream_name;
+                    	readKey  = spot.bname;
+                    	readIndex = stream_name;
                 	}
                 	
                     if( labels.size() < MAX_LABEL_SET_SIZE )
-                        labels.add( label );
+                        labels.add( readIndex );
                     
                     count.incrementAndGet();
-                    pairing.add( name );
+                    pairing.add( readKey );
                     duplications.add( spot.bname );
                     
                     if( 0 == count.get() % print_freq )
