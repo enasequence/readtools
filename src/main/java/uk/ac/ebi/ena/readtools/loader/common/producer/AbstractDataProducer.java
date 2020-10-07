@@ -34,9 +34,7 @@ AbstractDataProducer<T extends DataProducible> extends Thread implements DataPro
     {
         this.istream = new BufferedInputStream( istream, 1024 * 1024 );
     }
-    
-    
-    //Re-implement to instantiate feedable type of yours 
+
     protected abstract T
     newProducible();
 

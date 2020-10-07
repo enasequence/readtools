@@ -14,9 +14,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
-import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.util.FastqQualityFormat;
-import htsjdk.samtools.util.QualityEncodingDetector;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.IlluminaQualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.SolexaQualityNormalizer;
@@ -26,7 +24,6 @@ import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
@@ -71,7 +68,7 @@ public class Fastq2Sam {
             throw new IllegalArgumentException("Invalid number of input files : " + p.files.size());
         } else if( 1 == p.files.size() ) {
             //single
-            dataSpotToFastqSpotConsumer = (DataConsumer<DataSpot, FastqSpot>)new SingleFastqConsumer();
+            dataSpotToFastqSpotConsumer = new SingleFastqConsumer();
         } else if( 2 == p.files.size() ) {
             //same file names;
             if( p.files.get( 0 ).equals( p.files.get( 1 ) ) ) {
@@ -79,7 +76,7 @@ public class Fastq2Sam {
                         "Paired files cannot be same. File1 : " + p.files.get(0) + ", File2 : " + p.files.get(1));
             }
 
-            dataSpotToFastqSpotConsumer = (DataConsumer<DataSpot, FastqSpot>) new PairedFastqConsumer(
+            dataSpotToFastqSpotConsumer =  new PairedFastqConsumer(
                     new File( p.tmp_root ), p.spill_page_size );
         }
         
@@ -97,7 +94,7 @@ public class Fastq2Sam {
         
         dataSpotToFastqSpotConsumer.setConsumer( fastqSpotToBamConsumer );
         
-        ArrayList<AbstractDataProducer<?>> producers = new ArrayList<AbstractDataProducer<?>>();
+        ArrayList<AbstractDataProducer<?>> producers = new ArrayList<>();
 
         int attr = 1;
         for( String f_name: p.files ) {
@@ -105,13 +102,12 @@ public class Fastq2Sam {
 
             AbstractDataProducer<DataSpot> producer = new AbstractDataProducer<DataSpot>(
                     FileCompression.valueOf( p.compression ).open( f_name, p.use_tar )) {
-                final DataSpotParams params = DataSpot.defaultParams();
-                
+
                 @Override
                 protected DataSpot
                 newProducible()
                 {
-                    return new DataSpot( null, default_attr, params );
+                    return new DataSpot( null, default_attr );
                 }
             };
 
