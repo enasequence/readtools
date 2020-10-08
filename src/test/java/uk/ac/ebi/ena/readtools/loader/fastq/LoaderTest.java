@@ -10,24 +10,20 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.IlluminaQualityNormalizer;
+import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.PrintDataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
+import uk.ac.ebi.ena.readtools.loader.common.producer.DataSpotProducer;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 
 public class 
 LoaderTest
@@ -50,14 +46,7 @@ LoaderTest
     boolean 
     read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, DataProducerException, InterruptedException
     {
-        AbstractDataProducer<DataSpot> df = new AbstractDataProducer<DataSpot>( is )
-        {
-            @Override
-            protected DataSpot newProducible()
-            {
-                return new DataSpot( normalizer, "" );
-            }
-        };
+        DataSpotProducer df = new DataSpotProducer( is, normalizer, "" );
         df.setName( name );
         df.setConsumer( new PrintDataConsumer<>() );
         df.start();
@@ -99,14 +88,15 @@ LoaderTest
     @Test public void
     testCorrect() throws Exception
     {
+        IlluminaQualityNormalizer normalizer = new IlluminaQualityNormalizer();
         
-        if( !read( "mp3_schw3.fq", QualityNormalizer.ILLUMINA_1_3 ) )
+        if( !read( "mp3_schw3.fq", normalizer) )
             throw new Exception( "fail!" );
         
-        if( !read( "fastq_spots_correct.txt", QualityNormalizer.ILLUMINA_1_3 ) )
+        if( !read( "fastq_spots_correct.txt", normalizer ) )
             throw new Exception( "fail!" );
         
-        if( !read( "fastq_casava1_8_correct.txt", QualityNormalizer.SANGER ) )
+        if( !read( "fastq_casava1_8_correct.txt", normalizer ) )
             throw new Exception( "fail!" );
 
     }
@@ -115,26 +105,28 @@ LoaderTest
     @Test public void
     testFailed() throws Exception
     {
+        StandardQualityNormalizer stdNormalizer = new StandardQualityNormalizer();
+        IlluminaQualityNormalizer illNormalizer = new IlluminaQualityNormalizer();
 
-        if( read( "fastq_spot_incorrect.txt", QualityNormalizer.ILLUMINA_1_3 ) )
+        if( read( "fastq_spot_incorrect.txt", illNormalizer ) )
             throw new Exception( "fail!" );
 
-        if( read( "fastq_spot_incorrect2.txt", QualityNormalizer.ILLUMINA_1_3 ) )
+        if( read( "fastq_spot_incorrect2.txt", illNormalizer ) )
             throw new Exception( "fail!" );
 
-        if( read( "fastq_spot_incorrect3.txt", QualityNormalizer.ILLUMINA_1_3 ) )
+        if( read( "fastq_spot_incorrect3.txt", illNormalizer ) )
             throw new Exception( "fail!" );
         
-        if( read( "fastq_spot_incorrect4.txt", QualityNormalizer.ILLUMINA_1_3 ) )
+        if( read( "fastq_spot_incorrect4.txt", illNormalizer ) )
             throw new Exception( "fail!" );
 
-        if( read( "fastq_spot_incorrect5.txt", QualityNormalizer.ILLUMINA_1_3 ) )
+        if( read( "fastq_spot_incorrect5.txt", illNormalizer ) )
             throw new Exception( "fail!" );
 
-        if( read( "fastq_spot_incorrect6.txt", QualityNormalizer.SANGER ) )
+        if( read( "fastq_spot_incorrect6.txt", stdNormalizer ) )
             throw new Exception( "fail!" );
 
-        if( read( "fastq_casava1_8_incorrect.txt", QualityNormalizer.SANGER ) )
+        if( read( "fastq_casava1_8_incorrect.txt", stdNormalizer ) )
             throw new Exception( "fail!" );
 
     }

@@ -13,6 +13,9 @@ package uk.ac.ebi.ena.readtools.loader.fastq;
 
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
 
+/**
+ * Holds unpaired and paired read information.
+ */
 public class
 FastqSpot implements DataConsumable
 {

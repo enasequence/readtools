@@ -87,7 +87,7 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
             readIndexStr = getReadIndex( spot.bname );
         } catch ( DataConsumerException de )
         {
-            readIndexStr = spot.getReadIndex();
+            readIndexStr = spot.readIndex;
         }
 
         int readIndex = Integer.parseInt( readIndexStr ) - 1;

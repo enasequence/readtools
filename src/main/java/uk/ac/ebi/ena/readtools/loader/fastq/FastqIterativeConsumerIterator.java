@@ -10,6 +10,16 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
+import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.common.producer.DataSpotProducer;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,16 +29,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
-import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot.DataSpotParams;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
 
 public class
 FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<FastqSpot, DataConsumable>
@@ -76,18 +76,8 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
         {   
             final String default_attr = Integer.toString( attr ++ );
             final int nindex = normalizers.length == files.length ? attr - 2 : 0;
-            
-            AbstractDataProducer<DataSpot> producer =
-            new AbstractDataProducer<DataSpot>( FileCompression.open( file ))
-            {
-                @Override
-                protected DataSpot
-                newProducible()
-                {
-                    return new DataSpot( normalizers[ nindex ], default_attr );
-                }
-            };
 
+            DataSpotProducer producer = new DataSpotProducer( FileCompression.open( file ), normalizers[ nindex ], default_attr );
             producer.setConsumer( eater );
             producer.setName( file.getPath() );
             feeders.add( producer );

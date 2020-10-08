@@ -13,17 +13,19 @@ package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.common.producer.DataSpotProducer;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
-import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
+import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
+import uk.ac.ebi.ena.readtools.utils.Utils;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
@@ -107,42 +109,10 @@ FastqScanner
             throw new RawReadsException( ex, ex.getMessage() );
         }
     }
-    
-    
-    private QualityNormalizer
-    getQualityNormalizer( RawReadsFile rf )
-    {
-        QualityNormalizer qn = QualityNormalizer.NONE;
-        
-        if( null != rf.getQualityScoringSystem() )
-        {
-            switch( rf.getQualityScoringSystem() )
-            {
-            default:
-                throw new RawReadsException( "Scoring system: " + rf.getQualityScoringSystem() );
-   
-            case phred:
-                switch( rf.getAsciiOffset() )
-                {
-                default:
-                    throw new RawReadsException( "ASCII offset: " + rf.getAsciiOffset() );
-                    
-                case FROM33:
-                    qn = QualityNormalizer.X;
-                    break;
-                    
-                case FROM64:
-                    qn = QualityNormalizer.X_2;
-                    break;
-                }
-                break;
-                
-            case log_odds:
-                qn = QualityNormalizer.SOLEXA;
-                break;
-            }
-        }
-        return qn;
+
+
+    private QualityNormalizer getQualityNormalizer(RawReadsFile rf ) {
+        return Utils.getQualityNormalizer(Utils.detectFastqQualityFormat(rf.getFilename(), null));
     }
     
     
@@ -158,15 +128,7 @@ FastqScanner
             String stream_name = rf.getFilename();
             final QualityNormalizer normalizer = getQualityNormalizer( rf );
             
-            AbstractDataProducer<DataSpot> dp = new AbstractDataProducer<DataSpot>( is )
-            {
-                @Override protected DataSpot
-                newProducible()
-                {
-                    return new DataSpot( normalizer, "" );
-                }
-            };
-            
+            DataSpotProducer dp = new DataSpotProducer( is, normalizer, "" );
             dp.setName( stream_name );
             
             dp.setConsumer(new DataConsumer<DataSpot, DataConsumable>()
@@ -353,7 +315,7 @@ FastqScanner
 
             FastqIterativeConsumer wrapper = new FastqIterativeConsumer();
             wrapper.setFiles( new File[] { new File( rf.getFilename() ) } );  
-            wrapper.setNormalizers( new QualityNormalizer[] { QualityNormalizer.SANGER } );
+            wrapper.setNormalizers( new QualityNormalizer[] { new StandardQualityNormalizer() } );
             wrapper.setReadType( READ_TYPE.SINGLE );
 
             Iterator<String> read_name_iterator = new DelegateIterator<FastqSpot, String>( wrapper.iterator() ) {

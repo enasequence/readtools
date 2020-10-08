@@ -16,13 +16,11 @@ import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import htsjdk.samtools.util.FastqQualityFormat;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.IlluminaQualityNormalizer;
-import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.SolexaQualityNormalizer;
-import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.common.producer.DataSpotProducer;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqConsumer;
@@ -89,8 +87,10 @@ public class Fastq2Sam {
         FastqQualityFormat qualityFormat = Utils.detectFastqQualityFormat(p.files.get(0),
                 p.files.size() == 2 ? p.files.get(1) : null);
 
+        QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);
+
         Fastq2BamConsumer fastqSpotToBamConsumer = new Fastq2BamConsumer(
-                determineQualityNormalizer(qualityFormat), p.sample_name, p.data_file, p.tmp_root);
+                normalizer, p.sample_name, p.data_file, p.tmp_root);
         
         dataSpotToFastqSpotConsumer.setConsumer( fastqSpotToBamConsumer );
         
@@ -100,17 +100,8 @@ public class Fastq2Sam {
         for( String f_name: p.files ) {
             final String default_attr = Integer.toString( attr ++ );
 
-            AbstractDataProducer<DataSpot> producer = new AbstractDataProducer<DataSpot>(
-                    FileCompression.valueOf( p.compression ).open( f_name, p.use_tar )) {
-
-                @Override
-                protected DataSpot
-                newProducible()
-                {
-                    return new DataSpot( null, default_attr );
-                }
-            };
-
+            DataSpotProducer producer = new DataSpotProducer(
+                    FileCompression.valueOf( p.compression ).open( f_name, p.use_tar ), normalizer, default_attr);
             producer.setConsumer( dataSpotToFastqSpotConsumer );
             producer.setName( f_name );
             producers.add( producer );
@@ -141,19 +132,6 @@ public class Fastq2Sam {
         dataSpotToFastqSpotConsumer.cascadeErrors();
         fastqSpotToBamConsumer.unwind();
         System.out.println( "DONE" );
-    }
-
-    private QualityNormalizer determineQualityNormalizer(FastqQualityFormat qualityType) {
-        switch (qualityType)  {
-            case Standard:
-                return new StandardQualityNormalizer();
-            case Solexa:
-                return new SolexaQualityNormalizer();
-            case Illumina:
-                return new IlluminaQualityNormalizer();
-            default:
-                throw new IllegalArgumentException("Unexpected fastq quality format provided : " + qualityType);
-        }
     }
 
     @Parameters(commandDescription = "FastQ to SAM conversion.")
