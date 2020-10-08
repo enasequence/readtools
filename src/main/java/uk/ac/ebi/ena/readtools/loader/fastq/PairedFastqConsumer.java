@@ -33,25 +33,34 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
     {
         super( tmp_root, spill_page_size );
     }
-    
-    
-    public static String 
-    getReadnamePart( String readname, int group ) throws DataConsumerException
+
+    public static String
+    getReadKey(String readname ) throws DataConsumerException
+    {
+        return getReadPart(readname, KEY);
+    }
+
+    public static String
+    getReadIndex(String readname ) throws DataConsumerException
+    {
+        return getReadPart(readname, INDEX);
+    }
+
+    private static String
+    getReadPart(String readname, int group ) throws DataConsumerException
     {
         Matcher m = split_regexp.matcher( readname );
         if( m.find() )
             return m.group( group );
-        
+
         throw new DataConsumerException( String.format( "Readname [%s] does not match regexp", readname ) );
-        
     }
-    
-    
-    @Override public Object 
+
+    @Override public Object
     getKey( DataSpot object )
     {
         try
-        {   return getReadnamePart( object.bname, KEY );
+        {   return getReadKey( object.bname );
         } catch (DataConsumerException de )
         {
             return object.bname;
@@ -70,24 +79,24 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
     
     
     public void
-    append( List<DataSpot> list, DataSpot object ) throws DataConsumerException
+    append( List<DataSpot> list, DataSpot spot ) throws DataConsumerException
     {
-        String index_part;
+        String readIndexStr;
         try
         {
-            index_part = getReadnamePart( object.bname, INDEX );
+            readIndexStr = getReadIndex( spot.bname );
         } catch ( DataConsumerException de )
         {
-            index_part = object.getStreamKey();
+            readIndexStr = spot.getReadIndex();
         }
-        
-        int index = Integer.parseInt( index_part ) - 1;
-        if( null == list.get( index ) )
-            list.set( index, object );
+
+        int readIndex = Integer.parseInt( readIndexStr ) - 1;
+        if( null == list.get( readIndex ) )
+            list.set( readIndex, spot );
         else
-            throw new RuntimeException( "Got same spot twice: " + object );
+            throw new RuntimeException( "Got same spot twice: " + spot );
     }
-    
+
     
     @Override
     public FastqSpot
@@ -110,7 +119,7 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
             ++i;
             if( null == spot )
                 continue;
-            i_spot.name = (String) key;            
+            i_spot.name = (String) key;
             bases.append( spot.bases );
             quals.append( spot.quals );
             i_spot.read_length[ i ] = spot.bases.length();

@@ -66,17 +66,16 @@ public class DataSpot implements Serializable, DataProducible {
 
 
     static final long serialVersionUID = 1L;
-    static final protected char[] line_separator = System.getProperty ( "line.separator" ).toCharArray();
 
     public String bname; // name for bases
     public String bases;// bases
     public String qname; // name for qualities // no + here, it will be in stop symbols
     public String quals;
 
-    private String stream_key;
+    private String readIndex;
     transient private int expected_base_length;
     transient private int expected_qual_length;
-    transient private QualityNormalizer normailzer;
+    transient private QualityNormalizer normalizer;
     
     
     // default - no constraints
@@ -85,20 +84,19 @@ public class DataSpot implements Serializable, DataProducible {
     {
         expected_base_length = -1;
         expected_qual_length = -1;
-        stream_key = null;
+        readIndex = null;
     }
     
     
     // default - no constraints
     public
     DataSpot( QualityNormalizer normalizer, 
-              String            default_stream_attr,
-              DataSpotParams    params )
+              String            readIndex )
     {
         this();
-        this.normailzer = normalizer;
-        this.stream_key = default_stream_attr;
-        this.params     = params;
+        this.normalizer = normalizer;
+        this.readIndex = readIndex;
+        this.params     = defaultParams();
     }
    
    
@@ -113,9 +111,9 @@ public class DataSpot implements Serializable, DataProducible {
     
     
     public String
-    getStreamKey()
+    getReadIndex()
     {
-        return stream_key;
+        return readIndex;
     }
     
     
@@ -166,7 +164,7 @@ SPACE HERE
     transient private DataSpotParams params = null;
           
                                                   
-    public static DataSpotParams                                               
+    private static DataSpotParams
     defaultParams()
     {
         return new DataSpotParams( 1L, 
@@ -350,8 +348,8 @@ SPACE HERE
                 throw new DataProducerException( params.line_no, "Empty lines not allowed" );
         }
 
-        if (normailzer != null)
-            normailzer.normalize( quals );
+        if (normalizer != null)
+            normalizer.normalize( quals );
     }
 
     
