@@ -44,7 +44,7 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
                                    int spill_page_size, //only for paired
                                    READ_TYPE read_type,
                                    File[] files,
-                                   final QualityNormalizer normalizers[]  ) throws SecurityException, NoSuchMethodException, IOException
+                                   final QualityNormalizer normalizers[]  ) throws SecurityException, IOException
     {
         DataConsumer<DataSpot, FastqSpot> eater = null;
         
@@ -53,23 +53,21 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
         {
         
         case SINGLE:
-            eater = (DataConsumer<DataSpot, FastqSpot>)new SingleFastqConsumer();
+            eater = new SingleFastqConsumer();
             break;
             
         case PAIRED:
-            eater = (DataConsumer<DataSpot, FastqSpot>) new PairedFastqConsumer( tmp_folder, spill_page_size );
+            eater = new PairedFastqConsumer( tmp_folder, spill_page_size );
             break;
             
         default:
             throw new UnsupportedOperationException();
 
         }
-        
-        //IterativeEater vdb2  = new IterativeEater();//type, read_type, p.data_folder_name, p.use_md5 );
-        
+
         eater.setConsumer( this );
         
-        ArrayList<AbstractDataProducer<?>> feeders = new ArrayList<AbstractDataProducer<?>>();
+        ArrayList<AbstractDataProducer<?>> feeders = new ArrayList<>();
         
 
         int attr = 1;
@@ -82,13 +80,11 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
             AbstractDataProducer<DataSpot> producer =
             new AbstractDataProducer<DataSpot>( FileCompression.open( file ))
             {
-                final DataSpotParams params = DataSpot.defaultParams();
-                
                 @Override
                 protected DataSpot
                 newProducible()
                 {
-                    return new DataSpot( normalizers[ nindex ], default_attr, params );
+                    return new DataSpot( normalizers[ nindex ], default_attr );
                 }
             };
 
