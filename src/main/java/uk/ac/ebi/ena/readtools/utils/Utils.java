@@ -17,6 +17,10 @@ import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.util.FastqQualityFormat;
 import htsjdk.samtools.util.QualityEncodingDetector;
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.IlluminaQualityNormalizer;
+import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.SolexaQualityNormalizer;
+import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
 
 import java.io.File;
 import java.io.IOException;
@@ -86,5 +90,18 @@ public class Utils {
                 QualityEncodingDetector.FileContext.FASTQ, null);
 
         return qualityFormat;
+    }
+
+    public static QualityNormalizer getQualityNormalizer(FastqQualityFormat qualityType) {
+        switch (qualityType)  {
+            case Standard:
+                return new StandardQualityNormalizer();
+            case Solexa:
+                return new SolexaQualityNormalizer();
+            case Illumina:
+                return new IlluminaQualityNormalizer();
+            default:
+                throw new IllegalArgumentException("Unexpected fastq quality format provided : " + qualityType);
+        }
     }
 }

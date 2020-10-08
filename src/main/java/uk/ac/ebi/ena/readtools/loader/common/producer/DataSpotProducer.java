@@ -10,12 +10,24 @@
  */
 package uk.ac.ebi.ena.readtools.loader.common.producer;
 
-import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-public interface DataProducible extends DataConsumable {
-    void read(InputStream inputStream) throws IOException, QualityNormalizer.QualityNormaizationException;
+public class DataSpotProducer extends AbstractDataProducer<DataSpot> {
+
+    private final DataSpotReader dataSpotReader;
+
+    public DataSpotProducer(InputStream istream, QualityNormalizer normalizer, String defaultAttr) {
+        super(istream);
+
+        dataSpotReader = new DataSpotReader(normalizer, defaultAttr);
+    }
+
+    @Override
+    public DataSpot produce(InputStream inputStream) throws IOException {
+        return dataSpotReader.read(inputStream);
+    }
 }

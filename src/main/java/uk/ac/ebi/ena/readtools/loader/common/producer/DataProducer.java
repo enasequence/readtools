@@ -10,13 +10,15 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.producer;
 
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 
+import java.io.IOException;
+import java.io.InputStream;
 
-public interface
-DataProducer<T extends DataProducible>
-{
-    public T produce();
+
+public interface DataProducer<T extends DataConsumable> {
+    public T produce(InputStream inputStream) throws IOException;
     public void setConsumer(DataConsumer<T, ?> consumer );
     public boolean isOk();
     public Throwable getStoredException();

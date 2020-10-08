@@ -10,18 +10,16 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.producer;
 
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
+
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.InputStream;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-
-
-
 public abstract class
-AbstractDataProducer<T extends DataProducible> extends Thread implements DataProducer<T>
-{
+AbstractDataProducer<T extends DataConsumable> extends Thread implements DataProducer<T> {
     protected InputStream  istream;
     protected boolean      is_ok = true;
     protected DataConsumer<T, ?> dataConsumer;
@@ -29,113 +27,79 @@ AbstractDataProducer<T extends DataProducible> extends Thread implements DataPro
     private long readRecordCount;
     static final int       YIELD_CYCLES = 362;//16384;
     
-    
-    protected AbstractDataProducer(InputStream istream)
-    {
+    protected AbstractDataProducer(InputStream istream) {
         this.istream = new BufferedInputStream( istream, 1024 * 1024 );
     }
-
-    protected abstract T
-    newProducible();
 
     /**
      * Get the total number of records that were read.
      *
      * @return
      */
-    public long
-    getReadRecordCount()
-    {
+    public long getReadRecordCount() {
         return readRecordCount;
     }
-
-    //Re-implement if you need special type of feeding
-    public T
-    produce() throws DataProducerException
-    {
-        T object = newProducible();
-
-        try
-        {
-            try
-            {
-                object.read(istream);
-                ++readRecordCount;
-            } catch( EOFException e ){
-                throw new DataProducerEOFException(readRecordCount);
-            } catch( DataProducerException e ){
-                throw e;
-            } catch( Throwable cause ) {
-                throw new DataProducerException(cause);
-            }
-
-            return object;
-
-        } catch( IllegalArgumentException e) {
-            throw new DataProducerPanicException( String.valueOf( object ), e );
-        }
-    }
- 
     
-    public void setConsumer(DataConsumer<T, ?> consumer)
-    {
+    public void setConsumer(DataConsumer<T, ?> consumer) {
         this.dataConsumer = consumer;
     }
     
+    public boolean isOk() {
+        return is_ok;
+    }
+    
+    public Throwable getStoredException() {
+        return stored_exception;
+    }
+
     //TODO: scheduler should be fair and based on different principle
-    public final void
-    run()
-    {
-        try
-        {
+    public final void run() {
+        try {
             int yield = YIELD_CYCLES;
-            for( ; ; )
-            {
-                synchronized(dataConsumer)
-                {
+            for( ; ; ) {
+                synchronized(dataConsumer) {
                     for( yield = YIELD_CYCLES; yield > 0; --yield )
                         dataConsumer.consume( produce() );
                 }
-                
+
                 if( !dataConsumer.isOk() )
                     throw new DataProducerPanicException();
-                
+
                 Thread.sleep( 1 );
             }
-            
-        } catch( DataConsumerException e )
-        {
+
+        } catch( DataConsumerException e ) {
             //e.printStackTrace();
             this.stored_exception = e;
             is_ok = false;
-        } catch( DataProducerEOFException e )
-        {
+        } catch( DataProducerEOFException e ) {
             //e.printStackTrace();
-        } catch( DataProducerPanicException e )
-        {
+        } catch( DataProducerPanicException e ) {
             //e.printStackTrace();
             is_ok = false;
             this.stored_exception = e;
-        } catch( Throwable t )
-        {
+        } catch( Throwable t ) {
             //t.printStackTrace();
             this.stored_exception = t;
             is_ok = false;
         }
     }
-    
-    
-    public boolean
-    isOk()
-    {
-        return is_ok;
-    }
-    
-    
-    
-    public Throwable
-    getStoredException()
-    {
-        return stored_exception;
+
+    //Re-implement if you need special type of feeding
+    private T produce() throws DataProducerException {
+        T object = null;
+
+        try {
+            object = produce(istream);
+            ++readRecordCount;
+
+            return object;
+        } catch( EOFException e ){
+            throw new DataProducerEOFException(readRecordCount);
+        } catch( DataProducerException e ){
+            throw e;
+        } catch( Throwable cause ) {
+            throw new DataProducerException(cause);
+        }
     }
 }

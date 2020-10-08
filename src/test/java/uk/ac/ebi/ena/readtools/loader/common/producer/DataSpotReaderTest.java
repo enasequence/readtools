@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.fastq;
+package uk.ac.ebi.ena.readtools.loader.common.producer;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -19,19 +19,19 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 public class
-DataSpotTest {
+DataSpotReaderTest {
 
 	@Test
 	public void testCASAVA1_8() {
 		//CASAVA 1.8
-		Assert.assertTrue( DataSpot.p_casava_1_8_name.matcher( "@EAS139:136:FC706VJ:2:2104:15343:197393 1:Y:18:ATCACG" ).matches() );
-		Assert.assertTrue( DataSpot.p_casava_1_8_name.matcher( "@EAS139:136:FC706VJ:2:2104:15343:197393 2:Y:18:ATCACG" ).matches() );
+		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@EAS139:136:FC706VJ:2:2104:15343:197393 1:Y:18:ATCACG" ).matches() );
+		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@EAS139:136:FC706VJ:2:2104:15343:197393 2:Y:18:ATCACG" ).matches() );
 
 		//extended version of CASAVA 1.8
-		Assert.assertTrue( DataSpot.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 1:N:0:331" ).matches() );
-		Assert.assertTrue( DataSpot.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 2:N:0:331" ).matches() );
+		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 1:N:0:331" ).matches() );
+		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 2:N:0:331" ).matches() );
 		
-		Assert.assertTrue( DataSpot.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 1:N:0:331 COMMENT" ).matches() );
+		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 1:N:0:331 COMMENT" ).matches() );
 	}
 
 	@Test
@@ -48,7 +48,7 @@ DataSpotTest {
 
 		//DataSpot keeps reading until it sees '+' symbol on a new line which is in compliance with Fastq standard.
 		try(InputStream is = new ByteArrayInputStream((fullInput).getBytes(StandardCharsets.UTF_8))) {
-			DataSpot ds = new DataSpot(100);
+			DataSpotReader ds = new DataSpotReader(100);
 			ds.read(is);
 		} catch (InvalidBaseCharacterException e) {
 			ex = e;

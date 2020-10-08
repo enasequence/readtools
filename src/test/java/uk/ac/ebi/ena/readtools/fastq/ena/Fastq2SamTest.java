@@ -11,17 +11,13 @@
 package uk.ac.ebi.ena.readtools.fastq.ena;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.util.FastqQualityFormat;
-import htsjdk.samtools.util.SolexaQualityConverter;
 import org.junit.Assert;
 import org.junit.Test;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
-import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
 

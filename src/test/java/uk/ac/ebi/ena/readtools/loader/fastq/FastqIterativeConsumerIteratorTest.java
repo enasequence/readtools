@@ -10,17 +10,17 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
 
 
 
@@ -52,7 +52,7 @@ FastqIterativeConsumerIteratorTest
         wrapper.setFiles( new File[] { new File( "resources/T966_R1.fastq.gz" ),  
                                        new File( "resources/T966_R2.fastq.gz" ) } );
         
-        wrapper.setNormalizers( new QualityNormalizer[] { QualityNormalizer.SANGER } );
+        wrapper.setNormalizers( new QualityNormalizer[] { new StandardQualityNormalizer() } );
         wrapper.setReadType( READ_TYPE.PAIRED );
        
         
@@ -94,7 +94,7 @@ FastqIterativeConsumerIteratorTest
         wrapper.setFiles( new File[] { new File( "resources/fastq_spots_correct2_1.txt" ),  
                                        new File( "resources/fastq_spots_correct2_2.txt" ) } );
         
-        wrapper.setNormalizers( new QualityNormalizer[] { QualityNormalizer.SANGER } );
+        wrapper.setNormalizers( new QualityNormalizer[] { new StandardQualityNormalizer() } );
         wrapper.setReadType( READ_TYPE.PAIRED );
         
         int spot_count = 0;
