@@ -90,7 +90,7 @@ public class Fastq2Sam {
         }
 
         FastqQualityFormat qualityFormat = Utils.detectFastqQualityFormat(p.files.get(0),
-                p.files.size() == 2 ? p.files.get(0) : null);
+                p.files.size() == 2 ? p.files.get(1) : null);
 
         Fastq2BamConsumer fastqSpotToBamConsumer = new Fastq2BamConsumer(
                 determineQualityNormalizer(qualityFormat), p.sample_name, p.data_file, p.tmp_root);

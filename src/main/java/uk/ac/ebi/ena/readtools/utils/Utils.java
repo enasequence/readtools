@@ -60,7 +60,7 @@ public class Utils {
     }
 
     /**
-     * Detects Fastq quality format by looking at the passed files. Second argument is optional but can be useful
+     * Detects Fastq quality format by examining the given files. Second argument is optional but can be useful
      * when dealing with paired files.
      *
      * @param fastqFile1 - Path to fastq file. Cannot be null.
