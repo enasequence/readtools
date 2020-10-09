@@ -60,10 +60,10 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
     getKey( DataSpot object )
     {
         try
-        {   return getReadKey( object.bname );
+        {   return getReadKey( object.name);
         } catch (DataConsumerException de )
         {
-            return object.bname;
+            return object.name;
         }
     }
 
@@ -84,7 +84,7 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
         String readIndexStr;
         try
         {
-            readIndexStr = getReadIndex( spot.bname );
+            readIndexStr = getReadIndex( spot.name);
         } catch ( DataConsumerException de )
         {
             readIndexStr = spot.readIndex;
@@ -102,35 +102,11 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
     public FastqSpot
     assemble( final Object key, List<DataSpot> list ) throws DataConsumerException
     {
-        FastqSpot i_spot = FastqSpot.initPaired();
+        FastqSpot spot = list.size() == 1
+                ? new FastqSpot((String) key, list.get(0))
+                : new FastqSpot((String) key, list.get(0), list.get(1));
         
-        i_spot.read_start[ FastqSpot.FORWARD ] = 0;
-        i_spot.read_start[ FastqSpot.REVERSE ] = 0;
-
-        i_spot.read_length[ FastqSpot.FORWARD ] = 0;
-        i_spot.read_length[ FastqSpot.REVERSE ] = 0;
-        
-        StringBuilder bases = new StringBuilder();
-        StringBuilder quals = new StringBuilder();
-        
-        int i = -1;
-        for( DataSpot spot : list )
-        {
-            ++i;
-            if( null == spot )
-                continue;
-            i_spot.name = (String) key;
-            bases.append( spot.bases );
-            quals.append( spot.quals );
-            i_spot.read_length[ i ] = spot.bases.length();
-            i_spot.read_name[ i ] = spot.bname;
-        }
-
-        i_spot.bases = bases.toString();
-        i_spot.quals = quals.toString();
-        i_spot.read_start[ FastqSpot.REVERSE ] = i_spot.read_length[ FastqSpot.FORWARD ];
-        
-        return i_spot;
+        return spot;
     }
 
     

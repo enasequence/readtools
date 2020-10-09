@@ -11,77 +11,86 @@
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
+
+import java.util.StringJoiner;
 
 /**
- * Holds unpaired and paired read information.
+ * Holds unpaired or paired read information.
  */
-public class
-FastqSpot implements DataConsumable
-{
-    //Must be private. DO NOT USE!
-    private FastqSpot()
-    {
-        ;
-    }
-    
-    
-    public static final int FORWARD = 0;
-    public static final int REVERSE = 1;
+public class FastqSpot implements Spot {
 
-    //NCBI coords start from 0!
-    public int[] read_start;
-    public int[] read_length;
-    public String[] read_name;
-    //TODO byte arrays?
-    public String bases = "";
-    public String quals = "";
-    public String name  = "";
-    
-    
-    public static FastqSpot
-    initPaired()
-    {
-        FastqSpot result = new FastqSpot();
-        result.read_start   = new int[] { -1, -1 };
-        result.read_length  = new int[] { -1, -1 };
-        result.read_name    = new String[ 2 ]; 
-        return result;
+    public final String name;
+
+    public final DataSpot forward;
+    public final DataSpot reverse;
+
+    public FastqSpot(String name, DataSpot dataSpot) {
+        if (name == null || name.isEmpty() ) {
+            throw new IllegalArgumentException("Invalid read name.");
+        }
+
+        if (dataSpot == null) {
+            throw new IllegalArgumentException("Read cannot be null.");
+        }
+
+        this.forward = dataSpot;
+        this.reverse = null;
+        this.name = name;
     }
-    
-    
-    public static FastqSpot
-    initSingle()
-    {
-        FastqSpot result = new FastqSpot();
-        result.read_start   = new int[] { -1 };
-        result.read_length  = new int[] { -1 };
-        result.read_name    = new String[ 1 ];
-        return result;
+
+    /**
+     * Constructor for a paired read.
+     *
+     * @param name
+     * @param forward
+     * @param reverse
+     */
+    public FastqSpot(String name, DataSpot forward, DataSpot reverse) {
+        if (name == null || name.isEmpty() ) {
+            throw new IllegalArgumentException("Invalid read name.");
+        }
+
+        if (forward == null && reverse == null) {
+            throw new IllegalArgumentException("Both reads cannot be null.");
+        }
+
+        this.forward = forward;
+        this.reverse = reverse;
+
+        this.name = name;
     }
-    
-    
-    public String
-    toString()
-    {
-        StringBuilder result = new StringBuilder()
-                               .append( name )
-                               .append( '\n' )
-                               .append( read_start[ FORWARD ] )
-                               .append( ":" )
-                               .append( read_length[ FORWARD ] );
-        
-        if( 2 == read_start.length )
-            result.append( ", " )
-                  .append( read_start[ REVERSE ] )
-                  .append( ":" )
-                  .append( read_length[ REVERSE ] );
-                   
-        result.append( '\n' )
-              .append( bases )
-              .append( '\n' )
-              .append( quals );
-        
-        return result.toString();
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public boolean isPaired() {
+        return !(reverse == null || forward == null);
+    }
+
+    /**
+     * Convenient method for getting the non-null unpaired read.
+     *
+     * @return the non-null unpaired read. Returns null if this is a paired read and both forward and reverse reads are present.
+     */
+    public DataSpot getUnpaired() {
+        if (forward == null) {
+            return reverse;
+        } else if (reverse == null) {
+            return forward;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", FastqSpot.class.getSimpleName() + "[", "]")
+                .add("name='" + name + "'")
+                .add("first=" + forward)
+                .add("second=" + reverse)
+                .toString();
     }
 }

@@ -34,20 +34,14 @@ SingleFastqConsumer implements DataConsumer<DataSpot, FastqSpot>
     public void
     consume(DataSpot spot ) throws DataConsumerException
     {
-        
-        FastqSpot ispot = FastqSpot.initSingle();
-        int slash_idx = spot.bname.lastIndexOf( '/' );
-        ispot.name = slash_idx == -1 ? spot.bname 
-                                     : spot.bname.substring( 0, slash_idx );
-        ispot.bases = spot.bases;
-        ispot.quals = spot.quals;
-        ispot.read_start[ FastqSpot.FORWARD ] = 0;
-        ispot.read_length[ FastqSpot.FORWARD ] = spot.bases.length();
-        ispot.read_name[ FastqSpot.FORWARD ] = spot.bname;
+        int slash_idx = spot.name.lastIndexOf( '/' );
+
+        FastqSpot fastqSpot = new FastqSpot(slash_idx == -1 ? spot.name : spot.name.substring( 0, slash_idx ), spot);
+
         if( null != dataConsumer)
-            dataConsumer.consume( ispot );
+            dataConsumer.consume( fastqSpot );
         else
-            System.out.println( ispot );
+            System.out.println( fastqSpot );
     }
 
 

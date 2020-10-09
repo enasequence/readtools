@@ -71,10 +71,11 @@ FastqIterativeConsumerIteratorTest
         for(Iterator<FastqSpot> i = wrapper.iterator(); i.hasNext(); )
         {
             FastqSpot is = i.next();
-            base_count += is.bases.length();
+//            base_count += is.bases.length();
+            base_count += (is.forward.bases.length() + is.reverse.bases.length());
             spot_count += 1;
             if( picked_reads.containsKey( spot_count ) )
-                if( !picked_reads.get( spot_count ).equals( is.bases ) )
+                if( !picked_reads.get( spot_count ).equals( is.forward.bases + is.reverse.bases ) )
                     throw new RuntimeException( "Read " + spot_count + " failed" );
         }
         
@@ -103,7 +104,7 @@ FastqIterativeConsumerIteratorTest
         for(Iterator<FastqSpot> i = wrapper.iterator(); i.hasNext(); )
         {
             FastqSpot is = i.next();
-            base_count += is.bases.length();
+            base_count += (is.forward.bases.length() + is.reverse.bases.length());
             spot_count += 1;
         }
         

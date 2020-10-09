@@ -10,37 +10,38 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 
 import java.io.Serializable;
 
 /**
  * Holds raw unpaired read information.
  */
-public class DataSpot implements Serializable, DataConsumable {
+public class DataSpot implements Serializable, Spot {
 
     static final long serialVersionUID = 1L;
 
     public String readIndex;
 
-    public String bname; // name for bases
+    public String name; // name for bases
     public String bases;// bases
-    public String qname; // name for qualities // no + here, it will be in stop symbols
     public String quals;
+
+    @Override
+    public String getName() {
+        return name;
+    }
     
     public String toString() {
         return new StringBuilder()
             .append( "base_name = [" )
-            .append( bname )
+            .append(name)
             .append( "]\n" )
             .append( "bases = [" )
             .append( bases )
             .append( "], length = " )
             .append( null == bases ? "null" : bases.length() )
-            .append( "\nqual_name = [" )
-            .append( qname )
-            .append( "]\n" )
-            .append( "quals = [" )
+            .append( "\nquals = [" )
             .append( quals )
             .append( "], length = " )
             .append( null == quals ? "null" : quals.length() )

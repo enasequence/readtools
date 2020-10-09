@@ -13,7 +13,7 @@ package uk.ac.ebi.ena.readtools.loader.common.consumer;
 
 
 public class
-PrintDataConsumer<T1 extends DataConsumable, T2 extends DataConsumable> implements DataConsumer<T1, T2>
+PrintDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T1, T2>
 {
     volatile boolean lock;
     

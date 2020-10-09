@@ -19,7 +19,7 @@ import java.util.Map.Entry;
 
 
 public abstract class
-AbstractDataConsumer<T1 extends DataConsumable, T2 extends DataConsumable> implements DataConsumer<T1, T2>
+AbstractDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T1, T2>
 {
     protected Map<Object, List<T1>> objects = null; 
     protected DataConsumer<T2, ?> dataConsumer;

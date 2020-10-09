@@ -32,7 +32,7 @@ import java.util.zip.GZIPOutputStream;
 import uk.ac.ebi.ena.readtools.loader.common.Pair;
 
 public abstract class
-AbstractPagedDataConsumer<T1 extends DataConsumable, T2 extends DataConsumable> extends AbstractDataConsumer<T1, T2>
+AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractDataConsumer<T1, T2>
 {
     private static final int OUTPUT_BUFFER_SIZE = 8192;
     private boolean use_spill = true;

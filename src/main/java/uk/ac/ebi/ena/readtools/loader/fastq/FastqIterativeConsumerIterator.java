@@ -12,7 +12,7 @@ package uk.ac.ebi.ena.readtools.loader.fastq;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class
-FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<FastqSpot, DataConsumable>
+FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<FastqSpot, Spot>
 {
     private static final long CYCLE_TIMEFRAME = 0L;
     private BlockingQueue<FastqSpot>   queue = new SynchronousQueue<FastqSpot>();
@@ -46,18 +46,18 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
                                    File[] files,
                                    final QualityNormalizer normalizers[]  ) throws SecurityException, IOException
     {
-        DataConsumer<DataSpot, FastqSpot> eater = null;
+        DataConsumer<DataSpot, FastqSpot> consumer = null;
         
         
         switch( read_type )
         {
         
         case SINGLE:
-            eater = new SingleFastqConsumer();
+            consumer = new SingleFastqConsumer();
             break;
             
         case PAIRED:
-            eater = new PairedFastqConsumer( tmp_folder, spill_page_size );
+            consumer = new PairedFastqConsumer( tmp_folder, spill_page_size );
             break;
             
         default:
@@ -65,9 +65,9 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
 
         }
 
-        eater.setConsumer( this );
+        consumer.setConsumer( this );
         
-        ArrayList<AbstractDataProducer<?>> feeders = new ArrayList<>();
+        ArrayList<AbstractDataProducer<?>> producers = new ArrayList<>();
         
 
         int attr = 1;
@@ -78,19 +78,19 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
             final int nindex = normalizers.length == files.length ? attr - 2 : 0;
 
             DataSpotProducer producer = new DataSpotProducer( FileCompression.open( file ), normalizers[ nindex ], default_attr );
-            producer.setConsumer( eater );
+            producer.setConsumer( consumer );
             producer.setName( file.getPath() );
-            feeders.add( producer );
+            producers.add( producer );
             producer.start();
         }
         
-        new Thread( lifecycle( feeders, eater ), "lifecycle" ).start();
+        new Thread( lifecycle( producers, consumer ), "lifecycle" ).start();
     }
     
     
     private Runnable
-    lifecycle( final ArrayList<AbstractDataProducer<?>> feeders,
-               final DataConsumer<?, ?> eater_root )
+    lifecycle( final ArrayList<AbstractDataProducer<?>> producers,
+               final DataConsumer<?, ?> consumer_root )
     {
         return new Runnable()
                {
@@ -102,34 +102,34 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
                             boolean again = false;
                             do
                             {
-                                for( AbstractDataProducer<?> feeder : feeders )
+                                for( AbstractDataProducer<?> producer : producers )
                                 {
-                                    if( feeder.isAlive() )
+                                    if( producer.isAlive() )
                                     {
                                         try
                                         {
-                                            feeder.join( CYCLE_TIMEFRAME );
+                                            producer.join( CYCLE_TIMEFRAME );
                                         } catch( InterruptedException ie )
                                         {
                                             again = true;
-                                            System.out.printf( "%s was interrupted\n", feeder.getName() );
+                                            System.out.printf( "%s was interrupted\n", producer.getName() );
                                         }
-                                    }else if( !feeder.isOk() )
+                                    }else if( !producer.isOk() )
                                     {
-                                        throw new DataProducerException( feeder.getStoredException() );
+                                        throw new DataProducerException( producer.getStoredException() );
                                     }
                                 }
                             }while( again );
                            
-                            for( AbstractDataProducer<?> feeder : feeders )
+                            for( AbstractDataProducer<?> producer : producers )
                             {
-                                if( !feeder.isOk() )
+                                if( !producer.isOk() )
                                 {
-                                    throw new DataProducerException( feeder.getStoredException() );
+                                    throw new DataProducerException( producer.getStoredException() );
                                 }
                             }
                     
-                            eater_root.cascadeErrors();
+                            consumer_root.cascadeErrors();
 
                         }catch( Exception dfe )
                         {
@@ -165,7 +165,7 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
     
     @Override
     public void
-    setConsumer(DataConsumer<DataConsumable, ?> dataConsumer)
+    setConsumer(DataConsumer<Spot, ?> dataConsumer)
     {
         throw new RuntimeException( "N07 iMPl3m3nt3D" );
     }
