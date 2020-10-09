@@ -12,6 +12,7 @@ package uk.ac.ebi.ena.readtools.loader.common.producer;
 
 import org.junit.Assert;
 import org.junit.Test;
+import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 
 import java.io.ByteArrayInputStream;
@@ -48,7 +49,7 @@ DataSpotReaderTest {
 
 		//DataSpot keeps reading until it sees '+' symbol on a new line which is in compliance with Fastq standard.
 		try(InputStream is = new ByteArrayInputStream((fullInput).getBytes(StandardCharsets.UTF_8))) {
-			DataSpotReader ds = new DataSpotReader(100);
+			DataSpotReader ds = new DataSpotReader(new StandardQualityNormalizer());
 			ds.read(is);
 		} catch (InvalidBaseCharacterException e) {
 			ex = e;
