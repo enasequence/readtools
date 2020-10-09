@@ -185,14 +185,14 @@ SPACE HERE
             case CASAVA18:
                 if( !params.m_casava_1_8_name.reset( line ).find() )
                     throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, DataSpotReader.ReadStyle.CASAVA18 ) );
-                dataSpot.bname = String.format( "%s/%s", params.m_casava_1_8_name.group( 1 ), params.m_casava_1_8_name.group( 2 ) );
+                dataSpot.name = String.format( "%s/%s", params.m_casava_1_8_name.group( 1 ), params.m_casava_1_8_name.group( 2 ) );
                 break;
 
             case FASTQ:
                 if( !params.m_base_name.reset( line ).find() )
                     throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, DataSpotReader.ReadStyle.FASTQ ) );
 
-                dataSpot.bname = params.m_base_name.group( 1 );
+                dataSpot.name = params.m_base_name.group( 1 );
                 break;
 
             default:
@@ -226,7 +226,6 @@ SPACE HERE
         String line = readLine( is );
         if( !params.m_qname.reset( line ).find() )
             throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
-        dataSpot.qname = params.m_qname.group( 1 );
     }
 
     private void readQuals(InputStream is, DataSpot dataSpot) throws IOException
@@ -258,7 +257,7 @@ SPACE HERE
 
                 if( expectedQualLength != value.length() )
                     throw new DataProducerException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of the read one[%d]",
-                            dataSpot.bname,
+                            dataSpot.name,
                             expectedQualLength,
                             value.length() ) );
 
@@ -270,7 +269,7 @@ SPACE HERE
             //check against expected
             if( expectedQualLength >= 0 && expectedQualLength != value.length() )
                 throw new DataProducerException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of the read one[%d]",
-                        dataSpot.bname,
+                        dataSpot.name,
                         expectedQualLength,
                         value.length() ) );
 

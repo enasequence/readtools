@@ -10,7 +10,7 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.producer;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 
@@ -19,7 +19,7 @@ import java.io.EOFException;
 import java.io.InputStream;
 
 public abstract class
-AbstractDataProducer<T extends DataConsumable> extends Thread implements DataProducer<T> {
+AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
     protected InputStream  istream;
     protected boolean      is_ok = true;
     protected DataConsumer<T, ?> dataConsumer;

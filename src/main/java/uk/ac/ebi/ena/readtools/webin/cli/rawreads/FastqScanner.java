@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
@@ -131,7 +131,7 @@ FastqScanner
             DataSpotProducer dp = new DataSpotProducer( is, normalizer, "" );
             dp.setName( stream_name );
             
-            dp.setConsumer(new DataConsumer<DataSpot, DataConsumable>()
+            dp.setConsumer(new DataConsumer<DataSpot, Spot>()
             {
                 @Override
                 public void cascadeErrors() throws DataConsumerException { }
@@ -144,11 +144,11 @@ FastqScanner
 
                 	try
                 	{
-                		readKey = PairedFastqConsumer.getReadKey( spot.bname );
-                		readIndex = PairedFastqConsumer.getReadIndex( spot.bname );
+                		readKey = PairedFastqConsumer.getReadKey( spot.name);
+                		readIndex = PairedFastqConsumer.getReadIndex( spot.name);
                 	} catch ( DataConsumerException dee )
                 	{
-                    	readKey  = spot.bname;
+                    	readKey  = spot.name;
                     	readIndex = stream_name;
                 	}
                 	
@@ -157,14 +157,14 @@ FastqScanner
                     
                     count.incrementAndGet();
                     pairing.add( readKey );
-                    duplications.add( spot.bname );
+                    duplications.add( spot.name);
                     
                     if( 0 == count.get() % print_freq )
                         logProcessedReadNumber( count.get() );
                 }
 
                 @Override
-                public void setConsumer(DataConsumer<DataConsumable, ?> dataConsumer) {
+                public void setConsumer(DataConsumer<Spot, ?> dataConsumer) {
                     throw new RuntimeException( "Not implemented" );
                 }
 
@@ -321,7 +321,7 @@ FastqScanner
             Iterator<String> read_name_iterator = new DelegateIterator<FastqSpot, String>( wrapper.iterator() ) {
                 @Override public String convert( FastqSpot obj )
                 {
-                    return obj.read_name[ FastqSpot.FORWARD ];
+                    return obj.forward.name;
                 }
             };
             

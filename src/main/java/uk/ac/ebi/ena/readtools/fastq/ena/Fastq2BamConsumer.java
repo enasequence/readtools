@@ -18,9 +18,10 @@ import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumable;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
+import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
 
 import java.io.File;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
 /**
  * Accepts Fastq spot data and writes them out to a BAM file.
  */
-public class Fastq2BamConsumer implements DataConsumer<FastqSpot, DataConsumable> {
+public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
 
     private static final String DEFAULT_READ_GROUP_NAME = "A";
 
@@ -64,28 +65,24 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, DataConsumable
     @Override
     public void consume(FastqSpot iSpot) throws DataConsumerException {
         try {
-            Matcher matcher = VALID_DNA_CHARSET_PATTERN.matcher(iSpot.bases);
-            if( !matcher.matches() )
-                handleInvalidDnaCharset(iSpot.bases, matcher);
+            validate(iSpot);
 
-            if( iSpot.bases.length() != iSpot.quals.length() )
-                throw new IllegalArgumentException( String.format( "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", iSpot ) );
-
-            if (isPaired(iSpot)) {
+            if (iSpot.isPaired()) {
                 SAMRecord rec1 = createSamRecord(
-                        true, iSpot.name, getForwardBases(iSpot), getForwardQualities(iSpot));
+                        true, iSpot.name, iSpot.forward.bases, iSpot.forward.quals);
                 rec1.setFirstOfPairFlag(true);
                 rec1.setSecondOfPairFlag(false);
                 writer.addAlignment(rec1);
 
                 SAMRecord rec2 = createSamRecord(
-                        true, iSpot.name, getReverseBases(iSpot), getReverseQualities(iSpot));
+                        true, iSpot.name, iSpot.reverse.bases, iSpot.reverse.quals);
                 rec2.setFirstOfPairFlag(false);
                 rec2.setSecondOfPairFlag(true);
                 writer.addAlignment(rec2);
 
             } else {
-                SAMRecord rec = createSamRecord(false, iSpot.name, iSpot.bases, iSpot.quals);
+                DataSpot unpaired = iSpot.getUnpaired();
+                SAMRecord rec = createSamRecord(false, iSpot.name, unpaired.bases, unpaired.quals);
                 rec.setReadPairedFlag(false);
                 writer.addAlignment(rec);
             }
@@ -102,7 +99,7 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, DataConsumable
     public void cascadeErrors() throws DataConsumerException { }
 
     @Override
-    public void setConsumer(DataConsumer<DataConsumable, ? extends DataConsumable> dataConsumer) { }
+    public void setConsumer(DataConsumer<Spot, ? extends Spot> dataConsumer) { }
 
     @Override
     public boolean isOk() {
@@ -124,6 +121,27 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, DataConsumable
         return header;
     }
 
+    private void validate(FastqSpot fastqSpot) {
+        if (fastqSpot.forward != null) {
+            Matcher matcher = VALID_DNA_CHARSET_PATTERN.matcher(fastqSpot.forward.bases);
+            if( !matcher.matches() ) {
+                handleInvalidDnaCharset(fastqSpot.forward.bases, matcher);
+            }
+
+            if( fastqSpot.forward.bases.length() != fastqSpot.forward.quals.length() )
+                throw new IllegalArgumentException( String.format( "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", fastqSpot ) );
+        }
+
+        if (fastqSpot.reverse != null) {
+            Matcher matcher = VALID_DNA_CHARSET_PATTERN.matcher(fastqSpot.reverse.bases);
+            if( !matcher.matches() )
+                handleInvalidDnaCharset(fastqSpot.reverse.bases, matcher);
+
+            if( fastqSpot.reverse.bases.length() != fastqSpot.reverse.quals.length() )
+                throw new IllegalArgumentException( String.format( "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", fastqSpot ) );
+        }
+    }
+
     private void handleInvalidDnaCharset(String bases, Matcher matcher) {
         Set<Character> invalidBaseChars = bases.chars()
                 .mapToObj(intChar -> (char)intChar)
@@ -131,12 +149,6 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, DataConsumable
                 .collect(Collectors.toSet());
 
         throw new InvalidBaseCharacterException(bases, invalidBaseChars);
-    }
-
-    private boolean isPaired(FastqSpot iSpot) {
-        return iSpot.read_name.length == 2
-                && iSpot.read_name[FastqSpot.FORWARD] != null
-                && iSpot.read_name[FastqSpot.REVERSE] != null;
     }
 
     private SAMRecord createSamRecord(boolean paired, String baseName, String read, String qualities) {
@@ -156,31 +168,5 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, DataConsumable
             rec.setMateUnmappedFlag(true);
         }
         return rec;
-    }
-
-    private String getForwardBases(FastqSpot iSpot) {
-        int start = iSpot.read_start[FastqSpot.FORWARD];
-        int end = iSpot.read_length[FastqSpot.FORWARD];
-
-        return iSpot.bases.substring(start, end);
-    }
-
-    private String getForwardQualities(FastqSpot iSpot) {
-        int start = iSpot.read_start[FastqSpot.FORWARD];
-        int end = iSpot.read_length[FastqSpot.FORWARD];
-
-        return iSpot.quals.substring(start, end);
-    }
-
-    private String getReverseBases(FastqSpot iSpot) {
-        int start = iSpot.read_start[FastqSpot.REVERSE];
-
-        return iSpot.bases.substring(start);
-    }
-
-    private String getReverseQualities(FastqSpot iSpot) {
-        int start = iSpot.read_start[FastqSpot.REVERSE];
-
-        return iSpot.quals.substring(start);
     }
 }
