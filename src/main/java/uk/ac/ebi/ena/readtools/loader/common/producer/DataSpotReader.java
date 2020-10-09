@@ -109,40 +109,31 @@ SPACE HERE
     final static private Pattern p_quals     = Pattern.compile( "^([!-~]*?)$" ); //qualities
     final static private char base_stopper = '+';
 
-    private DataSpotReaderParams params = null;
+    private final DataSpotReaderParams params = defaultParams();
 
     /**
      * Default read index assigned to each {@link DataSpot} object returned by this reader instance.
      */
-    private String defaultReadIndex;
+    private final String defaultReadIndex;
 
-    private int expected_base_length;
-    private int expected_qual_length;
+    private final QualityNormalizer normalizer;
 
-    private QualityNormalizer normalizer;
+    private final int expectedBaseLength;
 
-    // default - no constraints
-    public DataSpotReader()
-    {
-        expected_base_length = -1;
-        expected_qual_length = -1;
-        defaultReadIndex = null;
-    }
-
-    // default - no constraints
-    public DataSpotReader( QualityNormalizer normalizer, String readIndex )
-    {
-        this();
+    public DataSpotReader( QualityNormalizer normalizer, String readIndex ) {
         this.normalizer = normalizer;
         this.defaultReadIndex = readIndex;
-        this.params     = defaultParams();
+        expectedBaseLength = -1;
     }
 
-    public DataSpotReader( int expected_length )
-    {
-        this();
-        expected_base_length = expected_length;
-        params     = defaultParams();
+    public DataSpotReader(QualityNormalizer normalizer) {
+        this(normalizer, null);
+    }
+
+    public DataSpotReader(QualityNormalizer normalizer, int expected_length ) {
+        this.normalizer = normalizer;
+        this.defaultReadIndex = null;
+        expectedBaseLength = expected_length;
     }
 
     public DataSpot read(InputStream inputStream) throws IOException {
@@ -222,11 +213,10 @@ SPACE HERE
         String value = params.m_bases.group( 1 );
 
         //check against expected, if any
-        if( -1 < expected_base_length
-                && expected_base_length != value.length() )
-            throw new DataProducerException( params.line_no, String.format( "Expected base length [%d] does not match readed one[%d]", expected_base_length, value.length() ) );
+        if( -1 < expectedBaseLength
+                && expectedBaseLength != value.length() )
+            throw new DataProducerException( params.line_no, String.format( "Expected base length [%d] does not match the read one[%d]", expectedBaseLength, value.length() ) );
 
-        expected_qual_length = 0 == value.length() ? -1 : value.length();
         dataSpot.bases = value;
     }
 
@@ -241,9 +231,11 @@ SPACE HERE
 
     private void readQuals(InputStream is, DataSpot dataSpot) throws IOException
     {
-        String line = readLine( is, expected_qual_length );
-        while( expected_qual_length >= 0 && line.trim().length() == 0 )
-            line = readLine( is, expected_qual_length );
+        int expectedQualLength = 0 == dataSpot.bases.length() ? -1 : dataSpot.bases.length();
+
+        String line = readLine( is, expectedQualLength );
+        while( expectedQualLength >= 0 && line.trim().length() == 0 )
+            line = readLine( is, expectedQualLength );
 
         String value = null;
 
@@ -264,10 +256,10 @@ SPACE HERE
                     sb.append( (char) ( Integer.parseInt( score ) + '!' ) );
                 value = sb.toString();
 
-                if( expected_qual_length != value.length() )
-                    throw new DataProducerException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of readed one[%d]",
+                if( expectedQualLength != value.length() )
+                    throw new DataProducerException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of the read one[%d]",
                             dataSpot.bname,
-                            expected_qual_length,
+                            expectedQualLength,
                             value.length() ) );
 
             }
@@ -276,14 +268,14 @@ SPACE HERE
             value = params.m_quals.group( 1 );
 
             //check against expected
-            if( expected_qual_length >= 0 && expected_qual_length != value.length() )
-                throw new DataProducerException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of readed one[%d]",
+            if( expectedQualLength >= 0 && expectedQualLength != value.length() )
+                throw new DataProducerException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of the read one[%d]",
                         dataSpot.bname,
-                        expected_qual_length,
+                        expectedQualLength,
                         value.length() ) );
 
             //we are lenient now.
-            if( expected_qual_length >= 0 )
+            if( expectedQualLength >= 0 )
             {
                 try
                 {
@@ -291,7 +283,7 @@ SPACE HERE
                     if( line.trim().length() > 0 )
                         throw new DataProducerException( params.line_no, String.format( "Trailing character(s) [%s] after expected number of quals [%d]",
                                 line,
-                                expected_qual_length ) );
+                                expectedQualLength ) );
                 } catch( IOException e )
                 {
                     ;
