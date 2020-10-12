@@ -21,7 +21,7 @@ import java.util.Map.Entry;
 public abstract class
 AbstractDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T1, T2>
 {
-    protected Map<Object, List<T1>> objects = null; 
+    protected Map<String, List<T1>> spots = null;
     protected DataConsumer<T2, ?> dataConsumer;
     
     private long log_time =  System.currentTimeMillis();
@@ -56,31 +56,31 @@ AbstractDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T
 
     protected AbstractDataConsumer(int map_size )
     {
-        objects = new HashMap<Object, List<T1>>( map_size );
+        spots = new HashMap<>( map_size );
     }
     
     
     @Override
     public void
-    setConsumer(DataConsumer<T2, ?> dataConsumer)
+    setConsumer(DataConsumer<T2, ? extends Spot> dataConsumer)
     {
         if( !dataConsumer.equals( this ) )
             this.dataConsumer = dataConsumer;
     }
 
     
-    public abstract Object
-    getKey( T1 object ) throws DataConsumerException;
+    public abstract String
+    getKey( T1 spot ) throws DataConsumerException;
     
     
     public abstract T2
-    assemble( final Object key, List<T1> list ) throws DataConsumerException;
+    assemble(final String key, List<T1> list ) throws DataConsumerException;
     
     
     public void 
-    append( List<T1> list, T1 obj ) throws DataConsumerException
+    append( List<T1> list, T1 spot ) throws DataConsumerException
     {
-        list.add( obj );
+        list.add( spot );
     }
     
     
@@ -98,7 +98,7 @@ AbstractDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T
     public synchronized void
     cascadeErrors() throws DataConsumerException
     {
-        for( Entry<Object, List<T1>> entry : objects.entrySet() )
+        for( Entry<String, List<T1>> entry : spots.entrySet() )
         {
             if( null != dataConsumer)
                 dataConsumer.consume( handleErrors( entry.getKey(), entry.getValue() ) );
@@ -112,38 +112,38 @@ AbstractDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T
     
     
     public abstract T2
-    handleErrors( final Object key, List<T1> list ) throws DataConsumerException;
+    handleErrors(final String key, List<T1> list ) throws DataConsumerException;
     
     
     public void
-    consume(T1 object ) throws DataConsumerException
+    consume(T1 spot ) throws DataConsumerException
     {
-        //System.out.println( object );
+        //System.out.println( spot );
         
-        Object key = getKey( object );
+        String key = getKey( spot );
         List<T1> list = null;
         
-        synchronized( objects )
+        synchronized(spots)
         {
-            if( !objects.containsKey( key )  )
+            if( !spots.containsKey( key )  )
             {
                 list = newListBucket();
-                objects.put( key, list );
+                spots.put( key, list );
             } else
             {
-                list = objects.get( key );
+                list = spots.get( key );
             }
 
             ate ++;
-            append( list, object );
+            append( list, spot );
         
             if( isCollected( list ) )
             {
                 T2 assembly = assemble( key, list );
                 assembled ++;
- //               synchronized( objects )
+ //               synchronized( spots )
                 {
-                    objects.remove( key );
+                    spots.remove( key );
                 }
                 
                 if( null != dataConsumer)

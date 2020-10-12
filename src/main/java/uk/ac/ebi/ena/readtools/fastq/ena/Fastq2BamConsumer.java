@@ -63,26 +63,26 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
     }
 
     @Override
-    public void consume(FastqSpot iSpot) throws DataConsumerException {
+    public void consume(FastqSpot spot) throws DataConsumerException {
         try {
-            validate(iSpot);
+            validate(spot);
 
-            if (iSpot.isPaired()) {
+            if (spot.isPaired()) {
                 SAMRecord rec1 = createSamRecord(
-                        true, iSpot.name, iSpot.forward.bases, iSpot.forward.quals);
+                        true, spot.name, spot.forward.bases, spot.forward.quals);
                 rec1.setFirstOfPairFlag(true);
                 rec1.setSecondOfPairFlag(false);
                 writer.addAlignment(rec1);
 
                 SAMRecord rec2 = createSamRecord(
-                        true, iSpot.name, iSpot.reverse.bases, iSpot.reverse.quals);
+                        true, spot.name, spot.reverse.bases, spot.reverse.quals);
                 rec2.setFirstOfPairFlag(false);
                 rec2.setSecondOfPairFlag(true);
                 writer.addAlignment(rec2);
 
             } else {
-                DataSpot unpaired = iSpot.getUnpaired();
-                SAMRecord rec = createSamRecord(false, iSpot.name, unpaired.bases, unpaired.quals);
+                DataSpot unpaired = spot.getUnpaired();
+                SAMRecord rec = createSamRecord(false, spot.name, unpaired.bases, unpaired.quals);
                 rec.setReadPairedFlag(false);
                 writer.addAlignment(rec);
             }

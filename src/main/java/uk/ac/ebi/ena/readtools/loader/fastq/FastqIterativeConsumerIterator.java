@@ -150,11 +150,11 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
     
     @Override
     public void
-    consume(FastqSpot object ) throws DataConsumerException
+    consume(FastqSpot spot) throws DataConsumerException
     {
         try
         {
-            queue.put( object );
+            queue.put(spot);
             
         } catch( InterruptedException e )
         {

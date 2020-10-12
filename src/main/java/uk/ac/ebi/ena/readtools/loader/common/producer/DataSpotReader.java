@@ -112,7 +112,7 @@ SPACE HERE
     private final DataSpotReaderParams params = defaultParams();
 
     /**
-     * Default read index assigned to each {@link DataSpot} object returned by this reader instance.
+     * Default read index assigned to each {@link DataSpot} spot returned by this reader instance.
      */
     private final String defaultReadIndex;
 
