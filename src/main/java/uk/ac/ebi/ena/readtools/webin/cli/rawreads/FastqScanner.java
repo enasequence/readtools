@@ -207,12 +207,13 @@ FastqScanner
                      BloomWrapper duplications ) throws Throwable
     {
         AtomicLong count = new AtomicLong();
-        DataProducerException t = read( rf, labelset, pairing, duplications, count );
+        DataProducerException dataProducerException = read( rf, labelset, pairing, duplications, count );
                         
-        if( null != t )
+        if( null != dataProducerException )
         {
-            ValidationResult dataFeederResult = fileResult.create(new ValidationOrigin("line number", t.getLineNo()));
-            dataFeederResult.add(ValidationMessage.error( t.getMessage()));
+            ValidationMessage dataProducerError = ValidationMessage.error( dataProducerException.getMessage() );
+            dataProducerError.appendOrigin(new ValidationOrigin("line number", dataProducerException.getLineNo()));
+            fileResult.add(dataProducerError);
         } else
         {
             fileResult.add(ValidationMessage.info( String.format( "Collected %d reads", count.get())));

@@ -15,37 +15,16 @@ package uk.ac.ebi.ena.readtools.loader.common.consumer;
 public class
 PrintDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T1, T2>
 {
-    volatile boolean lock;
-    
     @Override
     public void 
     cascadeErrors() throws DataConsumerException
     {
-        ;
     }
 
- 
-    public boolean
-    setLock()
-    {
-        if( lock )
-            return false;
-        lock = true;
-        return lock;
-    }
-    
-
-    public void
-    resetLock()
-    {
-        lock = false;
-    }
-
-    
     @Override public void
-    consume(T1 object ) throws DataConsumerException
+    consume(T1 spot ) throws DataConsumerException
     {
-        System.out.println( object ); 
+        System.out.println( spot );
     }
 
     
@@ -55,11 +34,9 @@ PrintDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T1, 
         throw new UnsupportedOperationException();
     }
 
-
     @Override public boolean 
     isOk()
     {
         return true;
     }
-
 }

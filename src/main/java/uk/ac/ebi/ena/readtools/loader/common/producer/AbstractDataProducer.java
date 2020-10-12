@@ -87,13 +87,13 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
 
     //Re-implement if you need special type of feeding
     private T produce() throws DataProducerException {
-        T object = null;
+        T spot = null;
 
         try {
-            object = produce(istream);
+            spot = produce(istream);
             ++readRecordCount;
 
-            return object;
+            return spot;
         } catch( EOFException e ){
             throw new DataProducerEOFException(readRecordCount);
         } catch( DataProducerException e ){

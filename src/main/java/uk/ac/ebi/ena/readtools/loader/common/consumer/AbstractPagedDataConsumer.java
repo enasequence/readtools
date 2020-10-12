@@ -72,7 +72,7 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
     
     
     public synchronized File
-    spillMap( Map<Object, List<T1>> map )
+    spillMap( Map<String, List<T1>> map )
     {
         long started = System.currentTimeMillis();
         try
@@ -86,9 +86,9 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
             ObjectOutputStream oos = openOutputStream( f );
             //spill & count records
             int i = 0;
-            for( Entry<Object, List<T1>> entry : map.entrySet() )
+            for( Entry<String, List<T1>> entry : map.entrySet() )
             {
-                oos.writeObject( new Pair<Object, List<T1>>( entry.getKey(), entry.getValue() ) );
+                oos.writeObject( new Pair<>( entry.getKey(), entry.getValue() ) );
                
                 for( T1 e : entry.getValue() )
                     if( null != e )
@@ -117,7 +117,7 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
 
 
     private ObjectOutputStream 
-    openOutputStream( File file ) throws IOException, FileNotFoundException
+    openOutputStream( File file ) throws IOException
     {
         ObjectOutputStream oos = new ObjectOutputStream( new BufferedOutputStream( new GZIPOutputStream( new BufferedOutputStream( new FileOutputStream( file ) ), OUTPUT_BUFFER_SIZE ) 
                                                                                    { 
@@ -132,10 +132,10 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
     }
 
     
-    public synchronized Map<Object, List<T1>>
+    public synchronized Map<String, List<T1>>
     fillMap( File file )
     {
-        Map<Object, List<T1>> result = new HashMap<Object, List<T1>>( spill_page_size );
+        Map<String, List<T1>> result = new HashMap<>( spill_page_size );
         ObjectInputStream ois = null;
         long started = System.currentTimeMillis();
         int  i = 0;
@@ -150,7 +150,7 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
             for( ; ; )
             {
                 @SuppressWarnings( "unchecked" )
-                Pair<Object, List<T1>> entry = (Pair<Object, List<T1>>)ois.readObject();
+                Pair<String, List<T1>> entry = (Pair<String, List<T1>>)ois.readObject();
                 result.put( entry.key, entry.value );
                 for( T1 e : entry.value )
                     if( null != e )
@@ -186,10 +186,10 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
     public List<T1>
     newListBucket() 
     {
-        if( use_spill && spill_page_size <= super.objects.size() )
+        if( use_spill && spill_page_size <= super.spots.size() )
         {
-            spillMap( super.objects );
-            super.objects.clear();
+            spillMap( super.spots);
+            super.spots.clear();
         }
         
         return super.newListBucket();
@@ -208,8 +208,8 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
                 int i = 0;
                 do
                 {
-                    if( super.objects.isEmpty() )
-                        super.objects = fillMap( files.get( i++ ) );    
+                    if( super.spots.isEmpty() )
+                        super.spots = fillMap( files.get( i++ ) );
                     
                     generation = files.size();
                     for( int j = i; j < generation;  ++ j )
@@ -230,13 +230,13 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
                             for( ; ; )
                             {
                                 @SuppressWarnings( "unchecked" )
-                                Pair<Object, List<T1>> entry = (Pair<Object, List<T1>>)ois.readObject();
+                                Pair<String, List<T1>> entry = (Pair<String, List<T1>>)ois.readObject();
                                 ++read_spots;
-                                if( super.objects.containsKey( entry.key ) )
+                                if( super.spots.containsKey( entry.key ) )
                                 {
-                                    for( T1 object : entry.value )
-                                        if( null != object )
-                                            consume( object );
+                                    for( T1 spot : entry.value )
+                                        if( null != spot )
+                                            consume( spot );
                                 } else
                                 {
                                     if( null == oos )
@@ -275,7 +275,7 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
                     
                     // flush unassembled
                     super.cascadeErrors();
-                    super.objects.clear();
+                    super.spots.clear();
                     
                 } while( ( i = generation ) < files.size() );
             } catch( Exception e )
