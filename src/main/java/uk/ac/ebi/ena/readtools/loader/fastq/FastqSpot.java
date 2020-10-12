@@ -67,7 +67,7 @@ public class FastqSpot implements Spot {
     }
 
     public boolean isPaired() {
-        return !(reverse == null || forward == null);
+        return reverse != null && forward != null;
     }
 
     /**

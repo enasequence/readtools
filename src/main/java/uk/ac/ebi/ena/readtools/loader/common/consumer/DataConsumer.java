@@ -12,7 +12,7 @@ package uk.ac.ebi.ena.readtools.loader.common.consumer;
 
 public interface DataConsumer<T1 extends Spot, T2 extends Spot> {
     void cascadeErrors() throws DataConsumerException;
-    void consume(T1 object ) throws DataConsumerException;
+    void consume(T1 spot ) throws DataConsumerException;
     void setConsumer(DataConsumer<T2, ? extends Spot> dataConsumer);
     boolean isOk();
 }

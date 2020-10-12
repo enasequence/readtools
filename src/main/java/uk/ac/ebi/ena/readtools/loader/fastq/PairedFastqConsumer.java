@@ -56,14 +56,14 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
         throw new DataConsumerException( String.format( "Readname [%s] does not match regexp", readname ) );
     }
 
-    @Override public Object
-    getKey( DataSpot object )
+    @Override public String
+    getKey( DataSpot spot )
     {
         try
-        {   return getReadKey( object.name);
+        {   return getReadKey( spot.name);
         } catch (DataConsumerException de )
         {
-            return object.name;
+            return spot.name;
         }
     }
 
@@ -100,7 +100,7 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
     
     @Override
     public FastqSpot
-    assemble( final Object key, List<DataSpot> list ) throws DataConsumerException
+    assemble(final String key, List<DataSpot> list ) throws DataConsumerException
     {
         FastqSpot spot = list.size() == 1
                 ? new FastqSpot((String) key, list.get(0))
@@ -121,7 +121,7 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot>
 
     @Override
     public FastqSpot
-    handleErrors( final Object key, List<DataSpot> list ) throws DataConsumerException
+    handleErrors(final String key, List<DataSpot> list ) throws DataConsumerException
     {   
         return assemble( key, list );
     }
