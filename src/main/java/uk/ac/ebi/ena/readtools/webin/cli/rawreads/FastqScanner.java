@@ -15,11 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
+import uk.ac.ebi.ena.readtools.loader.common.producer.AutoNormalizerDataSpotProducer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataSpotProducer;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
@@ -126,9 +126,8 @@ FastqScanner
         try( InputStream is = openFileInputStream( Paths.get( rf.getFilename() ) ) )
         {
             String stream_name = rf.getFilename();
-            final QualityNormalizer normalizer = getQualityNormalizer( rf );
-            
-            DataSpotProducer dp = new DataSpotProducer( is, normalizer, "" );
+
+            AutoNormalizerDataSpotProducer dp = new AutoNormalizerDataSpotProducer(is, "", rf.getFilename());
             dp.setName( stream_name );
             
             dp.setConsumer(new DataConsumer<DataSpot, Spot>()

@@ -55,10 +55,11 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
     //TODO: scheduler should be fair and based on different principle
     public final void run() {
         try {
-            int yield = YIELD_CYCLES;
+            begin();
+
             for( ; ; ) {
                 synchronized(dataConsumer) {
-                    for( yield = YIELD_CYCLES; yield > 0; --yield )
+                    for(int yield = YIELD_CYCLES; yield > 0; --yield )
                         dataConsumer.consume( produce() );
                 }
 
@@ -67,7 +68,6 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
 
                 Thread.sleep( 1 );
             }
-
         } catch( DataConsumerException e ) {
             //e.printStackTrace();
             this.stored_exception = e;
@@ -82,11 +82,17 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
             //t.printStackTrace();
             this.stored_exception = t;
             is_ok = false;
+        } finally {
+            end();
         }
     }
 
+    protected void begin() {}
+
+    protected void end() {}
+
     //Re-implement if you need special type of feeding
-    private T produce() throws DataProducerException {
+    private T produce() {
         T spot = null;
 
         try {

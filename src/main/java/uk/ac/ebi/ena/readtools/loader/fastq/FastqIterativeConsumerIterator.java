@@ -12,10 +12,9 @@ package uk.ac.ebi.ena.readtools.loader.fastq;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataSpotProducer;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
@@ -67,7 +66,7 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
 
         consumer.setConsumer( this );
         
-        ArrayList<AbstractDataProducer<?>> producers = new ArrayList<>();
+        ArrayList<DataSpotProducer> producers = new ArrayList<>();
         
 
         int attr = 1;
@@ -89,7 +88,7 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
     
     
     private Runnable
-    lifecycle( final ArrayList<AbstractDataProducer<?>> producers,
+    lifecycle( final ArrayList<DataSpotProducer> producers,
                final DataConsumer<?, ?> consumer_root )
     {
         return new Runnable()
@@ -102,7 +101,7 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
                             boolean again = false;
                             do
                             {
-                                for( AbstractDataProducer<?> producer : producers )
+                                for( DataSpotProducer producer : producers )
                                 {
                                     if( producer.isAlive() )
                                     {
@@ -121,7 +120,7 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
                                 }
                             }while( again );
                            
-                            for( AbstractDataProducer<?> producer : producers )
+                            for( DataSpotProducer producer : producers )
                             {
                                 if( !producer.isOk() )
                                 {

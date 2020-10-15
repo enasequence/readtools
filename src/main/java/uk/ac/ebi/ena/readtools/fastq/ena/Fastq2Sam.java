@@ -18,13 +18,12 @@ import htsjdk.samtools.util.FastqQualityFormat;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.producer.AutoNormalizerDataSpotProducer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataSpotProducer;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqConsumer;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
 import java.io.File;
@@ -94,14 +93,14 @@ public class Fastq2Sam {
         
         dataSpotToFastqSpotConsumer.setConsumer( fastqSpotToBamConsumer );
         
-        ArrayList<AbstractDataProducer<?>> producers = new ArrayList<>();
+        ArrayList<AutoNormalizerDataSpotProducer> producers = new ArrayList<>();
 
         int attr = 1;
         for( String f_name: p.files ) {
             final String default_attr = Integer.toString( attr ++ );
 
-            DataSpotProducer producer = new DataSpotProducer(
-                    FileCompression.valueOf( p.compression ).open( f_name, p.use_tar ), normalizer, default_attr);
+            AutoNormalizerDataSpotProducer producer = new AutoNormalizerDataSpotProducer(
+                    FileCompression.valueOf( p.compression ).open( f_name, p.use_tar ), default_attr, f_name);
             producer.setConsumer( dataSpotToFastqSpotConsumer );
             producer.setName( f_name );
             producers.add( producer );
@@ -110,7 +109,7 @@ public class Fastq2Sam {
         
         boolean again = false;
         do {
-            for( AbstractDataProducer<?> producer : producers ) {
+            for( AutoNormalizerDataSpotProducer producer : producers ) {
                 if( producer.isAlive() && producer.isOk() ) {
                     try {
                         producer.join();
@@ -123,7 +122,7 @@ public class Fastq2Sam {
             }
         } while( again );
        
-        for( AbstractDataProducer<?> producer : producers ) {
+        for( AutoNormalizerDataSpotProducer producer : producers ) {
             if( !producer.isOk() ) {
                 throw new DataProducerException( producer.getStoredException() );
             }

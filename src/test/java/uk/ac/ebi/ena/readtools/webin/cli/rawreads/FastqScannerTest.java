@@ -10,6 +10,11 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
+import org.junit.Assert;
+import org.junit.Test;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage.Severity;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -22,12 +27,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage.Severity;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
 public class 
@@ -536,5 +535,21 @@ FastqScannerTest
         fs.checkFiles( vr, rf );
 
         Assert.assertNotEquals( 1, vr.count(Severity.ERROR) );
+    }
+
+    @Test
+    public void testInvalid() throws Throwable {
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "invalid.fastq.gz" );
+
+        RawReadsFile rf = new RawReadsFile();
+
+        rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        FastqScanner fastqScanner = new MyScanner( expected_reads );
+        fastqScanner.checkFiles( vr, rf );
+
+        Assert.assertFalse(vr.isValid());
     }
 }
