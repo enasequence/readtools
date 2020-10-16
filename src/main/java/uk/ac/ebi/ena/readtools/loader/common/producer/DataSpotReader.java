@@ -102,7 +102,7 @@ SPACE HERE
 
     // regexs
     final static private Pattern p_base_name = Pattern.compile( "^@(\\S*)( .*$|$)" ); // for name of the record
-    final static private Pattern p_bases     = Pattern.compile( "^([ACGTNactgn.]*?)\\+$" ); // bases, trailing '+' is obligatory
+    final static private Pattern p_bases     = Pattern.compile( "^([ACGTNUactgnu.]*?)\\+$" ); // bases, trailing '+' is obligatory
     final static private Pattern p_qual_name = Pattern.compile( "^(\\S*)(?: .*$|$)" );  // name of quality record
     //  Pattern p_quals     = Pattern.compile( "^([\\!\\\"\\#\\$\\%\\&\\'\\(\\)\\*\\+,\\-\\.\\/0-9:;<=>\\?\\@A-I]+)$" ); //qualities
     final static private Pattern p_quals_sd  = Pattern.compile( "^-?[0-9]{0,3}( +-?[0-9]{1,3})*[ -]*?$" );

@@ -37,7 +37,7 @@ DataSpotReaderTest {
 
 	@Test
 	public void testInvalidBaseCharactersException() throws Exception {
-		String basesInput = "AGCTUagctuAGCTUagctu";
+		String basesInput = "AGCTUXagctuAGCTUagctux";
 
 		String fullInput = String.format("%s\n%s\n%s\n%s",
 				"@RN-001",
@@ -58,6 +58,6 @@ DataSpotReaderTest {
 		}
 
 		Assert.assertEquals(basesInput, ex.getBases());
-		Assert.assertArrayEquals(new Character[]{'U', 'u'}, ex.getInvalidCharacters().toArray());
+		Assert.assertArrayEquals(new Character[]{'X', 'x'}, ex.getInvalidCharacters().toArray());
 	}
 }

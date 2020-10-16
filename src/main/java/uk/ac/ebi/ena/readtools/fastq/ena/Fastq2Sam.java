@@ -89,7 +89,7 @@ public class Fastq2Sam {
         QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);
 
         Fastq2BamConsumer fastqSpotToBamConsumer = new Fastq2BamConsumer(
-                normalizer, p.sample_name, p.data_file, p.tmp_root);
+                normalizer, p.sample_name, p.data_file, p.tmp_root, p.convertUracil);
         
         dataSpotToFastqSpotConsumer.setConsumer( fastqSpotToBamConsumer );
         
@@ -124,7 +124,7 @@ public class Fastq2Sam {
        
         for( AutoNormalizerDataSpotProducer producer : producers ) {
             if( !producer.isOk() ) {
-                throw new DataProducerException( producer.getStoredException() );
+                throw new RuntimeException(producer.getStoredException());
             }
         }
 
@@ -166,6 +166,9 @@ public class Fastq2Sam {
 
         @Parameter( names = { "-sm", "--sample-name" }, required = true, description = "Value to use for SAM header SM. Required." )
         public String sample_name = null;
+
+        @Parameter( names = { "--convert-uracil" }, description = "Whether or not to convert Uracil bases [U, u] to [T, t]. Default is false." )
+        public boolean convertUracil = false;
 
         public String toString() {
             return String.format( "CommonParams:\nfiles: %s\ncompression: %s\ndata_file: %s",
