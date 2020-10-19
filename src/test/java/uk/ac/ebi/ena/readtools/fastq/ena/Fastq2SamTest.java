@@ -15,9 +15,11 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
+import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
 
@@ -29,6 +31,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Fastq2SamTest {
     @Test
@@ -94,6 +98,37 @@ public class Fastq2SamTest {
                 .reduce((listSize1, listSize2) -> listSize1 + listSize2).get();
 
         Assert.assertEquals(expectedRecCount, recCount);
+    }
+
+    @Test
+    public void testUracilFastq() throws IOException {
+        Fastq2Sam.Params params = new Fastq2Sam.Params();
+        params.tmp_root = System.getProperty("java.io.tmpdir");
+        params.sample_name = "SM-001";
+        params.compression = FileCompression.NONE.name();
+        params.files = Arrays.asList(
+                Fastq2SamTest.class.getClassLoader().getResource("uracil-bases.fastq").getFile());
+
+        // without flag set to false.
+        params.convertUracil = false;
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+
+        InvalidBaseCharacterException e = null;
+        try {
+            new Fastq2Sam().create(params);
+        } catch (Exception ex) {
+            e = (InvalidBaseCharacterException) ExceptionUtils.getRootCause(ex);
+        }
+        Assert.assertTrue(Pattern.matches("[uU]{1,2}", e.getInvalidCharacters().stream().map(String::valueOf).collect(Collectors.joining())));
+
+        // without flag set to true.
+        params.convertUracil = true;
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+        //Since U or u is not an acceptable base character inside a BAM file, execution of following line without
+        //any error means the Uracil base conversion happened successfully.
+        new Fastq2Sam().create(params);
+
+        Assert.assertTrue(new File(params.data_file).length() > 0);
     }
 
     private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {

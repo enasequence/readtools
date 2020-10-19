@@ -64,6 +64,23 @@ public class Utils {
     }
 
     /**
+     * Replace U bases with T.
+     *
+     * @param bases
+     * @return a new string of bases in which U bases are replaced with T's. Returns the input string as is otherwise.
+     */
+    public static String replaceUracilBases(String bases) {
+        Matcher matcher = URACIL_PATTERN.matcher(bases);
+        if (matcher.find()) {
+            String replacement = matcher.group().equals("U") ? "T" : "t";
+
+            return matcher.replaceAll(replacement);
+        }
+
+        return bases;
+    }
+
+    /**
      * Detects Fastq quality format by examining the given files. Second argument is optional but can be useful
      * when dealing with paired files.
      *

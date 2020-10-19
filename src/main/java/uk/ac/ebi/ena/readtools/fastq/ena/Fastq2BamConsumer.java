@@ -23,6 +23,7 @@ import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
+import uk.ac.ebi.ena.readtools.utils.Utils;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -39,24 +40,32 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
 
     private static final String DEFAULT_READ_GROUP_NAME = "A";
 
-    private static final String VALID_DNA_CHARSET = "^[.acmgrsvtwyhkdbnNACMGRSVTWYHKDBN]+$";
-    private static final Pattern VALID_DNA_CHARSET_PATTERN = Pattern.compile(VALID_DNA_CHARSET);
+    private static final String VALID_DNA_CHARSET = ".acmgrsvtwyhkdbnACMGRSVTWYHKDBN";
+
+    private final Pattern validDnaCharsetPattern;
 
     private final QualityNormalizer qualityNormalizer;
 
     private final String sampleName;
 
+    private final boolean convertUracil;
+
     private final SAMFileWriter writer;
 
     private volatile boolean isOk = true;
 
-    public Fastq2BamConsumer(QualityNormalizer qualityNormalizer, String sampleName, String outputFilePath, String tempDir) {
+    public Fastq2BamConsumer(QualityNormalizer qualityNormalizer, String sampleName, String outputFilePath,
+                             String tempDir, boolean convertUracil) {
         this.qualityNormalizer = qualityNormalizer;
         this.sampleName = sampleName;
+        this.convertUracil = convertUracil;
 
         if (sampleName == null || sampleName.trim().isEmpty()) {
             throw new IllegalArgumentException("Sample name is either null or empty.");
         }
+
+        validDnaCharsetPattern = convertUracil ? Pattern.compile("^[" + VALID_DNA_CHARSET + "uU]+$")
+                : Pattern.compile("^[" + VALID_DNA_CHARSET + "]+$");
 
         writer = new SAMFileWriterFactory().setTempDirectory(new File(tempDir)).makeSAMOrBAMWriter(
                 createHeader(), false, Paths.get(outputFilePath));
@@ -86,9 +95,6 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
                 rec.setReadPairedFlag(false);
                 writer.addAlignment(rec);
             }
-        } catch (InvalidBaseCharacterException ex) {
-            isOk = false;
-            throw ex;
         } catch (Exception ex) {
             isOk = false;
             throw new DataConsumerException(ex);
@@ -123,7 +129,7 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
 
     private void validate(FastqSpot fastqSpot) {
         if (fastqSpot.forward != null) {
-            Matcher matcher = VALID_DNA_CHARSET_PATTERN.matcher(fastqSpot.forward.bases);
+            Matcher matcher = validDnaCharsetPattern.matcher(fastqSpot.forward.bases);
             if( !matcher.matches() ) {
                 handleInvalidDnaCharset(fastqSpot.forward.bases, matcher);
             }
@@ -133,7 +139,7 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
         }
 
         if (fastqSpot.reverse != null) {
-            Matcher matcher = VALID_DNA_CHARSET_PATTERN.matcher(fastqSpot.reverse.bases);
+            Matcher matcher = validDnaCharsetPattern.matcher(fastqSpot.reverse.bases);
             if( !matcher.matches() )
                 handleInvalidDnaCharset(fastqSpot.reverse.bases, matcher);
 
@@ -160,7 +166,7 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
         rec.setReadUnmappedFlag(true);
         rec.setAttribute(ReservedTagConstants.READ_GROUP_ID, DEFAULT_READ_GROUP_NAME);
         rec.setReadName(baseName);
-        rec.setReadString(read);
+        rec.setReadString(modifyBases(read));
         rec.setBaseQualities(normalizedQualities);
 
         if (paired) {
@@ -168,5 +174,9 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
             rec.setMateUnmappedFlag(true);
         }
         return rec;
+    }
+
+    private String modifyBases(String bases) {
+        return convertUracil ? Utils.replaceUracilBases(bases) : bases;
     }
 }
