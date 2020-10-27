@@ -109,7 +109,7 @@ public class Fastq2SamTest {
         params.files = Arrays.asList(
                 Fastq2SamTest.class.getClassLoader().getResource("uracil-bases.fastq").getFile());
 
-        // without flag set to false.
+        // with flag set to false.
         params.convertUracil = false;
         params.data_file = Files.createTempFile(null, ".bam").toString();
 
@@ -121,11 +121,12 @@ public class Fastq2SamTest {
         }
         Assert.assertTrue(Pattern.matches("[uU]{1,2}", e.getInvalidCharacters().stream().map(String::valueOf).collect(Collectors.joining())));
 
-        // without flag set to true.
+        // with flag set to true.
         params.convertUracil = true;
         params.data_file = Files.createTempFile(null, ".bam").toString();
+
         //Since U or u is not an acceptable base character inside a BAM file, execution of following line without
-        //any error means the Uracil base conversion happened successfully.
+        //any error would mean that Uracil base conversion did take place and there is no need for its verification.
         new Fastq2Sam().create(params);
 
         Assert.assertTrue(new File(params.data_file).length() > 0);
