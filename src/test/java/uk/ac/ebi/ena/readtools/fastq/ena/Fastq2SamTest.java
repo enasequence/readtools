@@ -45,9 +45,12 @@ public class Fastq2SamTest {
         params.files = Arrays.asList(
                 Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile());
 
-        new Fastq2Sam().create(params);
+        Fastq2Sam fastq2Sam = new Fastq2Sam();
+        fastq2Sam.create(params);
 
         Assert.assertTrue(new File(params.data_file).length() > 0);
+        Assert.assertEquals(4, fastq2Sam.getTotalRecordCount());
+        Assert.assertEquals(404, fastq2Sam.getTotalBaseCount());
     }
 
     @Test
@@ -64,9 +67,12 @@ public class Fastq2SamTest {
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(inpFile1.getAbsolutePath(), inpFile2.getAbsolutePath());
 
-        new Fastq2Sam().create(params);
+        Fastq2Sam fastq2Sam = new Fastq2Sam();
+        fastq2Sam.create(params);
 
         Assert.assertTrue(outFile.length() > 0);
+        Assert.assertEquals(8, fastq2Sam.getTotalRecordCount());
+        Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
 
         Map<String, List<FastqRecord>> fastqRecordMap = createFastqRecordMap(inpFile1, inpFile2);
 
@@ -127,9 +133,12 @@ public class Fastq2SamTest {
 
         //Since U or u is not an acceptable base character inside a BAM file, execution of following line without
         //any error would mean that Uracil base conversion did take place and there is no need for its verification.
-        new Fastq2Sam().create(params);
+        Fastq2Sam fastq2Sam = new Fastq2Sam();
+        fastq2Sam.create(params);
 
         Assert.assertTrue(new File(params.data_file).length() > 0);
+        Assert.assertEquals(2, fastq2Sam.getTotalRecordCount());
+        Assert.assertEquals(40, fastq2Sam.getTotalBaseCount());
     }
 
     private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {

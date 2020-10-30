@@ -33,6 +33,8 @@ import java.util.List;
 
 public class Fastq2Sam {
 
+    private long totalRecordCount = 0, totalBaseCount = 0;
+
     public static void main( String[] args ) {
         final Params p = new Params();
         JCommander jc = new JCommander( p );
@@ -121,16 +123,33 @@ public class Fastq2Sam {
                 }
             }
         } while( again );
-       
+
         for( AutoNormalizerDataSpotProducer producer : producers ) {
             if( !producer.isOk() ) {
                 throw new RuntimeException(producer.getStoredException());
             }
+
+            totalRecordCount += producer.getRecordCount();
+            totalBaseCount += producer.getTotalBaseCount();
         }
 
         dataSpotToFastqSpotConsumer.cascadeErrors();
         fastqSpotToBamConsumer.unwind();
-        System.out.println( "DONE" );
+        System.out.println( String.format("READS: %d; BASES: %d", totalRecordCount, totalBaseCount) );
+    }
+
+    /**
+     * @return Total number of records that were processed.
+     */
+    public long getTotalRecordCount() {
+        return totalRecordCount;
+    }
+
+    /**
+     * @return Total number of bases accumulated across all records.
+     */
+    public long getTotalBaseCount() {
+        return totalBaseCount;
     }
 
     @Parameters(commandDescription = "FastQ to SAM conversion.")

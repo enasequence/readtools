@@ -20,12 +20,15 @@ import java.io.InputStream;
 
 public abstract class
 AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
-    protected InputStream  istream;
-    protected boolean      is_ok = true;
-    protected DataConsumer<T, ?> dataConsumer;
-    protected Throwable    stored_exception;
-    private long readRecordCount;
-    static final int       YIELD_CYCLES = 362;//16384;
+    private static final int YIELD_CYCLES = 362;//16384;
+
+    private volatile long recordCount = 0, totalBaseCount = 0;
+
+    protected final InputStream  istream;
+
+    protected volatile DataConsumer<T, ?> dataConsumer;
+    protected volatile boolean      is_ok = true;
+    protected volatile Throwable    stored_exception;
     
     protected AbstractDataProducer(InputStream istream) {
         this.istream = new BufferedInputStream( istream, 1024 * 1024 );
@@ -36,8 +39,17 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
      *
      * @return
      */
-    public long getReadRecordCount() {
-        return readRecordCount;
+    public long getRecordCount() {
+        return recordCount;
+    }
+
+    /**
+     * Get the total number of bases that were read.
+     *
+     * @return
+     */
+    public long getTotalBaseCount() {
+        return totalBaseCount;
     }
     
     public void setConsumer(DataConsumer<T, ?> consumer) {
@@ -97,11 +109,13 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
 
         try {
             spot = produce(istream);
-            ++readRecordCount;
+            ++recordCount;
+            totalBaseCount += spot.getBaseCount();
+
 
             return spot;
         } catch( EOFException e ){
-            throw new DataProducerEOFException(readRecordCount);
+            throw new DataProducerEOFException(recordCount);
         } catch( DataProducerException e ){
             throw e;
         } catch( Throwable cause ) {
