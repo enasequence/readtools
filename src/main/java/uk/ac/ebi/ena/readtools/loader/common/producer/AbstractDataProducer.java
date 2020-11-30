@@ -22,7 +22,7 @@ public abstract class
 AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
     private static final int YIELD_CYCLES = 362;//16384;
 
-    private volatile long recordCount = 0, totalBaseCount = 0;
+    private volatile long readCount = 0, baseCount = 0;
 
     protected final InputStream  istream;
 
@@ -35,12 +35,12 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
     }
 
     /**
-     * Get the total number of records that were read.
+     * Get the total number of reads that were read.
      *
      * @return
      */
-    public long getRecordCount() {
-        return recordCount;
+    public long getReadCount() {
+        return readCount;
     }
 
     /**
@@ -48,8 +48,8 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
      *
      * @return
      */
-    public long getTotalBaseCount() {
-        return totalBaseCount;
+    public long getBaseCount() {
+        return baseCount;
     }
     
     public void setConsumer(DataConsumer<T, ?> consumer) {
@@ -109,13 +109,13 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
 
         try {
             spot = produce(istream);
-            ++recordCount;
-            totalBaseCount += spot.getBaseCount();
+            ++readCount;
+            baseCount += spot.getBaseCount();
 
 
             return spot;
         } catch( EOFException e ){
-            throw new DataProducerEOFException(recordCount);
+            throw new DataProducerEOFException(readCount);
         } catch( DataProducerException e ){
             throw e;
         } catch( Throwable cause ) {

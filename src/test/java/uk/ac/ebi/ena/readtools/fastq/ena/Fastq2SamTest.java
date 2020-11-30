@@ -49,7 +49,7 @@ public class Fastq2SamTest {
         fastq2Sam.create(params);
 
         Assert.assertTrue(new File(params.data_file).length() > 0);
-        Assert.assertEquals(4, fastq2Sam.getTotalRecordCount());
+        Assert.assertEquals(4, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(404, fastq2Sam.getTotalBaseCount());
     }
 
@@ -71,7 +71,7 @@ public class Fastq2SamTest {
         fastq2Sam.create(params);
 
         Assert.assertTrue(outFile.length() > 0);
-        Assert.assertEquals(8, fastq2Sam.getTotalRecordCount());
+        Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
 
         Map<String, List<FastqRecord>> fastqRecordMap = createFastqRecordMap(inpFile1, inpFile2);
@@ -137,7 +137,7 @@ public class Fastq2SamTest {
         fastq2Sam.create(params);
 
         Assert.assertTrue(new File(params.data_file).length() > 0);
-        Assert.assertEquals(2, fastq2Sam.getTotalRecordCount());
+        Assert.assertEquals(2, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(40, fastq2Sam.getTotalBaseCount());
     }
 

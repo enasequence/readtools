@@ -33,7 +33,7 @@ import java.util.List;
 
 public class Fastq2Sam {
 
-    private long totalRecordCount = 0, totalBaseCount = 0;
+    private long totalReadCount = 0, totalBaseCount = 0;
 
     public static void main( String[] args ) {
         final Params p = new Params();
@@ -129,24 +129,24 @@ public class Fastq2Sam {
                 throw new RuntimeException(producer.getStoredException());
             }
 
-            totalRecordCount += producer.getRecordCount();
-            totalBaseCount += producer.getTotalBaseCount();
+            totalReadCount += producer.getReadCount();
+            totalBaseCount += producer.getBaseCount();
         }
 
         dataSpotToFastqSpotConsumer.cascadeErrors();
         fastqSpotToBamConsumer.unwind();
-        System.out.println( String.format("READS: %d; BASES: %d", totalRecordCount, totalBaseCount) );
+        System.out.println( String.format("READS: %d; BASES: %d", totalReadCount, totalBaseCount) );
     }
 
     /**
-     * @return Total number of records that were processed.
+     * @return Total number of reads that were processed.
      */
-    public long getTotalRecordCount() {
-        return totalRecordCount;
+    public long getTotalReadCount() {
+        return totalReadCount;
     }
 
     /**
-     * @return Total number of bases accumulated across all records.
+     * @return Total number of bases accumulated across all reads.
      */
     public long getTotalBaseCount() {
         return totalBaseCount;

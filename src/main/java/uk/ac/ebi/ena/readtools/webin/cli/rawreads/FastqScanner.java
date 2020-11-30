@@ -183,7 +183,7 @@ FastqScanner
             if( !dp.isOk() && !( dp.getStoredException() instanceof DataProducerException) && !( dp.getStoredException() instanceof InvocationTargetException ) )
                 throw dp.getStoredException();
             
-            Throwable t = dp.isOk() ? dp.getRecordCount() > 0 ? null : new DataProducerException( 0, "Empty file" )
+            Throwable t = dp.isOk() ? dp.getReadCount() > 0 ? null : new DataProducerException( 0, "Empty file" )
                                     : dp.getStoredException();
             if( dp.isOk() && null == t )
                 return null;
