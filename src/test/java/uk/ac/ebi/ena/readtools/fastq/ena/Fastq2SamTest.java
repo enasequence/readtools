@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 
 public class Fastq2SamTest {
     @Test
-    public void testCorrectUnpaired() throws IOException, DataProducerException, DataConsumerException {
+    public void singleFastqReadAndBaseCount() throws IOException, DataProducerException, DataConsumerException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
@@ -51,6 +51,25 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(4, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(404, fastq2Sam.getTotalBaseCount());
+    }
+
+    @Test
+    public void pairedFastqReadAndBaseCount() throws IOException, DataProducerException, DataConsumerException {
+        Fastq2Sam.Params params = new Fastq2Sam.Params();
+        params.tmp_root = System.getProperty("java.io.tmpdir");
+        params.sample_name = "SM-001";
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+        params.compression = FileCompression.NONE.name();
+        params.files = Arrays.asList(
+                Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile(),
+                Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile());
+
+        Fastq2Sam fastq2Sam = new Fastq2Sam();
+        fastq2Sam.create(params);
+
+        Assert.assertTrue(new File(params.data_file).length() > 0);
+        Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
+        Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
     }
 
     @Test
