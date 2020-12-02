@@ -66,6 +66,14 @@ public class FastqSpot implements Spot {
         return name;
     }
 
+    @Override
+    public long getBaseCount() {
+        long fwd = forward != null ? forward.getBaseCount() : 0;
+        long rev = reverse != null ? reverse.getBaseCount() : 0;
+
+        return fwd + rev;
+    }
+
     public boolean isPaired() {
         return reverse != null && forward != null;
     }

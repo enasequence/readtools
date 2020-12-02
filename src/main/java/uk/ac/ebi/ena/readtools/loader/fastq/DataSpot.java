@@ -31,7 +31,12 @@ public class DataSpot implements Serializable, Spot {
     public String getName() {
         return name;
     }
-    
+
+    @Override
+    public long getBaseCount() {
+        return bases.length();
+    }
+
     public String toString() {
         return new StringBuilder()
             .append( "base_name = [" )
