@@ -230,7 +230,12 @@ CramReferenceInfo
                 
                 es.getQueue().put(() -> {
                     count.incrementAndGet();
+
                     String md5 = sequenceRecord.getAttribute( SAMSequenceRecord.MD5_TAG );
+                    if (md5 == null) {
+                        throw new IllegalArgumentException("File header missing MD5 attribute : " + file.getAbsolutePath());
+                    }
+
                     result.computeIfAbsent( md5, k -> {
                         if( findOnDisk( md5 ) )
                         {

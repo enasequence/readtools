@@ -143,19 +143,13 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
                 return;
             }
 
-            FastqScanner fs = new FastqScanner( manifest.getPairingHorizon() ) 
-            {
-                @Override protected void 
-                logProcessedReadNumber( long count )
-                {
-                    ReadsValidator.this.logProcessedReadNumber( count );
-                }
+            FastqScanner fs = new FastqScanner( manifest.getPairingHorizon() ) {
+                @Override
+                protected void logProcessedReadNumber( long count ) { }
 
-                @Override protected void 
-                logFlushMsg( String msg )
-                {
+                @Override
+                protected void logFlushMsg( String msg ) {
                     ReadsValidator.this.logFlushMsg( msg );
-                    
                 }
             };
 
@@ -179,13 +173,9 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
     private void
     readBamOrCramFile( ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
     {
-        BamScanner scanner = new BamScanner()
-        {
-            @Override protected void
-            logProcessedReadNumber( long count )
-            {
-                ReadsValidator.this.logProcessedReadNumber( count );
-            }
+        BamScanner scanner = new BamScanner() {
+            @Override
+            protected void logProcessedReadNumber( long count ) {}
         };
 
         for( RawReadsFile rf : files )
@@ -202,7 +192,8 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
             {
                 fileResult.add(ValidationMessage.info("Processing file"));
                 if (rf.getFiletype().equals(Filetype.cram)) {
-                    scanner.readCramFile( fileResult, rf, paired );
+                    // Cram references have already been confirmed at this point so set the relevant flag to false.
+                    scanner.readCramFile( fileResult, rf, paired, false );
                 } else {
                     scanner.readBamFile( fileResult, rf, paired );
                 }
@@ -291,14 +282,6 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
         }
 
         return f;
-    }
-
-    
-    private void 
-    logProcessedReadNumber( long count )
-    {
-        String msg = String.format( "\rProcessed %16d read(s)", count );
-        logFlushMsg( msg );
     }
 
     

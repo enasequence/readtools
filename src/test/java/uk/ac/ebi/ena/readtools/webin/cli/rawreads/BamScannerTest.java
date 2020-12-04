@@ -51,7 +51,7 @@ BamScannerTest
         RawReadsFile rf = new RawReadsFile();
         rf.setFilename( file.getPath() );
         ValidationResult vr = new ValidationResult();
-        bs.readCramFile( vr, rf, paired );
+        bs.readCramFile( vr, rf, paired, true );
         Assert.assertTrue( vr.isValid() );
         Assert.assertTrue( "cram should be paired", paired.get() );
     }
@@ -67,7 +67,7 @@ BamScannerTest
         RawReadsFile rf = new RawReadsFile();
         rf.setFilename( file.getPath() );
         ValidationResult vr = new ValidationResult();
-        bs.readCramFile( vr, rf, paired );
+        bs.readCramFile( vr, rf, paired, true );
         Assert.assertFalse( vr.isValid() );
     }
 
@@ -115,7 +115,7 @@ BamScannerTest
         rf.setFilename( file.getPath() );
         Path ofile = Files.createTempFile( "BAMSCANNENR", "TEST" );
         ValidationResult vr = new ValidationResult( ofile.toFile() );
-        bs.readCramFile( vr, rf, paired );
+        bs.readCramFile( vr, rf, paired, true );
         Assert.assertFalse( vr.isValid() );
         Assert.assertTrue( new String( Files.readAllBytes( ofile ), StandardCharsets.UTF_8 ), new String( Files.readAllBytes( ofile ), StandardCharsets.UTF_8 ).contains( "File contains no valid reads" ) );
         
