@@ -200,7 +200,7 @@ FastqScannerTest
 
         fs.checkFiles( vr, rf1 );
 
-        Assert.assertTrue( fs.getPaired() );
+        Assert.assertFalse( fs.getPaired() );
         Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
     
@@ -317,27 +317,6 @@ FastqScannerTest
 
         fs.checkFiles( vr, rf1, rf2 );
 
-        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
-    }
-    
-    
-    /* Wrong pair set in one file */
-    @Test public void 
-    testCase8() throws Throwable
-    {
-        File output_dir = createOutputFolder();
-        Path f1 = saveRandomized( "@NAME2/1\nACGT\n+\n1234\n"
-                                + "@NAME/2\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-8", "gz" );
-        
-        FastqScanner fs = new MyScanner( expected_reads );
-        RawReadsFile rf1 = new RawReadsFile();
-        rf1.setFilename( f1.toFile().getCanonicalPath() );
-
-        ValidationResult vr = new ValidationResult();
-
-        fs.checkFiles( vr, rf1 );
-
-        Assert.assertTrue( fs.getPaired() );
         Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
     
@@ -551,5 +530,35 @@ FastqScannerTest
         fastqScanner.checkFiles( vr, rf );
 
         Assert.assertFalse(vr.isValid());
+    }
+
+    @Test
+    public void testSinglePairedWithUnpairedFastq() throws Throwable {
+        File output_dir = createOutputFolder();
+
+        Path f1 = saveRandomized(
+                "@paired/1\n" +
+                        "ACGT\n" +
+                        "+\n" +
+                        "1234\n" +
+                        "@paired/2\n" +
+                        "ACGT\n" +
+                        "+\n" +
+                        "1234\n" +
+                        "@unpaired\n" +
+                        "ACGT\n" +
+                        "+\n" +
+                        "1234", output_dir.toPath(), true, "fastq-1", "gz" );
+
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        fs.checkFiles( vr, rf1 );
+
+        Assert.assertFalse( fs.getPaired() );
+        Assert.assertTrue(vr.isValid());
     }
 }

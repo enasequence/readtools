@@ -257,27 +257,30 @@ FastqScanner
         
         if (!result.isValid())
             return;
-                
-        if( 2 == labelset.size() )
-        {
-            paired.set( true );
-            double pairing_level = (double)pairing.getPossibleDuplicateCount() / ( (double)( pairing.getAddsNumber() - pairing.getPossibleDuplicateCount() ) );
-            pairing_level = 100 * ( 1 < pairing_level ? 1/ pairing_level : pairing_level );
-            result.add(ValidationMessage.info(String.format( "Pairing percentage: %.2f%%", pairing_level )));
 
-            //TODO: estimate bloom false positives impact
-            if( (double)PAIRING_THRESHOLD > pairing_level )
+        //following is only relevant if we are dealing with 2 fastqs which are supposedly paired.
+        if (rfs.length == 2) {
+            if( 2 == labelset.size() )
             {
-                //terminal error
-                result.add(ValidationMessage.error(String.format( "Detected paired fastq submission with less than %d%% of paired reads", PAIRING_THRESHOLD )));
+                paired.set( true );
+                double pairing_level = (double)pairing.getPossibleDuplicateCount() / ( (double)( pairing.getAddsNumber() - pairing.getPossibleDuplicateCount() ) );
+                pairing_level = 100 * ( 1 < pairing_level ? 1/ pairing_level : pairing_level );
+                result.add(ValidationMessage.info(String.format( "Pairing percentage: %.2f%%", pairing_level )));
+
+                //TODO: estimate bloom false positives impact
+                if( (double)PAIRING_THRESHOLD > pairing_level )
+                {
+                    //terminal error
+                    result.add(ValidationMessage.error(String.format( "Detected paired fastq submission with less than %d%% of paired reads", PAIRING_THRESHOLD )));
+                }
+            } else if( labelset.size() > 2 )
+            {
+                result.add(ValidationMessage.error(String.format(
+                        "When submitting paired reads using two Fastq files the reads must follow Illumina paired read naming conventions. "
+                                + "This was not the case for the submitted Fastq files: %s. Unable to determine pairing from set: %s",
+                        rfs,
+                        labelset.stream().limit( 10 ).collect( Collectors.joining( ",", "", 10 < labelset.size() ? "..." : "" ) ) )));
             }
-        } else if( labelset.size() > 2 )
-        {
-            result.add(ValidationMessage.error(String.format(
-                "When submitting paired reads using two Fastq files the reads must follow Illumina paired read naming conventions. "
-              + "This was not the case for the submitted Fastq files: %s. Unable to determine pairing from set: %s",
-                rfs,
-                labelset.stream().limit( 10 ).collect( Collectors.joining( ",", "", 10 < labelset.size() ? "..." : "" ) ) )));
         }
         
         //extra check for suspected reads
