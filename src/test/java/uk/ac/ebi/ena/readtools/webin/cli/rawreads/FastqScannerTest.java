@@ -10,11 +10,6 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
-import org.junit.Assert;
-import org.junit.Test;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage.Severity;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,6 +22,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage.Severity;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
 public class 

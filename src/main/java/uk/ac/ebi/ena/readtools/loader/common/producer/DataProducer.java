@@ -10,11 +10,11 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.producer;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-
 import java.io.IOException;
 import java.io.InputStream;
+
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 
 
 public interface DataProducer<T extends Spot> {

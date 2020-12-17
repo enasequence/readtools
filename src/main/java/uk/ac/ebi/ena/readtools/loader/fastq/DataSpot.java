@@ -10,9 +10,9 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-
 import java.io.Serializable;
+
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 
 /**
  * Holds raw unpaired read information.

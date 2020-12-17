@@ -10,14 +10,15 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.producer;
 
-import org.junit.Assert;
-import org.junit.Test;
-import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 
 public class
 DataSpotReaderTest {

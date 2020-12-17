@@ -11,9 +11,9 @@
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-
 import java.util.StringJoiner;
+
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 
 /**
  * Holds unpaired or paired read information.
