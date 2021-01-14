@@ -116,6 +116,7 @@ public class Sam2Fastq {
 		params.samFile = inputFile;
 		params.fastqBaseName = fastqDir.toPath().resolve(Paths.get(runId)).toString();
 		params.gzip = true;
+		params.reverse = true;
 		create(params);
 	}
 	
