@@ -98,6 +98,18 @@ Sam2FastqTest
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "");
 	}
 
+	@Test
+	public void convertSam2FastqReversePairedReads() throws Exception {
+		String baseDir = "sam2fastq/";
+		String fileNamePrefix = "reverse-read";
+		String fileExt = ".sam";
+
+		File output = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+
+		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_1");
+		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_2");
+	}
+
 	private File generateFastqFiles(String source) throws Exception {
 		File output = File.createTempFile( "FASTQ", "FASTQ" );
 		output.delete();
@@ -119,7 +131,8 @@ Sam2FastqTest
 	private void assertFastqResult(String expectedFilePrefix, String actualFilePrefix, String fileIndex) throws URISyntaxException, IOException {
 		String expectedFastq = new String(Files.readAllBytes(Paths.get(Sam2FastqTest.class.getClassLoader()
 				.getResource( expectedFilePrefix + fileIndex + ".fastq" ).toURI())), StandardCharsets.UTF_8);
-		String actualFastq = new String(Files.readAllBytes(Paths.get( actualFilePrefix + fileIndex + ".fastq" ) ), StandardCharsets.UTF_8);
+
+		String actualFastq = new String(Files.readAllBytes(Paths.get( actualFilePrefix + fileIndex + ".fastq" ) ),StandardCharsets.UTF_8);
 
 		Assert.assertEquals(expectedFastq, actualFastq);
 	}
