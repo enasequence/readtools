@@ -10,13 +10,14 @@
 */
 package uk.ac.ebi.ena.readtools.utils;
 
+import java.io.File;
+
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
-import uk.ac.ebi.ena.readtools.sam.Sam2Fastq;
 
-import java.io.File;
+import uk.ac.ebi.ena.readtools.sam.Sam2Fastq;
 
 public class SAMReverseReadCheck {
 

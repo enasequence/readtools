@@ -10,18 +10,8 @@
 */
 package uk.ac.ebi.ena.readtools.validator;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
 import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.cram.CRAMException;
-
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.BamScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.FastqScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
@@ -37,9 +27,20 @@ import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 import uk.ac.ebi.ena.webin.cli.validator.response.ReadsValidationResponse;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
 public class ReadsValidator 
 implements Validator<ReadsManifest, ReadsValidationResponse> 
 {
+    private static final Duration DEFAULT_QUICK_RUN_DURATION = Duration.ofMinutes(5);
 
     private ReadsManifest manifest;
 
@@ -143,7 +144,8 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
                 return;
             }
 
-            FastqScanner fs = new FastqScanner( manifest.getPairingHorizon() ) {
+            FastqScanner fs = new FastqScanner(
+                    manifest.isQuick() ? DEFAULT_QUICK_RUN_DURATION : null, manifest.getPairingHorizon() ) {
                 @Override
                 protected void logProcessedReadNumber( long count ) { }
 
@@ -173,7 +175,7 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
     private void
     readBamOrCramFile( ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
     {
-        BamScanner scanner = new BamScanner() {
+        BamScanner scanner = new BamScanner(manifest.isQuick() ? DEFAULT_QUICK_RUN_DURATION : null) {
             @Override
             protected void logProcessedReadNumber( long count ) {}
         };

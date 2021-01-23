@@ -10,30 +10,9 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
-
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
@@ -46,10 +25,30 @@ import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
-import uk.ac.ebi.ena.readtools.utils.Utils;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 
 
 public abstract class 
@@ -61,21 +60,28 @@ FastqScanner
     //TODO remove duplication
     private static final int    DEFAULT_PRINT_FREQ = 1_000;
     private static final String PRINT_FREQ_PROPERTY_NAME = "webincli.scanner.print.freq";
-    private static final int    print_freq = Integer.valueOf( System.getProperty( PRINT_FREQ_PROPERTY_NAME, String.valueOf( DEFAULT_PRINT_FREQ ) ) );    
+    private static final int    print_freq = Integer.valueOf( System.getProperty( PRINT_FREQ_PROPERTY_NAME, String.valueOf( DEFAULT_PRINT_FREQ ) ) );
+
+    private static final Logger log = LoggerFactory.getLogger( FastqScanner.class );
     
     private final int expected_size;
     private final Set<String> labelset = new HashSet<>();
     private final AtomicBoolean paired = new AtomicBoolean();
 
-    private static final Logger log = LoggerFactory.getLogger( FastqScanner.class );
+    private final Duration runDuration;
     
     abstract protected void logProcessedReadNumber( long count );
     abstract protected void logFlushMsg( String message );
     
-    
     public
     FastqScanner( int expected_size )
     {
+        this(null, expected_size);
+    }
+
+    public FastqScanner(Duration runDuration, int expected_size )
+    {
+        this.runDuration = runDuration;
         this.expected_size = expected_size;
     }
 
@@ -110,11 +116,6 @@ FastqScanner
             throw new RawReadsException( ex, ex.getMessage() );
         }
     }
-
-
-    private QualityNormalizer getQualityNormalizer(RawReadsFile rf ) {
-        return Utils.getQualityNormalizer(Utils.detectFastqQualityFormat(rf.getFilename(), null));
-    }
     
     
     private DataProducerException
@@ -128,7 +129,8 @@ FastqScanner
         {
             String stream_name = rf.getFilename();
 
-            AutoNormalizerDataSpotProducer dp = new AutoNormalizerDataSpotProducer(is, "", rf.getFilename());
+            AutoNormalizerDataSpotProducer dp = new AutoNormalizerDataSpotProducer(
+                    is, runDuration == null ? null : runDuration, "", rf.getFilename());
             dp.setName( stream_name );
             
             dp.setConsumer(new DataConsumer<DataSpot, Spot>()

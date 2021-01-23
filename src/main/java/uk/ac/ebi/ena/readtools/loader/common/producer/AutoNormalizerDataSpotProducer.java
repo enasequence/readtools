@@ -10,14 +10,14 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.producer;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import htsjdk.samtools.util.FastqQualityFormat;
-
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.utils.Utils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Duration;
 
 /**
  * Detects quality normalizer automatically based on the given file.
@@ -32,6 +32,20 @@ public class AutoNormalizerDataSpotProducer extends AbstractDataProducer<DataSpo
 
     public AutoNormalizerDataSpotProducer(InputStream istream, String defaultAttr, String filePath) {
         super(istream);
+
+        this.defaultAttr = defaultAttr;
+        this.filePath = filePath;
+    }
+
+    /**
+     *
+     * @param istream
+     * @param runDuration - Run for the given duration of time.
+     * @param defaultAttr
+     * @param filePath
+     */
+    public AutoNormalizerDataSpotProducer(InputStream istream, Duration runDuration, String defaultAttr, String filePath) {
+        super(istream, runDuration);
 
         this.defaultAttr = defaultAttr;
         this.filePath = filePath;

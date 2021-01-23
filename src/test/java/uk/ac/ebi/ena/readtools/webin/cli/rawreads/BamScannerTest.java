@@ -10,6 +10,11 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -18,12 +23,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
 public class 
@@ -119,5 +121,38 @@ BamScannerTest
         Assert.assertFalse( vr.isValid() );
         Assert.assertTrue( new String( Files.readAllBytes( ofile ), StandardCharsets.UTF_8 ), new String( Files.readAllBytes( ofile ), StandardCharsets.UTF_8 ).contains( "File contains no valid reads" ) );
         
+    }
+
+    @Ignore("Run this test with a large enough SAM file and adjust 'expected run durations' accordingly")
+    @Test
+    public void testRunDuration() throws IOException {
+        Path file = Paths.get("/path/to/a/large/sam/file");
+
+        long expectedRunDurationMin = 1;
+        long expectedRunDurationMax = 2;
+
+        RawReadsFile rf = new RawReadsFile();
+        rf.setFilename( String.valueOf( file ) );
+
+        AtomicBoolean paired = new AtomicBoolean();
+
+        ValidationResult vr = new ValidationResult();
+
+        BamScanner bs = new BamScanner(Duration.ofSeconds(1)) {
+            @Override
+            protected void logProcessedReadNumber(long cnt) {
+
+            }
+        };
+
+        LocalDateTime before = LocalDateTime.now();
+
+        bs.readBamFile( vr, rf, paired );
+
+        LocalDateTime after = LocalDateTime.now();
+
+        long actualRunDuration = Duration.between(before, after).getSeconds();
+
+        Assert.assertTrue(actualRunDuration > expectedRunDurationMin && actualRunDuration < expectedRunDurationMax);
     }
 }
