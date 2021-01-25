@@ -90,6 +90,6 @@ public class AbstractDataProducerTest {
         long actualRunDurationSec = Duration.between(before, after).getSeconds();
 
         Assert.assertTrue(actualRunDurationSec >= expectedRunDurationSec);
-        Assert.assertTrue(adp.getReadCount() < dummySpotProduceCount);
+        Assert.assertTrue(adp.getReadCount() > 0 && adp.getReadCount() < dummySpotProduceCount);
     }
 }

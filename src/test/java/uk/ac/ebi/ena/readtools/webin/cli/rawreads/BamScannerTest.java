@@ -123,13 +123,16 @@ BamScannerTest
         
     }
 
-    @Ignore("Run this test with a large enough SAM file and adjust 'expected run durations' accordingly")
     @Test
     public void testRunDuration() throws IOException {
-        Path file = Paths.get("/path/to/a/large/sam/file");
+        URL url = BamScannerTest.class.getClassLoader().getResource( "bam2fastq/3fastq/M2241_BLV_sense.bam" );
+        Path file = Paths.get( new File( url.getFile() ).getCanonicalPath() );
 
-        long expectedRunDurationMin = 1;
-        long expectedRunDurationMax = 2;
+        //Adjust this if the file above is changed.
+        long fileReadCount = 129;
+
+        //Lower further if scanner completes faster than this.
+        Duration expectedRunDuration = Duration.ofMillis(1);
 
         RawReadsFile rf = new RawReadsFile();
         rf.setFilename( String.valueOf( file ) );
@@ -138,10 +141,11 @@ BamScannerTest
 
         ValidationResult vr = new ValidationResult();
 
-        BamScanner bs = new BamScanner(Duration.ofSeconds(1)) {
+        long processedReadCount[] = {0};
+        BamScanner bs = new BamScanner(expectedRunDuration) {
             @Override
             protected void logProcessedReadNumber(long cnt) {
-
+                processedReadCount[0] = cnt;
             }
         };
 
@@ -151,8 +155,13 @@ BamScannerTest
 
         LocalDateTime after = LocalDateTime.now();
 
-        long actualRunDuration = Duration.between(before, after).getSeconds();
+        Duration actualRunDuration = Duration.between(before, after);
 
-        Assert.assertTrue(actualRunDuration > expectedRunDurationMin && actualRunDuration < expectedRunDurationMax);
+        Assert.assertTrue(actualRunDuration.getNano() >= expectedRunDuration.getNano());
+
+        //If the scanner returned within the the time budget as it was supposed to
+        //then processed read count should be lower than total read count in the file.
+        //Which means the timeout functionality worked.
+        Assert.assertTrue(processedReadCount[0] > 0 && processedReadCount[0] < fileReadCount);
     }
 }

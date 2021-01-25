@@ -86,7 +86,7 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
 
             begin();
 
-            while(keepRunning.get()) {
+            do {
                 synchronized(dataConsumer) {
                     for(int yield = YIELD_CYCLES; yield > 0; --yield )
                         dataConsumer.consume( produce() );
@@ -96,7 +96,7 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
                     throw new DataProducerPanicException();
 
                 Thread.sleep( 1 );
-            }
+            } while(keepRunning.get());
         } catch( DataConsumerException e ) {
             //e.printStackTrace();
             this.stored_exception = e;

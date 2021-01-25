@@ -130,7 +130,7 @@ FastqScanner
             String stream_name = rf.getFilename();
 
             AutoNormalizerDataSpotProducer dp = new AutoNormalizerDataSpotProducer(
-                    is, runDuration == null ? null : runDuration, "", rf.getFilename());
+                    is, runDuration, "", rf.getFilename());
             dp.setName( stream_name );
             
             dp.setConsumer(new DataConsumer<DataSpot, Spot>()
