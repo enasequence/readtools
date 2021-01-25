@@ -10,17 +10,22 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.producer;
 
-import java.io.BufferedInputStream;
-import java.io.EOFException;
-import java.io.InputStream;
-
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 
+import java.io.BufferedInputStream;
+import java.io.EOFException;
+import java.io.InputStream;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.function.Supplier;
+
 public abstract class
 AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
     private static final int YIELD_CYCLES = 362;//16384;
+
+    private final Duration runDuration;
 
     private volatile long readCount = 0, baseCount = 0;
 
@@ -31,7 +36,17 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
     protected volatile Throwable    stored_exception;
     
     protected AbstractDataProducer(InputStream istream) {
+        this(istream, null);
+    }
+
+    /**
+     *
+     * @param istream
+     * @param runDuration - Run for the given duration of time.
+     */
+    protected AbstractDataProducer(InputStream istream, Duration runDuration) {
         this.istream = new BufferedInputStream( istream, 1024 * 1024 );
+        this.runDuration = runDuration;
     }
 
     /**
@@ -67,9 +82,11 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
     //TODO: scheduler should be fair and based on different principle
     public final void run() {
         try {
+            Supplier<Boolean> keepRunning = createKeepRunning();
+
             begin();
 
-            for( ; ; ) {
+            do {
                 synchronized(dataConsumer) {
                     for(int yield = YIELD_CYCLES; yield > 0; --yield )
                         dataConsumer.consume( produce() );
@@ -79,7 +96,7 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
                     throw new DataProducerPanicException();
 
                 Thread.sleep( 1 );
-            }
+            } while(keepRunning.get());
         } catch( DataConsumerException e ) {
             //e.printStackTrace();
             this.stored_exception = e;
@@ -102,6 +119,15 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
     protected void begin() {}
 
     protected void end() {}
+
+    private Supplier<Boolean> createKeepRunning() {
+        if (runDuration == null) {
+            return () -> true;
+        } else {
+            LocalDateTime startTime = LocalDateTime.now();
+            return () -> startTime.plus(runDuration).isAfter(LocalDateTime.now());
+        }
+    }
 
     //Re-implement if you need special type of feeding
     private T produce() {

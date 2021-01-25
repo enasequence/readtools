@@ -18,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -561,5 +563,46 @@ FastqScannerTest
 
         Assert.assertFalse( fs.getPaired() );
         Assert.assertTrue(vr.isValid());
+    }
+
+    @Test
+    public void testRunDuration() throws Throwable {
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "T966_R1.fastq.gz" );
+
+        //Adjust this if the file above is changed.
+        long fileReadCount = 3829;
+
+        //Lower further if scanner completes faster than this.
+        Duration expectedRunDuration = Duration.ofMillis(1);
+
+        RawReadsFile rf = new RawReadsFile();
+        rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        long processedReadCount[] = {0};
+        FastqScanner fastqScanner = new FastqScanner(expectedRunDuration, expected_reads) {
+            @Override
+            protected void logProcessedReadNumber(long count) {
+                processedReadCount[0] = count;
+            }
+
+            @Override protected void logFlushMsg(String message) { }
+        };
+
+        LocalDateTime before = LocalDateTime.now();
+
+        fastqScanner.checkFiles( vr, rf );
+
+        LocalDateTime after = LocalDateTime.now();
+
+        Duration actualRunDuration = Duration.between(before, after);
+
+        Assert.assertTrue(actualRunDuration.getNano() >= expectedRunDuration.getNano());
+
+        //If the scanner returned within the the time budget as it was supposed to
+        //then processed read count should be lower than total read count in the file.
+        //Which means the timeout functionality worked.
+        Assert.assertTrue(processedReadCount[0] > 0 && processedReadCount[0] < fileReadCount);
     }
 }

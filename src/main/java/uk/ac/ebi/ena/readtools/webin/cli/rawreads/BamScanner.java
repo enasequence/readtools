@@ -10,16 +10,6 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.SAMRecord;
@@ -31,12 +21,23 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.refs.CramReferenceInfo;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
+
+import java.io.File;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 public abstract class
@@ -53,8 +54,19 @@ BamScanner
     private static final int    print_freq = Integer.valueOf( System.getProperty( PRINT_FREQ_PROPERTY_NAME, String.valueOf( DEFAULT_PRINT_FREQ ) ) );    
 
     private static final Logger log = LoggerFactory.getLogger( BamScanner.class );
-    private static final String BAM_STAR = "*";    
+    private static final String BAM_STAR = "*";
+
+    private final Duration runDuration;
+
     abstract protected void logProcessedReadNumber( long cnt );
+
+    public BamScanner() {
+        this(null);
+    }
+
+    public BamScanner(Duration runDuration) {
+        this.runDuration = runDuration;
+    }
 
 
     /**
@@ -159,6 +171,8 @@ BamScanner
 
             try( SamReader reader = factory.open(ir) )
             {
+                Supplier<Boolean> keepReading = createKeepReading();
+
                 for( SAMRecord record : reader )
                 {
                     read_no++;
@@ -182,6 +196,10 @@ BamScanner
                     reads_cnt++;
                     if( 0 == reads_cnt % print_freq )
                         logProcessedReadNumber( reads_cnt );
+
+                    if (!keepReading.get()) {
+                        break;
+                    }
                 }
 
                 logProcessedReadNumber( reads_cnt );
@@ -196,6 +214,15 @@ BamScanner
         } catch( SAMFormatException | CRAMException e )
         {
             result.add( ValidationMessage.error( e ) );
+        }
+    }
+
+    private Supplier<Boolean> createKeepReading() {
+        if (runDuration == null) {
+            return () -> true;
+        } else {
+            LocalDateTime startTime = LocalDateTime.now();
+            return () -> startTime.plus(runDuration).isAfter(LocalDateTime.now());
         }
     }
 }
