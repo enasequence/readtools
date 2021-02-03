@@ -10,6 +10,19 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
+import java.io.File;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.SAMRecord;
@@ -21,23 +34,12 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.refs.CramReferenceInfo;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
-
-import java.io.File;
-import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 public abstract class

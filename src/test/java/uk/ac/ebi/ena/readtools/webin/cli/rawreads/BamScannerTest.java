@@ -10,11 +10,6 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -26,6 +21,11 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
 public class 

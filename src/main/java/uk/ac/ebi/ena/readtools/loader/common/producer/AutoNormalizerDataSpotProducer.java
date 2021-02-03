@@ -10,14 +10,15 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.producer;
 
-import htsjdk.samtools.util.FastqQualityFormat;
-import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
-import uk.ac.ebi.ena.readtools.utils.Utils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
+
+import htsjdk.samtools.util.FastqQualityFormat;
+
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
+import uk.ac.ebi.ena.readtools.utils.Utils;
 
 /**
  * Detects quality normalizer automatically based on the given file.

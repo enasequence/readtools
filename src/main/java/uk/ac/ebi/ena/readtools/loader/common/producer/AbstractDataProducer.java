@@ -10,16 +10,16 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.producer;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.function.Supplier;
+
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 
 public abstract class
 AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {

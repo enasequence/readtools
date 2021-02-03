@@ -10,12 +10,13 @@
 */
 package uk.ac.ebi.ena.readtools.utils;
 
-import org.junit.Assert;
-import org.junit.Test;
-import uk.ac.ebi.ena.readtools.sam.Sam2FastqTest;
-
 import java.io.File;
 import java.net.URL;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import uk.ac.ebi.ena.readtools.sam.Sam2FastqTest;
 
 public class SAMReverseReadCheckTest {
 

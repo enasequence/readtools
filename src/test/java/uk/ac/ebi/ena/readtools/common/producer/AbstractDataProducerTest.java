@@ -10,18 +10,19 @@
 */
 package uk.ac.ebi.ena.readtools.common.producer;
 
-import org.junit.Assert;
-import org.junit.Test;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
+import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
 
 public class AbstractDataProducerTest {
 
