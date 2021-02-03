@@ -32,7 +32,11 @@ DataSpotReaderTest {
 		//extended version of CASAVA 1.8
 		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 1:N:0:331" ).matches() );
 		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 2:N:0:331" ).matches() );
-		
+
+		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603     2:N:0:331" ).matches() );
+		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603\t2:N:0:331" ).matches() );
+		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603\t\t2:N:0:331" ).matches() );
+
 		Assert.assertTrue( DataSpotReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 1:N:0:331 COMMENT" ).matches() );
 	}
 

@@ -98,10 +98,11 @@ SPACE HERE
     //                                                          1        :  2   :    3       :   4  :  5   :   6   :  7          8 :  9 :  10         : 11
 //    final static private Pattern p_casava_1_8_name = Pattern.compile( "^@([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+) ([12]):[YN]:[0-9]*[02468]:[ACGTN]+$" );
     // relexed regular expression
-    final static Pattern p_casava_1_8_name = Pattern.compile( "^@([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9_-]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+) ([12]):[YN]:[0-9]*[02468]:.*$" );
+    final static Pattern p_casava_1_8_name = Pattern.compile(
+            "^@([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9_-]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)( *|\t*)([12]):[YN]:[0-9]*[02468]:.*$" );
 
     // regexs
-    final static private Pattern p_base_name = Pattern.compile( "^@(\\S*)( .*$|$)" ); // for name of the record
+    final static private Pattern p_base_name = Pattern.compile( "^@(\\S*)( .*$|\t.*$|$)" ); // for name of the record
     final static private Pattern p_bases     = Pattern.compile( "^([ACGTNUactgnu.]*?)\\+$" ); // bases, trailing '+' is obligatory
     final static private Pattern p_qual_name = Pattern.compile( "^(\\S*)(?: .*$|$)" );  // name of quality record
     //  Pattern p_quals     = Pattern.compile( "^([\\!\\\"\\#\\$\\%\\&\\'\\(\\)\\*\\+,\\-\\.\\/0-9:;<=>\\?\\@A-I]+)$" ); //qualities
@@ -185,7 +186,7 @@ SPACE HERE
             case CASAVA18:
                 if( !params.m_casava_1_8_name.reset( line ).find() )
                     throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, DataSpotReader.ReadStyle.CASAVA18 ) );
-                dataSpot.name = String.format( "%s/%s", params.m_casava_1_8_name.group( 1 ), params.m_casava_1_8_name.group( 2 ) );
+                dataSpot.name = String.format( "%s/%s", params.m_casava_1_8_name.group( 1 ), params.m_casava_1_8_name.group( 3 ) );
                 break;
 
             case FASTQ:
