@@ -47,6 +47,7 @@ import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
+import uk.ac.ebi.ena.readtools.utils.Utils;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
@@ -85,38 +86,6 @@ FastqScanner
         this.runDuration = runDuration;
         this.expected_size = expected_size;
     }
-
-    
-    private InputStream
-    openFileInputStream( Path path )
-    {
-        final int marksize = 256;
-        BufferedInputStream is;
-        try 
-        {
-            is = new BufferedInputStream( Files.newInputStream( path ) );
-            is.mark( marksize );
-            try
-            {
-                return new BufferedInputStream( new GZIPInputStream( is ) );
-            } catch( IOException gzip )
-            {
-                is.reset();
-                try
-                {
-                    is.mark( marksize );
-                    return new BufferedInputStream( new BZip2CompressorInputStream( is ) );
-                } catch( IOException bzip )
-                {
-                    is.reset();
-                    return is;
-                }
-            }
-        } catch( IOException ex )
-        {
-            throw new RawReadsException( ex, ex.getMessage() );
-        }
-    }
     
     
     private DataProducerException
@@ -126,7 +95,7 @@ FastqScanner
           BloomWrapper duplications,
           AtomicLong count ) throws Throwable
     {
-        try( InputStream is = openFileInputStream( Paths.get( rf.getFilename() ) ) )
+        try( InputStream is = Utils.openFastqInputStream( Paths.get( rf.getFilename() ) ) )
         {
             String stream_name = rf.getFilename();
 

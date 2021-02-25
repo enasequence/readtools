@@ -45,7 +45,7 @@ public class Fastq2SamTest {
         params.data_file = Files.createTempFile(null, ".bam").toString();
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile());
+                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile()).getAbsolutePath());
 
         Fastq2Sam fastq2Sam = new Fastq2Sam();
         fastq2Sam.create(params);
@@ -63,8 +63,8 @@ public class Fastq2SamTest {
         params.data_file = Files.createTempFile(null, ".bam").toString();
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile(),
-                Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile());
+                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile()).getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile()).getAbsolutePath());
 
         Fastq2Sam fastq2Sam = new Fastq2Sam();
         fastq2Sam.create(params);
@@ -134,7 +134,7 @@ public class Fastq2SamTest {
         params.sample_name = "SM-001";
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                Fastq2SamTest.class.getClassLoader().getResource("uracil-bases.fastq").getFile());
+                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases.fastq").getFile()).getAbsolutePath());
 
         // with flag set to false.
         params.convertUracil = false;

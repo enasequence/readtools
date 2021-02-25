@@ -10,10 +10,19 @@
 */
 package uk.ac.ebi.ena.readtools.utils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 import htsjdk.samtools.fastq.AsyncFastqWriter;
 import htsjdk.samtools.fastq.BasicFastqWriter;
@@ -23,10 +32,12 @@ import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.util.FastqQualityFormat;
 import htsjdk.samtools.util.QualityEncodingDetector;
 
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.IlluminaQualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.SolexaQualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
+import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsException;
 
 public class Utils {
 
@@ -90,8 +101,11 @@ public class Utils {
      * @return
      */
     public static FastqQualityFormat detectFastqQualityFormat(String fastqFile1, String fastqFile2) {
-        FastqReader reader1 = new FastqReader(new File(fastqFile1), true);
-        FastqReader reader2 = fastqFile2 == null ? null : new FastqReader(new File(fastqFile2), true);
+        FastqReader reader1 = new FastqReader(null, new BufferedReader(new InputStreamReader(
+                openFastqInputStream(Paths.get(fastqFile1)), StandardCharsets.UTF_8)), true);
+
+        FastqReader reader2 = fastqFile2 == null ? null : new FastqReader(null, new BufferedReader(new InputStreamReader(
+                openFastqInputStream(Paths.get(fastqFile2)), StandardCharsets.UTF_8)), true);
 
         final QualityEncodingDetector detector = new QualityEncodingDetector();
 
@@ -120,6 +134,37 @@ public class Utils {
                 return new IlluminaQualityNormalizer();
             default:
                 throw new IllegalArgumentException("Unexpected fastq quality format provided : " + qualityType);
+        }
+    }
+
+    /**
+     * Opens an input stream to Fastq file. Supports reading from *.gz and *.bzip2 archive formats.
+     *
+     * @param path
+     * @return
+     */
+    public static InputStream openFastqInputStream( Path path ) {
+        final int marksize = 256;
+        BufferedInputStream is;
+
+        try {
+            is = new BufferedInputStream( Files.newInputStream( path ) );
+            is.mark( marksize );
+
+            try {
+                return new BufferedInputStream( new GZIPInputStream( is ) );
+            } catch( IOException gzip ) {
+                is.reset();
+                try {
+                    is.mark( marksize );
+                    return new BufferedInputStream( new BZip2CompressorInputStream( is ) );
+                } catch( IOException bzip ) {
+                    is.reset();
+                    return is;
+                }
+            }
+        } catch( IOException ex ) {
+            throw new RawReadsException( ex, ex.getMessage() );
         }
     }
 }
