@@ -56,6 +56,11 @@ public class AbstractDataProducerTest {
                     public long getBaseCount() {
                         return 99;
                     }
+
+                    @Override
+                    public long getSizeBytes() {
+                        return 99L;
+                    }
                 };
             }
         };

@@ -26,7 +26,7 @@ public class FastqSpot implements Spot {
     public final DataSpot reverse;
 
     public FastqSpot(String name, DataSpot dataSpot) {
-        if (name == null || name.isEmpty() ) {
+        if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Invalid read name.");
         }
 
@@ -47,7 +47,7 @@ public class FastqSpot implements Spot {
      * @param reverse
      */
     public FastqSpot(String name, DataSpot forward, DataSpot reverse) {
-        if (name == null || name.isEmpty() ) {
+        if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Invalid read name.");
         }
 
@@ -100,5 +100,10 @@ public class FastqSpot implements Spot {
                 .add("first=" + forward)
                 .add("second=" + reverse)
                 .toString();
+    }
+
+    @Override
+    public long getSizeBytes() {
+        return name.getBytes().length + forward.getSizeBytes() + reverse.getSizeBytes();
     }
 }

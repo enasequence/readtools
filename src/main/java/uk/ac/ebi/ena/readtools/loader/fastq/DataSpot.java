@@ -39,17 +39,21 @@ public class DataSpot implements Serializable, Spot {
 
     public String toString() {
         return new StringBuilder()
-            .append( "base_name = [" )
-            .append(name)
-            .append( "]\n" )
-            .append( "bases = [" )
-            .append( bases )
-            .append( "], length = " )
-            .append( null == bases ? "null" : bases.length() )
-            .append( "\nquals = [" )
-            .append( quals )
-            .append( "], length = " )
-            .append( null == quals ? "null" : quals.length() )
-            .toString();
+                .append("base_name = [")
+                .append(name)
+                .append("]\n")
+                .append("bases = [")
+                .append(bases)
+                .append("], length = ")
+                .append(null == bases ? "null" : bases.length())
+                .append("\nquals = [")
+                .append(quals)
+                .append("], length = ")
+                .append(null == quals ? "null" : quals.length())
+                .toString();
+    }
+
+    public long getSizeBytes() {
+        return name.getBytes().length + bases.getBytes().length + quals.getBytes().length;
     }
 }
