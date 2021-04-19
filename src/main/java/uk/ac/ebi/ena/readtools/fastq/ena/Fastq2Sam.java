@@ -63,12 +63,14 @@ public class Fastq2Sam {
 
     public void create(Params p) throws IOException {
         DataConsumer<DataSpot, FastqSpot> dataSpotToFastqSpotConsumer = null;
+        boolean paired = false;
 
         if (null == p.files || p.files.size() < 1 || p.files.size() > 2) {
             throw new IllegalArgumentException("Invalid number of input files : " + p.files.size());
         } else if (1 == p.files.size()) {
             //single
             dataSpotToFastqSpotConsumer = new SingleFastqConsumer();
+            paired = false;
         } else if (2 == p.files.size()) {
             //same file names;
             if (p.files.get(0).equals(p.files.get(1))) {
@@ -78,6 +80,7 @@ public class Fastq2Sam {
 
             dataSpotToFastqSpotConsumer = new PairedFastqConsumer(
                     new File(p.tmp_root), p.spill_page_size, p.spill_page_size_bytes);
+            paired = true;
         }
 
         if (p.verbose) {
@@ -92,7 +95,7 @@ public class Fastq2Sam {
         QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);
 
         Fastq2BamConsumer fastqSpotToBamConsumer = new Fastq2BamConsumer(
-                normalizer, p.sample_name, p.data_file, p.tmp_root, p.convertUracil);
+                normalizer, p.sample_name, p.data_file, p.tmp_root, p.convertUracil, paired);
 
         dataSpotToFastqSpotConsumer.setConsumer(fastqSpotToBamConsumer);
 

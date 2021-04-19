@@ -38,28 +38,25 @@ import uk.ac.ebi.ena.readtools.utils.Utils;
  * Accepts Fastq spot data and writes them out to a BAM file.
  */
 public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
-
     private static final String DEFAULT_READ_GROUP_NAME = "A";
-
     private static final String VALID_DNA_CHARSET = ".acmgrsvtwyhkdbnACMGRSVTWYHKDBN";
 
-    private final Pattern validDnaCharsetPattern;
-
     private final QualityNormalizer qualityNormalizer;
-
     private final String sampleName;
-
     private final boolean convertUracil;
+    private final boolean paired;
 
+    private final Pattern validDnaCharsetPattern;
     private final SAMFileWriter writer;
 
     private volatile boolean isOk = true;
 
     public Fastq2BamConsumer(QualityNormalizer qualityNormalizer, String sampleName, String outputFilePath,
-                             String tempDir, boolean convertUracil) {
+                             String tempDir, boolean convertUracil, boolean paired) {
         this.qualityNormalizer = qualityNormalizer;
         this.sampleName = sampleName;
         this.convertUracil = convertUracil;
+        this.paired = paired;
 
         if (sampleName == null || sampleName.trim().isEmpty()) {
             throw new IllegalArgumentException("Sample name is either null or empty.");
@@ -103,10 +100,12 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
     }
 
     @Override
-    public void cascadeErrors() throws DataConsumerException { }
+    public void cascadeErrors() throws DataConsumerException {
+    }
 
     @Override
-    public void setConsumer(DataConsumer<Spot, ? extends Spot> dataConsumer) { }
+    public void setConsumer(DataConsumer<Spot, ? extends Spot> dataConsumer) {
+    }
 
     @Override
     public boolean isOk() {
@@ -123,7 +122,11 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
 
         final SAMFileHeader header = new SAMFileHeader();
         header.addReadGroup(rgroup);
-        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        if (paired) {
+            header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        } else {
+            header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
+        }
 
         return header;
     }
@@ -131,27 +134,29 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
     private void validate(FastqSpot fastqSpot) {
         if (fastqSpot.forward != null) {
             Matcher matcher = validDnaCharsetPattern.matcher(fastqSpot.forward.bases);
-            if( !matcher.matches() ) {
+            if (!matcher.matches()) {
                 handleInvalidDnaCharset(fastqSpot.forward.bases, matcher);
             }
 
-            if( fastqSpot.forward.bases.length() != fastqSpot.forward.quals.length() )
-                throw new IllegalArgumentException( String.format( "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", fastqSpot ) );
+            if (fastqSpot.forward.bases.length() != fastqSpot.forward.quals.length())
+                throw new IllegalArgumentException(String.format(
+                        "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", fastqSpot));
         }
 
         if (fastqSpot.reverse != null) {
             Matcher matcher = validDnaCharsetPattern.matcher(fastqSpot.reverse.bases);
-            if( !matcher.matches() )
+            if (!matcher.matches())
                 handleInvalidDnaCharset(fastqSpot.reverse.bases, matcher);
 
-            if( fastqSpot.reverse.bases.length() != fastqSpot.reverse.quals.length() )
-                throw new IllegalArgumentException( String.format( "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", fastqSpot ) );
+            if (fastqSpot.reverse.bases.length() != fastqSpot.reverse.quals.length())
+                throw new IllegalArgumentException(String.format(
+                        "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", fastqSpot));
         }
     }
 
     private void handleInvalidDnaCharset(String bases, Matcher matcher) {
         Set<Character> invalidBaseChars = bases.chars()
-                .mapToObj(intChar -> (char)intChar)
+                .mapToObj(intChar -> (char) intChar)
                 .filter(base -> !matcher.reset(String.valueOf(base)).matches())
                 .collect(Collectors.toSet());
 
