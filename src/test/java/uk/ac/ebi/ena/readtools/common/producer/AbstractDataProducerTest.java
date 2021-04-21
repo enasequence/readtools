@@ -59,7 +59,7 @@ public class AbstractDataProducerTest {
 
                     @Override
                     public long getSizeBytes() {
-                        return 99L;
+                        return 1024 * 99L;
                     }
                 };
             }

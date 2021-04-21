@@ -96,7 +96,7 @@ public class MultiFastqOutputter {
 		if (writer == null) {
 			log.info("Creating overflow BAM file.");
 			headerForOverflowWriter = header.clone();
-			headerForOverflowWriter.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+			headerForOverflowWriter.setSortOrder(SAMFileHeader.SortOrder.queryname);
 
 			writer = new SAMFileWriterFactory().makeBAMWriter(headerForOverflowWriter, false, cacheOverFlowStream);
 		}

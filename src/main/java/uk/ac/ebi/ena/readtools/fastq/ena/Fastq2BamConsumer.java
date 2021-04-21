@@ -123,7 +123,7 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
         final SAMFileHeader header = new SAMFileHeader();
         header.addReadGroup(rgroup);
         if (paired) {
-            header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+            header.setSortOrder(SAMFileHeader.SortOrder.queryname);
         } else {
             header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
         }
