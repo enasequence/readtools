@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.function.Supplier;
 
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 
 public abstract class
@@ -87,29 +86,22 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
             begin();
 
             do {
-                synchronized(dataConsumer) {
-                    for(int yield = YIELD_CYCLES; yield > 0; --yield )
-                        dataConsumer.consume( produce() );
+                synchronized (dataConsumer) {
+                    for (int yield = YIELD_CYCLES; yield > 0; --yield)
+                        dataConsumer.consume(produce());
                 }
 
-                if( !dataConsumer.isOk() )
+                if (!dataConsumer.isOk())
                     throw new DataProducerPanicException();
 
-                Thread.sleep( 1 );
-            } while(keepRunning.get());
-        } catch( DataConsumerException e ) {
-            //e.printStackTrace();
-            this.stored_exception = e;
-            is_ok = false;
-        } catch( DataProducerEOFException e ) {
-            //e.printStackTrace();
-        } catch( DataProducerPanicException e ) {
-            //e.printStackTrace();
+                Thread.sleep(1);
+            } while (keepRunning.get());
+        } catch (DataProducerEOFException ignored) {
+        } catch (DataProducerPanicException e) {
             is_ok = false;
             this.stored_exception = e;
-        } catch( Throwable t ) {
-            //t.printStackTrace();
-            this.stored_exception = t;
+        } catch (Throwable e) {
+            this.stored_exception = e;
             is_ok = false;
         } finally {
             end();

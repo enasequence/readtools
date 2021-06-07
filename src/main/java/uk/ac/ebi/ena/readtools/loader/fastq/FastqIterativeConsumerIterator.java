@@ -40,6 +40,7 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
     FastqIterativeConsumerIterator(File tmp_folder,
                                    int spill_page_size, //only for paired
                                    long spill_page_size_bytes, //only for paired
+                                   long spill_abandon_limit_bytes,
                                    READ_TYPE read_type,
                                    File[] files,
                                    final QualityNormalizer normalizers[]) throws SecurityException, IOException {
@@ -50,7 +51,7 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
                 consumer = new SingleFastqConsumer();
                 break;
             case PAIRED:
-                consumer = new PairedFastqConsumer(tmp_folder, spill_page_size, spill_page_size_bytes);
+                consumer = new PairedFastqConsumer(tmp_folder, spill_page_size, spill_page_size_bytes, spill_abandon_limit_bytes);
                 break;
             default:
                 throw new UnsupportedOperationException();

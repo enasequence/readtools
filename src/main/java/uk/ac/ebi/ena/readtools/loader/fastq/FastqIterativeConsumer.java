@@ -26,6 +26,7 @@ FastqIterativeConsumer implements Iterable<FastqSpot> {
     private File[] files;
     private int spill_page_size = 4_500_000;
     private long spill_page_size_bytes = 4L * 1024L * 1024L * 1024L;
+    private long spill_abandon_limit_bytes = 10L * 1024L * 1024L * 1024L;
     private File tmp_folder = new File(".");
     private READ_TYPE read_type;
     private QualityNormalizer[] normalizers;
@@ -38,6 +39,7 @@ FastqIterativeConsumer implements Iterable<FastqSpot> {
                     tmp_folder,
                     spill_page_size,
                     spill_page_size_bytes,
+                    spill_abandon_limit_bytes,
                     read_type,
                     files,
                     normalizers);
@@ -65,6 +67,10 @@ FastqIterativeConsumer implements Iterable<FastqSpot> {
 
     public long getSpill_page_size_bytes() {
         return spill_page_size_bytes;
+    }
+
+    public long getSpill_abandon_limit_bytes() {
+        return spill_abandon_limit_bytes;
     }
 
     public void

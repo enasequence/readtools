@@ -26,8 +26,8 @@ PairedFastqConsumer extends AbstractPagedDataConsumer<DataSpot, FastqSpot> {
     static public final int KEY = 1;
     static public final int INDEX = 2;
 
-    public PairedFastqConsumer(File tmp_root, int spill_page_size, long spill_page_size_bytes) {
-        super(tmp_root, spill_page_size, spill_page_size_bytes);
+    public PairedFastqConsumer(File tmp_root, int spill_page_size, long spill_page_size_bytes, long spill_abandon_limit_bytes) {
+        super(tmp_root, spill_page_size, spill_page_size_bytes, spill_abandon_limit_bytes);
     }
 
     public static String

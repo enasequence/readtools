@@ -10,6 +10,10 @@
 */
 package uk.ac.ebi.ena.readtools.fastq.ena;
 
+
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.TestCase.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,6 +38,7 @@ import htsjdk.samtools.fastq.FastqRecord;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
 
 public class Fastq2SamTest {
@@ -87,6 +92,7 @@ public class Fastq2SamTest {
                 new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile()).getAbsolutePath());
 
         params.spill_page_size_bytes = 400L;
+        params.spill_abandon_limit_bytes = 10L * 1024L;
 
         Fastq2Sam fastq2Sam = new Fastq2Sam();
         fastq2Sam.create(params);
@@ -94,6 +100,30 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
+    }
+
+    @Test
+    public void testMemoryPagingAbandonLimit() throws IOException, DataProducerException, DataConsumerException {
+        Fastq2Sam.Params params = new Fastq2Sam.Params();
+        params.tmp_root = System.getProperty("java.io.tmpdir");
+        params.sample_name = "SM-001";
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+        params.compression = FileCompression.NONE.name();
+        params.files = Arrays.asList(
+                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile()).getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile()).getAbsolutePath());
+
+        params.spill_page_size_bytes = 400L;
+        params.spill_abandon_limit_bytes = 10L;
+
+        Fastq2Sam fastq2Sam = new Fastq2Sam();
+
+        try {
+            fastq2Sam.create(params);
+            fail();
+        } catch (DataConsumerMemoryLimitException e) {
+            assertTrue(e.getMessage().contains("Temp memory limit"));
+        }
     }
 
     @Test

@@ -25,6 +25,7 @@ import htsjdk.samtools.util.FastqQualityFormat;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.common.producer.AutoNormalizerDataSpotProducer;
 import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
 import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
@@ -79,7 +80,7 @@ public class Fastq2Sam {
             }
 
             dataSpotToFastqSpotConsumer = new PairedFastqConsumer(
-                    new File(p.tmp_root), p.spill_page_size, p.spill_page_size_bytes);
+                    new File(p.tmp_root), p.spill_page_size, p.spill_page_size_bytes, p.spill_abandon_limit_bytes);
             paired = true;
         }
 
@@ -123,6 +124,9 @@ public class Fastq2Sam {
                         again = true;
                     }
                 } else if (!producer.isOk()) {
+                    if (producer.getStoredException() instanceof DataConsumerMemoryLimitException) {
+                        throw new DataConsumerMemoryLimitException(producer.getStoredException());
+                    }
                     throw new DataProducerException(producer.getStoredException());
                 }
             }
@@ -130,6 +134,9 @@ public class Fastq2Sam {
 
         for (AutoNormalizerDataSpotProducer producer : producers) {
             if (!producer.isOk()) {
+                if (producer.getStoredException() instanceof DataConsumerMemoryLimitException) {
+                    throw new DataConsumerMemoryLimitException(producer.getStoredException());
+                }
                 throw new RuntimeException(producer.getStoredException());
             }
 
@@ -186,6 +193,9 @@ public class Fastq2Sam {
 
         @Parameter(names = {"-sps", "-spill-page-size-bytes"}, description = "Spill page size in bytes, depends on maximum of available memory and size of un-assembled record pool")
         public long spill_page_size_bytes = 4L * 1024L * 1024L * 1024L;
+
+        @Parameter(names = {"-sps", "-spill_abandon_limit_bytes"}, description = "Spill memory limit in bytes, processing fails when temp files total size reaches this limit, 0 == no limit")
+        public long spill_abandon_limit_bytes = 10L * 1024L * 1024L * 1024L;
 
         @Parameter(names = {"-tmp", "--tmp-root"}, description = "Folder to store temporary output in case of paired reads assembly. Should be large enough")
         public String tmp_root = ".";

@@ -38,21 +38,27 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
     // note - must be at least n - 1; 
     final int spill_page_size;  //( Runtime.getRuntime().maxMemory() - Runtime.getRuntime().freeMemory() ) / 5120;
     final long spill_page_size_bytes; //Runtime.getRuntime().maxMemory() - Runtime.getRuntime().freeMemory()
+    final long spill_abandon_limit_bytes;
     final private File tmp_root;
+
+    private long spill_total_bytes = 0;
 
     public AbstractPagedDataConsumer() {
         this(new File("."),
                 (int) ((Runtime.getRuntime().maxMemory() - Runtime.getRuntime().freeMemory()) / 5120),
-                Runtime.getRuntime().maxMemory() - Runtime.getRuntime().freeMemory());
+                Runtime.getRuntime().maxMemory() - Runtime.getRuntime().freeMemory(),
+                10L * 1024L * 1024L * 1024L);
     }
 
     public AbstractPagedDataConsumer(File tmp_root,
                                      int spill_page_size,
-                                     long spill_page_size_bytes) {
+                                     long spill_page_size_bytes,
+                                     long spill_abandon_limit_bytes) {
         super(spill_page_size);
         this.tmp_root = tmp_root;
         this.spill_page_size = spill_page_size;
         this.spill_page_size_bytes = spill_page_size_bytes;
+        this.spill_abandon_limit_bytes = spill_abandon_limit_bytes;
     }
 
     private File
@@ -170,6 +176,11 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
     newListBucket() {
         if (use_spill
                 && (spill_page_size <= super.spots.size() || spill_page_size_bytes <= super.spotsSizeBytes)) {
+            if (spill_abandon_limit_bytes > 0 && spill_total_bytes >= spill_abandon_limit_bytes) {
+                throw new DataConsumerMemoryLimitException(
+                        "Temp memory limit " + spill_abandon_limit_bytes + " bytes reached");
+            }
+            spill_total_bytes += super.spotsSizeBytes;
             spillMap(super.spots);
             super.spots.clear();
         }
