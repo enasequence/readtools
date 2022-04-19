@@ -18,8 +18,8 @@ import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
 
 
 public interface DataProducer<T extends Spot> {
-    public T produce(InputStream inputStream) throws IOException;
-    public void setConsumer(DataConsumer<T, ?> consumer );
-    public boolean isOk();
-    public Throwable getStoredException();
+    T produce(InputStream inputStream) throws IOException;
+    void setConsumer(DataConsumer<T, ?> consumer );
+    boolean isOk();
+    Throwable getStoredException();
 }

@@ -89,8 +89,10 @@ FastqScanner
           BloomWrapper duplications,
           AtomicLong count ) throws Throwable
     {
-        try( InputStream is = Utils.openFastqInputStream( Paths.get( rf.getFilename() ) ) )
+        try( Utils.InputStreamFuture isf = Utils.openFastqInputStream( Paths.get( rf.getFilename() ) ) )
         {
+            InputStream is = isf.inputStream;
+
             String stream_name = rf.getFilename();
 
             AutoNormalizerDataSpotProducer dp = new AutoNormalizerDataSpotProducer(

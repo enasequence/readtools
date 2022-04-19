@@ -90,7 +90,8 @@ public class Fastq2Sam {
                 System.out.println(" " + f_name);
         }
 
-        FastqQualityFormat qualityFormat = Utils.detectFastqQualityFormat(p.files.get(0),
+        FastqQualityFormat qualityFormat = Utils.detectFastqQualityFormat(
+                p.files.get(0),
                 p.files.size() == 2 ? p.files.get(1) : null);
 
         QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);

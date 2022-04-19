@@ -13,7 +13,6 @@ package uk.ac.ebi.ena.readtools.loader.common;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
@@ -36,14 +35,14 @@ FileCompression
     
 
     public InputStream
-    open( String f_name, boolean tar ) throws FileNotFoundException, IOException
+    open( String f_name, boolean tar ) throws IOException
     {
         return open( new File( f_name ), tar );
     }
     
 
     public InputStream
-    open( File file, boolean tar ) throws FileNotFoundException, IOException
+    open( File file, boolean tar ) throws IOException
     {
         InputStream is = new FileInputStream( file );
         try
@@ -102,7 +101,7 @@ FileCompression
     
     
     public static InputStream
-    open( File file ) throws FileNotFoundException, IOException
+    open( File file ) throws IOException
     {
         return getCompressor( file ).open( file.getPath(), getUseTar( file ) );
     }

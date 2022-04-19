@@ -10,9 +10,16 @@
 */
 package uk.ac.ebi.ena.readtools.utils;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -26,10 +33,10 @@ public class UtilsTest {
         String expectedUpper = "GACGGATCTATAGCAAAACT";
         String expectedLower = "gacggatctatagcaaaact";
 
-        File output = File.createTempFile( "FASTQ", "FASTQ" );
+        File output = File.createTempFile("FASTQ", "FASTQ");
         output.delete();
 
-        URL url = UtilsTest.class.getClassLoader().getResource( "uracil-bases.fastq");
+        URL url = UtilsTest.class.getClassLoader().getResource("uracil-bases.fastq");
 
         Utils.replaceUracilBasesInFastq(url.getFile(), output.getAbsolutePath());
 
@@ -42,5 +49,35 @@ public class UtilsTest {
 
         Assert.assertEquals(expectedUpper, recReadString1);
         Assert.assertEquals(expectedLower, recReadString2);
+    }
+
+    @Test
+    public void bz2Stream() throws IOException {
+        Path filePath = Paths.get("src/test/resources/tst.fastq.bz2");
+        Utils.InputStreamFuture bz2res = Utils.createBz2InputStream(filePath);
+        BufferedReader br = new BufferedReader(new InputStreamReader(bz2res.inputStream, StandardCharsets.UTF_8));
+
+        System.out.println(br.readLine());
+
+        Integer exitCode = Utils.getBz2ReadResult(bz2res.future);
+        System.out.println("exitCode " + exitCode);
+
+        bz2res = Utils.createBz2InputStream(filePath);
+        br = new BufferedReader(new InputStreamReader(bz2res.inputStream, StandardCharsets.UTF_8));
+        List<String> sl = new ArrayList<>();
+
+        System.out.println("\n=====================================");
+
+        while (true) {
+            String line = br.readLine();
+            if (null == line) {
+                break;
+            }
+            sl.add(line);
+        }
+
+        exitCode = Utils.getBz2ReadResult(bz2res.future);
+        System.out.println("exitCode " + exitCode);
+        System.out.print(sl);
     }
 }
