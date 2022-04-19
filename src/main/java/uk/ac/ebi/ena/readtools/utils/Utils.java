@@ -177,6 +177,8 @@ public class Utils {
                     is.close();
 
                     return createBz2InputStream(path);
+
+//                    return makeFutureStub(path, new BufferedInputStream( new BZip2CompressorInputStream( is ) ));
                 } catch( IOException bzip ) {
                     is.reset();
                     return makeFutureStub(path, is);
@@ -263,8 +265,9 @@ public class Utils {
         @Override
         public void close() throws Exception {
             inputStream.close();
-            if (0 != future.get()) {
-                throw new RuntimeException("Failed to decompress " + filePath);
+            Integer exitCode = future.get();
+            if (0 != exitCode) {
+                throw new RuntimeException("Failed to decompress " + filePath + " bzip2 exit code " + exitCode);
             }
         }
     }
