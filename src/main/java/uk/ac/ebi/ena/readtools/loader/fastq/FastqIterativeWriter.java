@@ -16,7 +16,7 @@ import java.util.Iterator;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 
 public class
-FastqIterativeConsumer implements Iterable<FastqSpot> {
+FastqIterativeWriter implements Iterable<PairedRead> {
     public enum
     READ_TYPE {
         SINGLE,
@@ -32,10 +32,10 @@ FastqIterativeConsumer implements Iterable<FastqSpot> {
     private QualityNormalizer[] normalizers;
 
     @Override
-    public Iterator<FastqSpot>
+    public Iterator<PairedRead>
     iterator() {
         try {
-            return new FastqIterativeConsumerIterator(
+            return new FastqIterativeWriterIterator(
                     tmp_folder,
                     spill_page_size,
                     spill_page_size_bytes,

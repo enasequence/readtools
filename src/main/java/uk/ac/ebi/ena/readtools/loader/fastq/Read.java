@@ -12,12 +12,12 @@ package uk.ac.ebi.ena.readtools.loader.fastq;
 
 import java.io.Serializable;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
 /**
  * Holds raw unpaired read information.
  */
-public class DataSpot implements Serializable, Spot {
+public class Read implements Serializable, Spot {
 
     static final long serialVersionUID = 1L;
 

@@ -19,12 +19,12 @@ import java.time.LocalDateTime;
 import org.junit.Assert;
 import org.junit.Test;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-import uk.ac.ebi.ena.readtools.loader.common.producer.AbstractDataProducer;
+import uk.ac.ebi.ena.readtools.loader.common.converter.AbstractReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
-public class AbstractDataProducerTest {
+public class AbstractReadConverterTest {
 
     @Test
     public void testRunDuration() throws InterruptedException {
@@ -32,9 +32,9 @@ public class AbstractDataProducerTest {
         int dummySpotProduceCount = 5000;
         long expectedRunDurationSec = 1;
 
-        AbstractDataProducer adp = new AbstractDataProducer(null, Duration.ofSeconds(expectedRunDurationSec)) {
+        AbstractReadConverter adp = new AbstractReadConverter(null, Duration.ofSeconds(expectedRunDurationSec)) {
             @Override
-            public Spot produce(InputStream inputStream) throws IOException {
+            public Spot convert(InputStream inputStream) throws IOException {
                 //To prevent the test from running indefinitely (just in case).
                 if (getReadCount() > dummySpotProduceCount) {
                     throw new EOFException();
@@ -64,19 +64,19 @@ public class AbstractDataProducerTest {
                 };
             }
         };
-        adp.setConsumer(new DataConsumer() {
+        adp.setWriter(new ReadWriter() {
             @Override
-            public void cascadeErrors() throws DataConsumerException {
+            public void cascadeErrors() throws ReadWriterException {
 
             }
 
             @Override
-            public void consume(Spot spot) throws DataConsumerException {
+            public void write(Spot spot) throws ReadWriterException {
 
             }
 
             @Override
-            public void setConsumer(DataConsumer dataConsumer) {
+            public void setWriter(ReadWriter readWriter) {
 
             }
 

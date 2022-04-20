@@ -24,13 +24,13 @@ import htsjdk.samtools.util.FastqQualityFormat;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerMemoryLimitException;
-import uk.ac.ebi.ena.readtools.loader.common.producer.AutoNormalizerDataSpotProducer;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
-import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
+import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
+import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
+import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqConsumer;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
@@ -63,7 +63,7 @@ public class Fastq2Sam {
     }
 
     public void create(Params p) throws IOException {
-        DataConsumer<DataSpot, FastqSpot> dataSpotToFastqSpotConsumer = null;
+        ReadWriter<Read, PairedRead> dataSpotToFastqSpotConsumer = null;
         boolean paired = false;
 
         if (null == p.files || p.files.size() < 1 || p.files.size() > 2) {
@@ -79,7 +79,7 @@ public class Fastq2Sam {
                         "Paired files cannot be same. File1 : " + p.files.get(0) + ", File2 : " + p.files.get(1));
             }
 
-            dataSpotToFastqSpotConsumer = new PairedFastqConsumer(
+            dataSpotToFastqSpotConsumer = new PairedFastqWriter(
                     new File(p.tmp_root), p.spill_page_size, p.spill_page_size_bytes, p.spill_abandon_limit_bytes);
             paired = true;
         }
@@ -99,17 +99,17 @@ public class Fastq2Sam {
         Fastq2BamConsumer fastqSpotToBamConsumer = new Fastq2BamConsumer(
                 normalizer, p.sample_name, p.data_file, p.tmp_root, p.convertUracil, paired);
 
-        dataSpotToFastqSpotConsumer.setConsumer(fastqSpotToBamConsumer);
+        dataSpotToFastqSpotConsumer.setWriter(fastqSpotToBamConsumer);
 
-        ArrayList<AutoNormalizerDataSpotProducer> producers = new ArrayList<>();
+        ArrayList<FastqReadReadConverter> producers = new ArrayList<>();
 
         int attr = 1;
         for (String f_name : p.files) {
             final String default_attr = Integer.toString(attr++);
 
-            AutoNormalizerDataSpotProducer producer = new AutoNormalizerDataSpotProducer(
+            FastqReadReadConverter producer = new FastqReadReadConverter(
                     FileCompression.valueOf(p.compression).open(f_name, p.use_tar), default_attr, f_name);
-            producer.setConsumer(dataSpotToFastqSpotConsumer);
+            producer.setWriter(dataSpotToFastqSpotConsumer);
             producer.setName(f_name);
             producers.add(producer);
             producer.start();
@@ -117,7 +117,7 @@ public class Fastq2Sam {
 
         boolean again = false;
         do {
-            for (AutoNormalizerDataSpotProducer producer : producers) {
+            for (FastqReadReadConverter producer : producers) {
                 if (producer.isAlive() && producer.isOk()) {
                     try {
                         producer.join();
@@ -125,18 +125,18 @@ public class Fastq2Sam {
                         again = true;
                     }
                 } else if (!producer.isOk()) {
-                    if (producer.getStoredException() instanceof DataConsumerMemoryLimitException) {
-                        throw new DataConsumerMemoryLimitException(producer.getStoredException());
+                    if (producer.getStoredException() instanceof ReadWriterMemoryLimitException) {
+                        throw new ReadWriterMemoryLimitException(producer.getStoredException());
                     }
-                    throw new DataProducerException(producer.getStoredException());
+                    throw new ConverterException(producer.getStoredException());
                 }
             }
         } while (again);
 
-        for (AutoNormalizerDataSpotProducer producer : producers) {
+        for (FastqReadReadConverter producer : producers) {
             if (!producer.isOk()) {
-                if (producer.getStoredException() instanceof DataConsumerMemoryLimitException) {
-                    throw new DataConsumerMemoryLimitException(producer.getStoredException());
+                if (producer.getStoredException() instanceof ReadWriterMemoryLimitException) {
+                    throw new ReadWriterMemoryLimitException(producer.getStoredException());
                 }
                 throw new RuntimeException(producer.getStoredException());
             }

@@ -8,35 +8,33 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.producer;
+package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 public class
-DataProducerPanicException extends DataProducerException
+ConverterEOFException extends ConverterException
 {
     private static final long serialVersionUID = 1L;
     
-    
-    public DataProducerPanicException(String value )
+    public ConverterEOFException(String value )
     {
         super( -1, value );
     }
 
     
-    public DataProducerPanicException()
+    public ConverterEOFException(long line_no )
+    {
+        super( line_no );
+    }
+    
+    
+    public ConverterEOFException()
     {
         super( -1 );
     }
     
-    
-    public DataProducerPanicException(Throwable cause )
+    public ConverterEOFException(Throwable cause )
     {
         super( cause );
-    }
-    
-    
-    public DataProducerPanicException(String message, Throwable cause )
-    {
-        super( message, cause );
     }
     
     

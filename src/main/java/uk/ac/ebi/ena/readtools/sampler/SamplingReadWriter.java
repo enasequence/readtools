@@ -13,12 +13,12 @@ package uk.ac.ebi.ena.readtools.sampler;
 
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.QualityNormalizer.QualityNormaizationException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
+import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
 public class
-SamplingDataConsumer<T1 extends DataSpot, T2 extends Spot> implements DataConsumer<T1, T2>
+SamplingReadWriter<T1 extends Read, T2 extends Spot> implements ReadWriter<T1, T2>
 {
     final protected int lbound = 33;  //!
     final protected int hbound = 126; //~;
@@ -64,7 +64,7 @@ SamplingDataConsumer<T1 extends DataSpot, T2 extends Spot> implements DataConsum
     
     @Override
     public void
-    consume(T1 object )
+    write(T1 object )
     {
         try
         {
@@ -95,7 +95,7 @@ SamplingDataConsumer<T1 extends DataSpot, T2 extends Spot> implements DataConsum
 
     @Override
     public void
-    setConsumer(DataConsumer<T2, ?> dataConsumer)
+    setWriter(ReadWriter<T2, ?> readWriter)
     {
         throw new UnsupportedOperationException();
     }

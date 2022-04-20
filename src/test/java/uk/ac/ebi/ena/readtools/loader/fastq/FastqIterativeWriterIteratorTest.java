@@ -21,12 +21,12 @@ import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
 
 
 
 public class
-FastqIterativeConsumerIteratorTest
+FastqIterativeWriterIteratorTest
 {
     @Before
     public void
@@ -48,7 +48,7 @@ FastqIterativeConsumerIteratorTest
     public void 
     iteratorPairedTest1()
     {
-        FastqIterativeConsumer wrapper = new FastqIterativeConsumer();
+        FastqIterativeWriter wrapper = new FastqIterativeWriter();
         
         wrapper.setFiles( new File[] { new File( "resources/T966_R1.fastq.gz" ),  
                                        new File( "resources/T966_R2.fastq.gz" ) } );
@@ -69,9 +69,9 @@ FastqIterativeConsumerIteratorTest
         picked_reads.put( 3829, "CATACACACTATAACAATAATGTCTATACTCACTAATTTTAGAATAAAACTTTAAACATTTATCACATACAGCATATGGATTCCCATCTCTATATACTATGCCAGAAAGTTACCACAGTTATGCACAGAGCTGCAAACAACTATACATGATATAATATTAGAATGTGTGTACTGCAAGC" );
 
         
-        for(Iterator<FastqSpot> i = wrapper.iterator(); i.hasNext(); )
+        for(Iterator<PairedRead> i = wrapper.iterator(); i.hasNext(); )
         {
-            FastqSpot is = i.next();
+            PairedRead is = i.next();
 //            base_count += is.bases.length();
             base_count += (is.forward.bases.length() + is.reverse.bases.length());
             spot_count += 1;
@@ -91,7 +91,7 @@ FastqIterativeConsumerIteratorTest
     public void 
     iteratorPairedTest2()
     {
-        FastqIterativeConsumer wrapper = new FastqIterativeConsumer();
+        FastqIterativeWriter wrapper = new FastqIterativeWriter();
         
         wrapper.setFiles( new File[] { new File( "resources/fastq_spots_correct2_1.txt" ),  
                                        new File( "resources/fastq_spots_correct2_2.txt" ) } );
@@ -102,9 +102,9 @@ FastqIterativeConsumerIteratorTest
         int spot_count = 0;
         int base_count = 0;
         
-        for(Iterator<FastqSpot> i = wrapper.iterator(); i.hasNext(); )
+        for(Iterator<PairedRead> i = wrapper.iterator(); i.hasNext(); )
         {
-            FastqSpot is = i.next();
+            PairedRead is = i.next();
             base_count += (is.forward.bases.length() + is.reverse.bases.length());
             spot_count += 1;
         }

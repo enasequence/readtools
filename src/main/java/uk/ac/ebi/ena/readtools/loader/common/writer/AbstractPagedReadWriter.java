@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.consumer;
+package uk.ac.ebi.ena.readtools.loader.common.writer;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -31,7 +31,7 @@ import java.util.zip.GZIPOutputStream;
 import uk.ac.ebi.ena.readtools.loader.common.Pair;
 
 public abstract class
-AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractDataConsumer<T1, T2> {
+AbstractPagedReadWriter<T1 extends Spot, T2 extends Spot> extends AbstractReadWriter<T1, T2> {
     private static final int OUTPUT_BUFFER_SIZE = 8192;
     private boolean use_spill = true;
     private List<File> files = new ArrayList<File>();
@@ -43,17 +43,17 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
 
     private long spill_total_bytes = 0;
 
-    public AbstractPagedDataConsumer() {
+    public AbstractPagedReadWriter() {
         this(new File("."),
                 (int) ((Runtime.getRuntime().maxMemory() - Runtime.getRuntime().freeMemory()) / 5120),
                 Runtime.getRuntime().maxMemory() - Runtime.getRuntime().freeMemory(),
                 10L * 1024L * 1024L * 1024L);
     }
 
-    public AbstractPagedDataConsumer(File tmp_root,
-                                     int spill_page_size,
-                                     long spill_page_size_bytes,
-                                     long spill_abandon_limit_bytes) {
+    public AbstractPagedReadWriter(File tmp_root,
+                                   int spill_page_size,
+                                   long spill_page_size_bytes,
+                                   long spill_abandon_limit_bytes) {
         super(spill_page_size);
         this.tmp_root = tmp_root;
         this.spill_page_size = spill_page_size;
@@ -177,7 +177,7 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
         if (use_spill
                 && (spill_page_size <= super.spots.size() || spill_page_size_bytes <= super.spotsSizeBytes)) {
             if (spill_abandon_limit_bytes > 0 && spill_total_bytes >= spill_abandon_limit_bytes) {
-                throw new DataConsumerMemoryLimitException(
+                throw new ReadWriterMemoryLimitException(
                         "Temp memory limit " + spill_abandon_limit_bytes + " bytes reached");
             }
             spill_total_bytes += super.spotsSizeBytes;
@@ -190,7 +190,7 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
 
 
     public synchronized void
-    cascadeErrors() throws DataConsumerException {
+    cascadeErrors() throws ReadWriterException {
         if (use_spill && files.size() > 0) {
             try {
                 use_spill = false;
@@ -222,7 +222,7 @@ AbstractPagedDataConsumer<T1 extends Spot, T2 extends Spot> extends AbstractData
                                 if (super.spots.containsKey(entry.key)) {
                                     for (T1 spot : entry.value)
                                         if (null != spot)
-                                            consume(spot);
+                                            write(spot);
                                 } else {
                                     if (null == oos) {
                                         oos = openOutputStream(getTempFile());

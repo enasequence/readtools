@@ -27,17 +27,17 @@ import htsjdk.samtools.SAMRecord;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
+import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
+import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
 /**
  * Accepts Fastq spot data and writes them out to a BAM file.
  */
-public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
+public class Fastq2BamConsumer implements ReadWriter<PairedRead, Spot> {
     private static final String DEFAULT_READ_GROUP_NAME = "A";
     private static final String VALID_DNA_CHARSET = ".acmgrsvtwyhkdbnACMGRSVTWYHKDBN";
 
@@ -70,7 +70,7 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
     }
 
     @Override
-    public void consume(FastqSpot spot) throws DataConsumerException {
+    public void write(PairedRead spot) throws ReadWriterException {
         try {
             validate(spot);
 
@@ -88,23 +88,23 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
                 writer.addAlignment(rec2);
 
             } else {
-                DataSpot unpaired = spot.getUnpaired();
+                Read unpaired = spot.getUnpaired();
                 SAMRecord rec = createSamRecord(false, spot.name, unpaired.bases, unpaired.quals);
                 rec.setReadPairedFlag(false);
                 writer.addAlignment(rec);
             }
         } catch (Exception ex) {
             isOk = false;
-            throw new DataConsumerException(ex);
+            throw new ReadWriterException(ex);
         }
     }
 
     @Override
-    public void cascadeErrors() throws DataConsumerException {
+    public void cascadeErrors() throws ReadWriterException {
     }
 
     @Override
-    public void setConsumer(DataConsumer<Spot, ? extends Spot> dataConsumer) {
+    public void setWriter(ReadWriter<Spot, ? extends Spot> readWriter) {
     }
 
     @Override
@@ -131,26 +131,26 @@ public class Fastq2BamConsumer implements DataConsumer<FastqSpot, Spot> {
         return header;
     }
 
-    private void validate(FastqSpot fastqSpot) {
-        if (fastqSpot.forward != null) {
-            Matcher matcher = validDnaCharsetPattern.matcher(fastqSpot.forward.bases);
+    private void validate(PairedRead pairedRead) {
+        if (pairedRead.forward != null) {
+            Matcher matcher = validDnaCharsetPattern.matcher(pairedRead.forward.bases);
             if (!matcher.matches()) {
-                handleInvalidDnaCharset(fastqSpot.forward.bases, matcher);
+                handleInvalidDnaCharset(pairedRead.forward.bases, matcher);
             }
 
-            if (fastqSpot.forward.bases.length() != fastqSpot.forward.quals.length())
+            if (pairedRead.forward.bases.length() != pairedRead.forward.quals.length())
                 throw new IllegalArgumentException(String.format(
-                        "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", fastqSpot));
+                        "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", pairedRead));
         }
 
-        if (fastqSpot.reverse != null) {
-            Matcher matcher = validDnaCharsetPattern.matcher(fastqSpot.reverse.bases);
+        if (pairedRead.reverse != null) {
+            Matcher matcher = validDnaCharsetPattern.matcher(pairedRead.reverse.bases);
             if (!matcher.matches())
-                handleInvalidDnaCharset(fastqSpot.reverse.bases, matcher);
+                handleInvalidDnaCharset(pairedRead.reverse.bases, matcher);
 
-            if (fastqSpot.reverse.bases.length() != fastqSpot.reverse.quals.length())
+            if (pairedRead.reverse.bases.length() != pairedRead.reverse.quals.length())
                 throw new IllegalArgumentException(String.format(
-                        "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", fastqSpot));
+                        "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", pairedRead));
         }
     }
 

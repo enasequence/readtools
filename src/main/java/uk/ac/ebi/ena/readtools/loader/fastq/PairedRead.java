@@ -13,28 +13,28 @@ package uk.ac.ebi.ena.readtools.loader.fastq;
 
 import java.util.StringJoiner;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
 /**
  * Holds unpaired or paired read information.
  */
-public class FastqSpot implements Spot {
+public class PairedRead implements Spot {
 
     public final String name;
 
-    public final DataSpot forward;
-    public final DataSpot reverse;
+    public final Read forward;
+    public final Read reverse;
 
-    public FastqSpot(String name, DataSpot dataSpot) {
+    public PairedRead(String name, Read read) {
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Invalid read name.");
         }
 
-        if (dataSpot == null) {
+        if (read == null) {
             throw new IllegalArgumentException("Read cannot be null.");
         }
 
-        this.forward = dataSpot;
+        this.forward = read;
         this.reverse = null;
         this.name = name;
     }
@@ -46,7 +46,7 @@ public class FastqSpot implements Spot {
      * @param forward
      * @param reverse
      */
-    public FastqSpot(String name, DataSpot forward, DataSpot reverse) {
+    public PairedRead(String name, Read forward, Read reverse) {
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Invalid read name.");
         }
@@ -83,7 +83,7 @@ public class FastqSpot implements Spot {
      *
      * @return the non-null unpaired read. Returns null if this is a paired read and both forward and reverse reads are present.
      */
-    public DataSpot getUnpaired() {
+    public Read getUnpaired() {
         if (forward == null) {
             return reverse;
         } else if (reverse == null) {
@@ -95,7 +95,7 @@ public class FastqSpot implements Spot {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", FastqSpot.class.getSimpleName() + "[", "]")
+        return new StringJoiner(", ", PairedRead.class.getSimpleName() + "[", "]")
                 .add("name='" + name + "'")
                 .add("first=" + forward)
                 .add("second=" + reverse)

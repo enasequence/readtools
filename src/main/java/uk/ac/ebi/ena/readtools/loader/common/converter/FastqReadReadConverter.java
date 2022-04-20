@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.producer;
+package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,21 +17,21 @@ import java.time.Duration;
 import htsjdk.samtools.util.FastqQualityFormat;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
+import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
 /**
  * Detects quality normalizer automatically based on the given file.
  */
-public class AutoNormalizerDataSpotProducer extends AbstractDataProducer<DataSpot> {
+public class FastqReadReadConverter extends AbstractReadConverter<Read> {
 
     private final String filePath;
 
     private final String defaultAttr;
 
-    private volatile DataSpotReader dataSpotReader;
+    private volatile ReadReader readReader;
 
-    public AutoNormalizerDataSpotProducer(InputStream istream, String defaultAttr, String filePath) {
+    public FastqReadReadConverter(InputStream istream, String defaultAttr, String filePath) {
         super(istream);
 
         this.defaultAttr = defaultAttr;
@@ -45,7 +45,7 @@ public class AutoNormalizerDataSpotProducer extends AbstractDataProducer<DataSpo
      * @param defaultAttr
      * @param filePath
      */
-    public AutoNormalizerDataSpotProducer(InputStream istream, Duration runDuration, String defaultAttr, String filePath) {
+    public FastqReadReadConverter(InputStream istream, Duration runDuration, String defaultAttr, String filePath) {
         super(istream, runDuration);
 
         this.defaultAttr = defaultAttr;
@@ -59,14 +59,14 @@ public class AutoNormalizerDataSpotProducer extends AbstractDataProducer<DataSpo
 
             QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);
 
-            dataSpotReader = new DataSpotReader(normalizer, defaultAttr);
+            readReader = new ReadReader(normalizer, defaultAttr);
         } catch (Exception ex) {
-            throw new DataProducerException(ex);
+            throw new ConverterException(ex);
         }
     }
 
     @Override
-    public DataSpot produce(InputStream inputStream) throws IOException {
-        return dataSpotReader.read(inputStream);
+    public Read convert(InputStream inputStream) throws IOException {
+        return readReader.read(inputStream);
     }
 }

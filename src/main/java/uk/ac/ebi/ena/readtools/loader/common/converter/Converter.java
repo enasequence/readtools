@@ -8,26 +8,18 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.producer;
+package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
-public class DataSpotProducer extends AbstractDataProducer<DataSpot> {
 
-    private final DataSpotReader dataSpotReader;
-
-    public DataSpotProducer(InputStream istream, QualityNormalizer normalizer, String defaultAttr) {
-        super(istream);
-
-        dataSpotReader = new DataSpotReader(normalizer, defaultAttr);
-    }
-
-    @Override
-    public DataSpot produce(InputStream inputStream) throws IOException {
-        return dataSpotReader.read(inputStream);
-    }
+public interface Converter<T extends Spot> {
+    T convert(InputStream inputStream) throws IOException;
+    void setWriter(ReadWriter<T, ?> writer );
+    boolean isOk();
+    Throwable getStoredException();
 }

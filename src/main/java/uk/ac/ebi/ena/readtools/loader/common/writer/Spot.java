@@ -8,21 +8,10 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.consumer;
+package uk.ac.ebi.ena.readtools.loader.common.writer;
 
-public class
-DataConsumerMemoryLimitException extends RuntimeException {
-    private static final long serialVersionUID = 1L;
-
-    public DataConsumerMemoryLimitException(String value) {
-        super(value);
-    }
-
-    public DataConsumerMemoryLimitException() {
-        super();
-    }
-
-    public DataConsumerMemoryLimitException(Throwable cause) {
-        super(cause);
-    }
+public interface Spot {
+    String getName();
+    long getBaseCount();
+    long getSizeBytes();
 }

@@ -22,9 +22,9 @@ import org.junit.Test;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.IlluminaQualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.PrintDataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataSpotProducer;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.PrintReadWriter;
 
 public class 
 LoaderTest
@@ -45,11 +45,11 @@ LoaderTest
     
 
     boolean 
-    read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, DataProducerException, InterruptedException
+    read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, ConverterException, InterruptedException
     {
-        DataSpotProducer df = new DataSpotProducer( is, normalizer, "" );
+        ReadConverter df = new ReadConverter( is, normalizer, "" );
         df.setName( name );
-        df.setConsumer( new PrintDataConsumer<>() );
+        df.setWriter( new PrintReadWriter<>() );
         df.start();
         df.join();
         return df.isOk();

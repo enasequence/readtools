@@ -8,40 +8,27 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.producer;
+package uk.ac.ebi.ena.readtools.loader.common.writer;
 
 public class
-DataProducerEOFException extends DataProducerException
+ReadWriterException extends RuntimeException
 {
     private static final long serialVersionUID = 1L;
-    
-    public DataProducerEOFException(String value )
+
+    public ReadWriterException(String value )
     {
-        super( -1, value );
+        super( value );
+    }
+
+    public ReadWriterException()
+    {
+        super();
     }
 
     
-    public DataProducerEOFException(long line_no )
-    {
-        super( line_no );
-    }
-    
-    
-    public DataProducerEOFException()
-    {
-        super( -1 );
-    }
-    
-    public DataProducerEOFException(Throwable cause )
+    public ReadWriterException(Throwable cause )
     {
         super( cause );
     }
-    
-    
-    public String
-    toString()
-    {
-        return super.toString();
-    }
-    
+
 }

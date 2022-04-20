@@ -8,35 +8,21 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.consumer;
-
-
+package uk.ac.ebi.ena.readtools.loader.common.writer;
 
 public class
-PrintDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T1, T2>
-{
-    @Override
-    public void 
-    cascadeErrors() throws DataConsumerException
-    {
+ReadWriterMemoryLimitException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    public ReadWriterMemoryLimitException(String value) {
+        super(value);
     }
 
-    @Override public void
-    consume(T1 spot ) throws DataConsumerException
-    {
-        System.out.println( spot );
+    public ReadWriterMemoryLimitException() {
+        super();
     }
 
-    
-    @Override public void
-    setConsumer(DataConsumer<T2, ?> dataConsumer)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override public boolean 
-    isOk()
-    {
-        return true;
+    public ReadWriterMemoryLimitException(Throwable cause) {
+        super(cause);
     }
 }

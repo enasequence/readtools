@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.consumer;
+package uk.ac.ebi.ena.readtools.loader.common.writer;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,9 +19,9 @@ import java.util.Map.Entry;
 
 
 public abstract class
-AbstractDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T1, T2> {
+AbstractReadWriter<T1 extends Spot, T2 extends Spot> implements ReadWriter<T1, T2> {
     protected Map<String, List<T1>> spots = null;
-    protected DataConsumer<T2, ?> dataConsumer;
+    protected ReadWriter<T2, ?> readWriter;
 
     private long log_time = System.currentTimeMillis();
     private long log_interval = 60 * 1000;
@@ -34,38 +34,38 @@ AbstractDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T
     @Override
     public boolean
     isOk() {
-        return null == dataConsumer ? is_ok : is_ok && dataConsumer.isOk();
+        return null == readWriter ? is_ok : is_ok && readWriter.isOk();
     }
 
-    public AbstractDataConsumer<T1, T2>
+    public AbstractReadWriter<T1, T2>
     setVerbose(boolean verbose) {
         this.verbose = verbose;
         return this;
     }
 
-    public AbstractDataConsumer() {
+    public AbstractReadWriter() {
         this(1024 * 1024);
     }
 
-    protected AbstractDataConsumer(int map_size) {
+    protected AbstractReadWriter(int map_size) {
         spots = new HashMap<>(map_size);
     }
 
     @Override
     public void
-    setConsumer(DataConsumer<T2, ? extends Spot> dataConsumer) {
-        if (!dataConsumer.equals(this))
-            this.dataConsumer = dataConsumer;
+    setWriter(ReadWriter<T2, ? extends Spot> readWriter) {
+        if (!readWriter.equals(this))
+            this.readWriter = readWriter;
     }
 
     public abstract String
-    getKey(T1 spot) throws DataConsumerException;
+    getKey(T1 spot) throws ReadWriterException;
 
     public abstract T2
-    assemble(final String key, List<T1> list) throws DataConsumerException;
+    assemble(final String key, List<T1> list) throws ReadWriterException;
 
     public void
-    append(List<T1> list, T1 spot) throws DataConsumerException {
+    append(List<T1> list, T1 spot) throws ReadWriterException {
         list.add(spot);
     }
 
@@ -78,23 +78,23 @@ AbstractDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T
     isCollected(List<T1> list);
 
     public synchronized void
-    cascadeErrors() throws DataConsumerException {
+    cascadeErrors() throws ReadWriterException {
         for (Entry<String, List<T1>> entry : spots.entrySet()) {
-            if (null != dataConsumer)
-                dataConsumer.consume(handleErrors(entry.getKey(), entry.getValue()));
+            if (null != readWriter)
+                readWriter.write(handleErrors(entry.getKey(), entry.getValue()));
             else
                 System.out.println("<?> " + handleErrors(entry.getKey(), entry.getValue()));
         }
 
-        if (null != dataConsumer)
-            dataConsumer.cascadeErrors();
+        if (null != readWriter)
+            readWriter.cascadeErrors();
     }
 
     public abstract T2
-    handleErrors(final String key, List<T1> list) throws DataConsumerException;
+    handleErrors(final String key, List<T1> list) throws ReadWriterException;
 
     public void
-    consume(T1 spot) throws DataConsumerException {
+    write(T1 spot) throws ReadWriterException {
         String key = getKey(spot);
         List<T1> bucket;
 
@@ -118,8 +118,8 @@ AbstractDataConsumer<T1 extends Spot, T2 extends Spot> implements DataConsumer<T
                     spotsSizeBytes -= bucketSize(removed);
                 }
 
-                if (null != dataConsumer) {
-                    dataConsumer.consume(assembly);
+                if (null != readWriter) {
+                    readWriter.write(assembly);
                 } else {
                     System.out.println(assembly);
                 }

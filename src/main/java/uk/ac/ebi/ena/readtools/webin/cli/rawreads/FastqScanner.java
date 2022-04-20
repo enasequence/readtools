@@ -31,16 +31,16 @@ import org.slf4j.LoggerFactory;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-import uk.ac.ebi.ena.readtools.loader.common.producer.AutoNormalizerDataSpotProducer;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqSpot;
-import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqConsumer;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
+import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
+import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
+import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
@@ -82,7 +82,7 @@ FastqScanner
     }
     
     
-    private DataProducerException
+    private ConverterException
     read( RawReadsFile rf,
           Set<String>  labels,
           BloomWrapper pairing,
@@ -93,26 +93,26 @@ FastqScanner
         {
             String stream_name = rf.getFilename();
 
-            AutoNormalizerDataSpotProducer dp = new AutoNormalizerDataSpotProducer(
+            FastqReadReadConverter dp = new FastqReadReadConverter(
                     is, runDuration, "", rf.getFilename());
             dp.setName( stream_name );
             
-            dp.setConsumer(new DataConsumer<DataSpot, Spot>()
+            dp.setWriter(new ReadWriter<Read, Spot>()
             {
                 @Override
-                public void cascadeErrors() throws DataConsumerException { }
+                public void cascadeErrors() throws ReadWriterException { }
 
                 @Override public void
-                consume(DataSpot spot )
+                write(Read spot )
                 {
                 	String readKey;
                 	String readIndex;
 
                 	try
                 	{
-                		readKey = PairedFastqConsumer.getReadKey( spot.name);
-                		readIndex = PairedFastqConsumer.getReadIndex( spot.name);
-                	} catch ( DataConsumerException dee )
+                		readKey = PairedFastqWriter.getReadKey( spot.name);
+                		readIndex = PairedFastqWriter.getReadIndex( spot.name);
+                	} catch ( ReadWriterException dee )
                 	{
                     	readKey  = spot.name;
                     	readIndex = stream_name;
@@ -130,7 +130,7 @@ FastqScanner
                 }
 
                 @Override
-                public void setConsumer(DataConsumer<Spot, ?> dataConsumer) {
+                public void setWriter(ReadWriter<Spot, ?> readWriter) {
                     throw new RuntimeException( "Not implemented" );
                 }
 
@@ -147,19 +147,19 @@ FastqScanner
             logProcessedReadNumber( count.get() );
             logFlushMsg( String.format( ", result: %s\n", null == dp.getStoredException() ? "OK" : String.valueOf( dp.getStoredException() ) ) );
 
-            if( !dp.isOk() && !( dp.getStoredException() instanceof DataProducerException) && !( dp.getStoredException() instanceof InvocationTargetException ) )
+            if( !dp.isOk() && !( dp.getStoredException() instanceof ConverterException) && !( dp.getStoredException() instanceof InvocationTargetException ) )
                 throw dp.getStoredException();
             
-            Throwable t = dp.isOk() ? dp.getReadCount() > 0 ? null : new DataProducerException( 0, "Empty file" )
+            Throwable t = dp.isOk() ? dp.getReadCount() > 0 ? null : new ConverterException( 0, "Empty file" )
                                     : dp.getStoredException();
             if( dp.isOk() && null == t )
                 return null;
             
-            t = null == t ? new DataProducerException( -1, "Unknown failure" ) : t;
+            t = null == t ? new ConverterException( -1, "Unknown failure" ) : t;
             t = t instanceof InvocationTargetException ? t.getCause() : t;
-            t = t instanceof DataProducerException ? t : new DataProducerException( t );
+            t = t instanceof ConverterException ? t : new ConverterException( t );
             
-            DataProducerException result = (DataProducerException) t;
+            ConverterException result = (ConverterException) t;
             return result;
         }
     }
@@ -173,12 +173,12 @@ FastqScanner
                      BloomWrapper duplications ) throws Throwable
     {
         AtomicLong count = new AtomicLong();
-        DataProducerException dataProducerException = read( rf, labelset, pairing, duplications, count );
+        ConverterException converterException = read( rf, labelset, pairing, duplications, count );
                         
-        if( null != dataProducerException )
+        if( null != converterException)
         {
-            ValidationMessage dataProducerError = ValidationMessage.error( dataProducerException.getMessage() );
-            dataProducerError.appendOrigin(new ValidationOrigin("line number", dataProducerException.getLineNo()));
+            ValidationMessage dataProducerError = ValidationMessage.error( converterException.getMessage() );
+            dataProducerError.appendOrigin(new ValidationOrigin("line number", converterException.getLineNo()));
             fileResult.add(dataProducerError);
         } else
         {
@@ -283,13 +283,13 @@ FastqScanner
 
             long index = 1;
 
-            FastqIterativeConsumer wrapper = new FastqIterativeConsumer();
+            FastqIterativeWriter wrapper = new FastqIterativeWriter();
             wrapper.setFiles( new File[] { new File( rf.getFilename() ) } );  
             wrapper.setNormalizers( new QualityNormalizer[] { new StandardQualityNormalizer() } );
             wrapper.setReadType( READ_TYPE.SINGLE );
 
-            Iterator<String> read_name_iterator = new DelegateIterator<FastqSpot, String>( wrapper.iterator() ) {
-                @Override public String convert( FastqSpot obj )
+            Iterator<String> read_name_iterator = new DelegateIterator<PairedRead, String>( wrapper.iterator() ) {
+                @Override public String convert( PairedRead obj )
                 {
                     return obj.forward.name;
                 }

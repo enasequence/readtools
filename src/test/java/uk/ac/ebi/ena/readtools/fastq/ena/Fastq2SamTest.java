@@ -37,13 +37,13 @@ import htsjdk.samtools.fastq.FastqRecord;
 
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerMemoryLimitException;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 
 public class Fastq2SamTest {
     @Test
-    public void singleFastqReadAndBaseCount() throws IOException, DataProducerException, DataConsumerException {
+    public void singleFastqReadAndBaseCount() throws IOException, ConverterException, ReadWriterException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
@@ -61,7 +61,7 @@ public class Fastq2SamTest {
     }
 
     @Test
-    public void pairedFastqReadAndBaseCount() throws IOException, DataProducerException, DataConsumerException {
+    public void pairedFastqReadAndBaseCount() throws IOException, ConverterException, ReadWriterException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
@@ -81,7 +81,7 @@ public class Fastq2SamTest {
 
 
     @Test
-    public void testMemoryPaging() throws IOException, DataProducerException, DataConsumerException {
+    public void testMemoryPaging() throws IOException, ConverterException, ReadWriterException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
@@ -103,7 +103,7 @@ public class Fastq2SamTest {
     }
 
     @Test
-    public void testMemoryPagingAbandonLimit() throws IOException, DataProducerException, DataConsumerException {
+    public void testMemoryPagingAbandonLimit() throws IOException, ConverterException, ReadWriterException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
@@ -121,13 +121,13 @@ public class Fastq2SamTest {
         try {
             fastq2Sam.create(params);
             fail();
-        } catch (DataConsumerMemoryLimitException e) {
+        } catch (ReadWriterMemoryLimitException e) {
             assertTrue(e.getMessage().contains("Temp memory limit"));
         }
     }
 
     @Test
-    public void testCorrectPairedWithUnpaired() throws IOException, DataProducerException, DataConsumerException {
+    public void testCorrectPairedWithUnpaired() throws IOException, ConverterException, ReadWriterException {
         File inpFile1 = new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile());
         File inpFile2 = new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile());
 

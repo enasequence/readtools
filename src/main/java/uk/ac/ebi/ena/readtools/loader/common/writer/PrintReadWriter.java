@@ -8,11 +8,35 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.consumer;
+package uk.ac.ebi.ena.readtools.loader.common.writer;
 
-public interface DataConsumer<T1 extends Spot, T2 extends Spot> {
-    void cascadeErrors() throws DataConsumerException;
-    void consume(T1 spot ) throws DataConsumerException;
-    void setConsumer(DataConsumer<T2, ? extends Spot> dataConsumer);
-    boolean isOk();
+
+
+public class
+PrintReadWriter<T1 extends Spot, T2 extends Spot> implements ReadWriter<T1, T2>
+{
+    @Override
+    public void 
+    cascadeErrors() throws ReadWriterException
+    {
+    }
+
+    @Override public void
+    write(T1 spot ) throws ReadWriterException
+    {
+        System.out.println( spot );
+    }
+
+    
+    @Override public void
+    setWriter(ReadWriter<T2, ?> readWriter)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public boolean 
+    isOk()
+    {
+        return true;
+    }
 }

@@ -22,44 +22,44 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataSpotProducer;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeConsumer.READ_TYPE;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
 
 public class
-FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<FastqSpot, Spot> {
+FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedRead, Spot> {
     private static final long CYCLE_TIMEFRAME = 0L;
-    private BlockingQueue<FastqSpot> queue = new SynchronousQueue<FastqSpot>();
-    private AtomicReference<FastqSpot> current_element = new AtomicReference<FastqSpot>();
+    private BlockingQueue<PairedRead> queue = new SynchronousQueue<PairedRead>();
+    private AtomicReference<PairedRead> current_element = new AtomicReference<PairedRead>();
     private AtomicBoolean was_cascade_errors = new AtomicBoolean(false);
     private Exception storedException;
 
-    FastqIterativeConsumerIterator(File tmp_folder,
-                                   int spill_page_size, //only for paired
-                                   long spill_page_size_bytes, //only for paired
-                                   long spill_abandon_limit_bytes,
-                                   READ_TYPE read_type,
-                                   File[] files,
-                                   final QualityNormalizer normalizers[]) throws SecurityException, IOException {
-        DataConsumer<DataSpot, FastqSpot> consumer = null;
+    FastqIterativeWriterIterator(File tmp_folder,
+                                 int spill_page_size, //only for paired
+                                 long spill_page_size_bytes, //only for paired
+                                 long spill_abandon_limit_bytes,
+                                 READ_TYPE read_type,
+                                 File[] files,
+                                 final QualityNormalizer normalizers[]) throws SecurityException, IOException {
+        ReadWriter<Read, PairedRead> consumer = null;
 
         switch (read_type) {
             case SINGLE:
                 consumer = new SingleFastqConsumer();
                 break;
             case PAIRED:
-                consumer = new PairedFastqConsumer(tmp_folder, spill_page_size, spill_page_size_bytes, spill_abandon_limit_bytes);
+                consumer = new PairedFastqWriter(tmp_folder, spill_page_size, spill_page_size_bytes, spill_abandon_limit_bytes);
                 break;
             default:
                 throw new UnsupportedOperationException();
         }
 
-        consumer.setConsumer(this);
+        consumer.setWriter(this);
 
-        ArrayList<DataSpotProducer> producers = new ArrayList<>();
+        ArrayList<ReadConverter> producers = new ArrayList<>();
 
         int attr = 1;
 
@@ -67,8 +67,8 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
             final String default_attr = Integer.toString(attr++);
             final int nindex = normalizers.length == files.length ? attr - 2 : 0;
 
-            DataSpotProducer producer = new DataSpotProducer(FileCompression.open(file), normalizers[nindex], default_attr);
-            producer.setConsumer(consumer);
+            ReadConverter producer = new ReadConverter(FileCompression.open(file), normalizers[nindex], default_attr);
+            producer.setWriter(consumer);
             producer.setName(file.getPath());
             producers.add(producer);
             producer.start();
@@ -78,15 +78,15 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
     }
 
     private Runnable
-    lifecycle(final ArrayList<DataSpotProducer> producers,
-              final DataConsumer<?, ?> consumer_root) {
+    lifecycle(final ArrayList<ReadConverter> producers,
+              final ReadWriter<?, ?> consumer_root) {
         return new Runnable() {
             public void
             run() {
                 try {
                     boolean again = false;
                     do {
-                        for (DataSpotProducer producer : producers) {
+                        for (ReadConverter producer : producers) {
                             if (producer.isAlive()) {
                                 try {
                                     producer.join(CYCLE_TIMEFRAME);
@@ -95,14 +95,14 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
                                     System.out.printf("%s was interrupted\n", producer.getName());
                                 }
                             } else if (!producer.isOk()) {
-                                throw new DataProducerException(producer.getStoredException());
+                                throw new ConverterException(producer.getStoredException());
                             }
                         }
                     } while (again);
 
-                    for (DataSpotProducer producer : producers) {
+                    for (ReadConverter producer : producers) {
                         if (!producer.isOk()) {
-                            throw new DataProducerException(producer.getStoredException());
+                            throw new ConverterException(producer.getStoredException());
                         }
                     }
 
@@ -117,13 +117,13 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
 
     @Override
     public void
-    cascadeErrors() throws DataConsumerException {
+    cascadeErrors() throws ReadWriterException {
         was_cascade_errors.lazySet(true);
     }
 
     @Override
     public void
-    consume(FastqSpot spot) throws DataConsumerException {
+    write(PairedRead spot) throws ReadWriterException {
         try {
             queue.put(spot);
         } catch (InterruptedException e) {
@@ -133,7 +133,7 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
 
     @Override
     public void
-    setConsumer(DataConsumer<Spot, ?> dataConsumer) {
+    setWriter(ReadWriter<Spot, ?> readWriter) {
         throw new RuntimeException("N07 iMPl3m3nt3D");
     }
 
@@ -158,7 +158,7 @@ FastqIterativeConsumerIterator implements Iterator<FastqSpot>, DataConsumer<Fast
     }
 
     @Override
-    public FastqSpot
+    public PairedRead
     next() {
         if (null != storedException) {
             throw new RuntimeException(storedException);

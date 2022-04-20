@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.producer;
+package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -21,9 +21,9 @@ import java.util.stream.Collectors;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
+import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
-class DataSpotReader {
+class ReadReader {
 
     public enum ReadStyle {
         FASTQ,
@@ -113,7 +113,7 @@ SPACE HERE
     private final DataSpotReaderParams params = defaultParams();
 
     /**
-     * Default read index assigned to each {@link DataSpot} spot returned by this reader instance.
+     * Default read index assigned to each {@link Read} spot returned by this reader instance.
      */
     private final String defaultReadIndex;
 
@@ -121,51 +121,51 @@ SPACE HERE
 
     private final int expectedBaseLength;
 
-    public DataSpotReader( QualityNormalizer normalizer, String readIndex ) {
+    public ReadReader(QualityNormalizer normalizer, String readIndex ) {
         this.normalizer = normalizer;
         this.defaultReadIndex = readIndex;
         expectedBaseLength = -1;
     }
 
-    public DataSpotReader(QualityNormalizer normalizer) {
+    public ReadReader(QualityNormalizer normalizer) {
         this(normalizer, null);
     }
 
-    public DataSpotReader(QualityNormalizer normalizer, int expected_length ) {
+    public ReadReader(QualityNormalizer normalizer, int expected_length ) {
         this.normalizer = normalizer;
         this.defaultReadIndex = null;
         expectedBaseLength = expected_length;
     }
 
-    public DataSpot read(InputStream inputStream) throws IOException {
+    public Read read(InputStream inputStream) throws IOException {
         boolean recordStarted = false;
 
-        DataSpot dataSpot = new DataSpot();
-        dataSpot.readIndex = defaultReadIndex;
+        Read read = new Read();
+        read.readIndex = defaultReadIndex;
 
         try {
-            readBaseName(inputStream, dataSpot);
+            readBaseName(inputStream, read);
 
             recordStarted = true;
 
-            readBases(inputStream, dataSpot);
-            readQualName(inputStream, dataSpot);
-            readQuals(inputStream, dataSpot);
+            readBases(inputStream, read);
+            readQualName(inputStream, read);
+            readQuals(inputStream, read);
 
-            checkReadData(dataSpot);
+            checkReadData(read);
 
-            return dataSpot;
+            return read;
         } catch (EOFException e) {
             // Read data must always be checked even when the end of stream has been reached.
             if( recordStarted ) {
-                checkReadData(dataSpot);
+                checkReadData(read);
             }
 
             throw e;
         }
     }
 
-    private void readBaseName(InputStream is, DataSpot dataSpot) throws IOException
+    private void readBaseName(InputStream is, Read read) throws IOException
     {
         String line = readLine( is );
         while( line.trim().length() == 0 )
@@ -176,33 +176,33 @@ SPACE HERE
         {
             //try casava 1.8
             if( params.m_casava_1_8_name.reset( line ).find() )
-                params.read_style = DataSpotReader.ReadStyle.CASAVA18;
+                params.read_style = ReadReader.ReadStyle.CASAVA18;
             else
-                params.read_style = DataSpotReader.ReadStyle.FASTQ;
+                params.read_style = ReadReader.ReadStyle.FASTQ;
         }
 
         switch( params.read_style )
         {
             case CASAVA18:
                 if( !params.m_casava_1_8_name.reset( line ).find() )
-                    throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, DataSpotReader.ReadStyle.CASAVA18 ) );
-                dataSpot.name = String.format( "%s/%s", params.m_casava_1_8_name.group( 1 ), params.m_casava_1_8_name.group( 3 ) );
+                    throw new ConverterException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, ReadReader.ReadStyle.CASAVA18 ) );
+                read.name = String.format( "%s/%s", params.m_casava_1_8_name.group( 1 ), params.m_casava_1_8_name.group( 3 ) );
                 break;
 
             case FASTQ:
                 if( !params.m_base_name.reset( line ).find() )
-                    throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, DataSpotReader.ReadStyle.FASTQ ) );
+                    throw new ConverterException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, ReadReader.ReadStyle.FASTQ ) );
 
-                dataSpot.name = params.m_base_name.group( 1 );
+                read.name = params.m_base_name.group( 1 );
                 break;
 
             default:
-                throw new DataProducerException( params.line_no, String.format( "Line [%s] has no read style defined!", line ) );
+                throw new ConverterException( params.line_no, String.format( "Line [%s] has no read style defined!", line ) );
         }
     }
 
     // get bases
-    private void readBases(InputStream is, DataSpot dataSpot) throws IOException
+    private void readBases(InputStream is, Read read) throws IOException
     {
         String line = readLine( is, -1, base_stopper );
         while( line.trim().length() == 0 )
@@ -216,22 +216,22 @@ SPACE HERE
         //check against expected, if any
         if( -1 < expectedBaseLength
                 && expectedBaseLength != value.length() )
-            throw new DataProducerException( params.line_no, String.format( "Expected base length [%d] does not match the read one[%d]", expectedBaseLength, value.length() ) );
+            throw new ConverterException( params.line_no, String.format( "Expected base length [%d] does not match the read one[%d]", expectedBaseLength, value.length() ) );
 
-        dataSpot.bases = value;
+        read.bases = value;
     }
 
     // get name of quality line
-    private void readQualName(InputStream is, DataSpot dataSpot) throws IOException
+    private void readQualName(InputStream is, Read read) throws IOException
     {
         String line = readLine( is );
         if( !params.m_qname.reset( line ).find() )
-            throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
+            throw new ConverterException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
     }
 
-    private void readQuals(InputStream is, DataSpot dataSpot) throws IOException
+    private void readQuals(InputStream is, Read read) throws IOException
     {
-        int expectedQualLength = 0 == dataSpot.bases.length() ? -1 : dataSpot.bases.length();
+        int expectedQualLength = 0 == read.bases.length() ? -1 : read.bases.length();
 
         String line = readLine( is, expectedQualLength );
         while( expectedQualLength >= 0 && line.trim().length() == 0 )
@@ -242,13 +242,13 @@ SPACE HERE
         if( !params.m_quals.reset( line ).find() )
         {
             if( !params.m_quals_sd.reset( line ).matches() )
-                throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
+                throw new ConverterException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
             else
             {
                 line += readLine( is );
 
                 if( !params.m_quals_sd.reset( line ).matches() )
-                    throw new DataProducerException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
+                    throw new ConverterException( params.line_no, String.format( "Line [%s] does not match regexp", line ) );
 
                 String[] scores = line.split( " +" );
                 StringBuilder sb = new StringBuilder( scores.length );
@@ -257,8 +257,8 @@ SPACE HERE
                 value = sb.toString();
 
                 if( expectedQualLength != value.length() )
-                    throw new DataProducerException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of the read one[%d]",
-                            dataSpot.name,
+                    throw new ConverterException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of the read one[%d]",
+                            read.name,
                             expectedQualLength,
                             value.length() ) );
 
@@ -269,8 +269,8 @@ SPACE HERE
 
             //check against expected
             if( expectedQualLength >= 0 && expectedQualLength != value.length() )
-                throw new DataProducerException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of the read one[%d]",
-                        dataSpot.name,
+                throw new ConverterException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of the read one[%d]",
+                        read.name,
                         expectedQualLength,
                         value.length() ) );
 
@@ -281,7 +281,7 @@ SPACE HERE
                 {
                     line = readLine( is );
                     if( line.trim().length() > 0 )
-                        throw new DataProducerException( params.line_no, String.format( "Trailing character(s) [%s] after expected number of quals [%d]",
+                        throw new ConverterException( params.line_no, String.format( "Trailing character(s) [%s] after expected number of quals [%d]",
                                 line,
                                 expectedQualLength ) );
                 } catch( IOException e )
@@ -290,19 +290,19 @@ SPACE HERE
                 }
             }
         }
-        dataSpot.quals = value;
+        read.quals = value;
     }
 
-    private void checkReadData(DataSpot dataSpot)
+    private void checkReadData(Read read)
     {
         if( !params.allow_empty )
         {
-            if( null == dataSpot.bases || null == dataSpot.quals
-                    || 0 == dataSpot.bases.length() || 0 == dataSpot.quals.length() )
-                throw new DataProducerException( params.line_no, "Empty lines not allowed" );
+            if( null == read.bases || null == read.quals
+                    || 0 == read.bases.length() || 0 == read.quals.length() )
+                throw new ConverterException( params.line_no, "Empty lines not allowed" );
         }
 
-        normalizer.normalize( dataSpot.quals.getBytes(StandardCharsets.UTF_8) );
+        normalizer.normalize( read.quals.getBytes(StandardCharsets.UTF_8) );
     }
 
     // reads stream line till line separator

@@ -8,27 +8,42 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.consumer;
+package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 public class
-DataConsumerException extends RuntimeException
+ConverterPanicException extends ConverterException
 {
     private static final long serialVersionUID = 1L;
-
-    public DataConsumerException(String value )
+    
+    
+    public ConverterPanicException(String value )
     {
-        super( value );
-    }
-
-    public DataConsumerException()
-    {
-        super();
+        super( -1, value );
     }
 
     
-    public DataConsumerException(Throwable cause )
+    public ConverterPanicException()
+    {
+        super( -1 );
+    }
+    
+    
+    public ConverterPanicException(Throwable cause )
     {
         super( cause );
     }
-
+    
+    
+    public ConverterPanicException(String message, Throwable cause )
+    {
+        super( message, cause );
+    }
+    
+    
+    public String
+    toString()
+    {
+        return super.toString();
+    }
+    
 }

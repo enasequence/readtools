@@ -10,46 +10,46 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 
 public class
-SingleFastqConsumer implements DataConsumer<DataSpot, FastqSpot>
+SingleFastqConsumer implements ReadWriter<Read, PairedRead>
 {
-    DataConsumer<FastqSpot, ?> dataConsumer;
+    ReadWriter<PairedRead, ?> readWriter;
     boolean is_ok = true;
     
     @Override
     public void 
-    cascadeErrors() throws DataConsumerException
+    cascadeErrors() throws ReadWriterException
     {
         //empty, no errors here
         
-        if( null != dataConsumer)
-            dataConsumer.cascadeErrors();
+        if( null != readWriter)
+            readWriter.cascadeErrors();
     }
 
     
     @Override
     public void
-    consume(DataSpot spot ) throws DataConsumerException
+    write(Read spot ) throws ReadWriterException
     {
         int slash_idx = spot.name.lastIndexOf( '/' );
 
-        FastqSpot fastqSpot = new FastqSpot(slash_idx == -1 ? spot.name : spot.name.substring( 0, slash_idx ), spot);
+        PairedRead pairedRead = new PairedRead(slash_idx == -1 ? spot.name : spot.name.substring( 0, slash_idx ), spot);
 
-        if( null != dataConsumer)
-            dataConsumer.consume( fastqSpot );
+        if( null != readWriter)
+            readWriter.write(pairedRead);
         else
-            System.out.println( fastqSpot );
+            System.out.println(pairedRead);
     }
 
 
     @Override
     public void
-    setConsumer(DataConsumer<FastqSpot, ?> dataConsumer)
+    setWriter(ReadWriter<PairedRead, ?> readWriter)
     {
-        this.dataConsumer = dataConsumer;
+        this.readWriter = readWriter;
     }
 
 
@@ -57,6 +57,6 @@ SingleFastqConsumer implements DataConsumer<DataSpot, FastqSpot>
     public boolean 
     isOk()
     {
-        return null == dataConsumer ? is_ok : is_ok && dataConsumer.isOk();
+        return null == readWriter ? is_ok : is_ok && readWriter.isOk();
     }
 }

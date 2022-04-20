@@ -17,15 +17,15 @@ import java.time.Duration;
 
 import org.junit.Test;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumerException;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
-import uk.ac.ebi.ena.readtools.loader.common.producer.AutoNormalizerDataSpotProducer;
-import uk.ac.ebi.ena.readtools.loader.common.producer.DataProducerException;
-import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
+import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
-public class AutoNormalizerDataSpotProducerTest {
+public class AutoNormalizerReadProducerTest {
     private static final long FASTQ_VALIDATION_MAX_DURATION_MS = 4_000;
 
     @Test (timeout = FASTQ_VALIDATION_MAX_DURATION_MS + 1_000)
@@ -34,21 +34,21 @@ public class AutoNormalizerDataSpotProducerTest {
 
         try (InputStream is = Utils.openFastqInputStream(filePath)) {
             Duration duration = Duration.ofMillis(FASTQ_VALIDATION_MAX_DURATION_MS);
-            AutoNormalizerDataSpotProducer dp =
-                    new AutoNormalizerDataSpotProducer(is, duration, "", filePath.toString());
+            FastqReadReadConverter dp =
+                    new FastqReadReadConverter(is, duration, "", filePath.toString());
             dp.setName(filePath.toFile().getName());
-            dp.setConsumer(new DataConsumer<DataSpot, Spot>() {
+            dp.setWriter(new ReadWriter<Read, Spot>() {
                 @Override
-                public void cascadeErrors() throws DataConsumerException {
+                public void cascadeErrors() throws ReadWriterException {
                 }
 
                 @Override
                 public void
-                consume(DataSpot spot) {
+                write(Read spot) {
                 }
 
                 @Override
-                public void setConsumer(DataConsumer<Spot, ?> dataConsumer) {
+                public void setWriter(ReadWriter<Spot, ?> readWriter) {
                     throw new RuntimeException("Not implemented");
                 }
 
@@ -60,7 +60,7 @@ public class AutoNormalizerDataSpotProducerTest {
             dp.start();
             dp.join();
             if (!dp.isOk()) {
-                if (dp.getStoredException() instanceof DataProducerException) {
+                if (dp.getStoredException() instanceof ConverterException) {
                     dp.getStoredException().printStackTrace();
                     throw new Exception("DataProducerException");
                 } else {

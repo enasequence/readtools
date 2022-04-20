@@ -8,41 +8,41 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.producer;
+package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 public class
-DataProducerException extends RuntimeException
+ConverterException extends RuntimeException
 {
     private static final long serialVersionUID = 1L;
     private long   line_no = -1;
     
-    public DataProducerException(long line_no, String value )
+    public ConverterException(long line_no, String value )
     {
         super( value );
         this.line_no = line_no;
     }
 
-    public DataProducerException(long line_no )
+    public ConverterException(long line_no )
     {
         super();
         this.line_no = line_no;
     }
 
     
-    public DataProducerException(long line_no, Throwable cause )
+    public ConverterException(long line_no, Throwable cause )
     {
         super( cause );
         this.line_no = line_no;
     }
 
 
-    public DataProducerException(String message, Throwable cause )
+    public ConverterException(String message, Throwable cause )
     {
         super( message, cause );
     }
     
     
-    public DataProducerException(Throwable cause )
+    public ConverterException(Throwable cause )
     {
         super( cause );
     }

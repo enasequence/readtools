@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.producer;
+package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
@@ -17,11 +17,11 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.function.Supplier;
 
-import uk.ac.ebi.ena.readtools.loader.common.consumer.DataConsumer;
-import uk.ac.ebi.ena.readtools.loader.common.consumer.Spot;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
 public abstract class
-AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
+AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
     private static final int YIELD_CYCLES = 362;//16384;
 
     private final Duration runDuration;
@@ -30,11 +30,11 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
 
     protected final InputStream  istream;
 
-    protected volatile DataConsumer<T, ?> dataConsumer;
+    protected volatile ReadWriter<T, ?> readWriter;
     protected volatile boolean      is_ok = true;
     protected volatile Throwable    stored_exception;
     
-    protected AbstractDataProducer(InputStream istream) {
+    protected AbstractReadConverter(InputStream istream) {
         this(istream, null);
     }
 
@@ -43,7 +43,7 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
      * @param istream
      * @param runDuration - Run for the given duration of time.
      */
-    protected AbstractDataProducer(InputStream istream, Duration runDuration) {
+    protected AbstractReadConverter(InputStream istream, Duration runDuration) {
         this.istream = new BufferedInputStream( istream, 1024 * 1024 );
         this.runDuration = runDuration;
     }
@@ -66,8 +66,8 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
         return baseCount;
     }
     
-    public void setConsumer(DataConsumer<T, ?> consumer) {
-        this.dataConsumer = consumer;
+    public void setWriter(ReadWriter<T, ?> writer) {
+        this.readWriter = writer;
     }
     
     public boolean isOk() {
@@ -86,18 +86,18 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
             begin();
 
             do {
-                synchronized (dataConsumer) {
+                synchronized (readWriter) {
                     for (int yield = YIELD_CYCLES; yield > 0; --yield)
-                        dataConsumer.consume(produce());
+                        readWriter.write(convert());
                 }
 
-                if (!dataConsumer.isOk())
-                    throw new DataProducerPanicException();
+                if (!readWriter.isOk())
+                    throw new ConverterPanicException();
 
                 Thread.sleep(1);
             } while (keepRunning.get());
-        } catch (DataProducerEOFException ignored) {
-        } catch (DataProducerPanicException e) {
+        } catch (ConverterEOFException ignored) {
+        } catch (ConverterPanicException e) {
             is_ok = false;
             this.stored_exception = e;
         } catch (Throwable e) {
@@ -122,22 +122,22 @@ AbstractDataProducer<T extends Spot> extends Thread implements DataProducer<T> {
     }
 
     //Re-implement if you need special type of feeding
-    private T produce() {
+    private T convert() {
         T spot = null;
 
         try {
-            spot = produce(istream);
+            spot = convert(istream);
             ++readCount;
             baseCount += spot.getBaseCount();
 
 
             return spot;
         } catch( EOFException e ){
-            throw new DataProducerEOFException(readCount);
-        } catch( DataProducerException e ){
+            throw new ConverterEOFException(readCount);
+        } catch( ConverterException e ){
             throw e;
         } catch( Throwable cause ) {
-            throw new DataProducerException(cause);
+            throw new ConverterException(cause);
         }
     }
 }
