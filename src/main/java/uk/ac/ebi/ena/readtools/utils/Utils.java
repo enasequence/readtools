@@ -15,16 +15,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.apache.commons.exec.CommandLine;
-import org.apache.commons.exec.DefaultExecutor;
-import org.apache.commons.exec.Executor;
-import org.apache.commons.exec.PumpStreamHandler;
 
 import htsjdk.samtools.fastq.AsyncFastqWriter;
 import htsjdk.samtools.fastq.BasicFastqWriter;
@@ -102,13 +97,13 @@ public class Utils {
      * @return
      */
     public static FastqQualityFormat detectFastqQualityFormat(String fastqFile1, String fastqFile2) {
-        InputStreamFuture inputStreamFuture1 = openFastqInputStream(Paths.get(fastqFile1));
-        InputStreamFuture inputStreamFuture2 = fastqFile2 == null ? null : openFastqInputStream(Paths.get(fastqFile2));
+        InputStream inputStream1 = openFastqInputStream(Paths.get(fastqFile1));
+        InputStream inputStream2 = fastqFile2 == null ? null : openFastqInputStream(Paths.get(fastqFile2));
 
         FastqReader reader1 = new FastqReader(null, new BufferedReader(new InputStreamReader(
-                inputStreamFuture1.inputStream, StandardCharsets.UTF_8)), true);
+                inputStream1, StandardCharsets.UTF_8)), true);
         FastqReader reader2 = fastqFile2 == null ? null : new FastqReader(null, new BufferedReader(new InputStreamReader(
-                inputStreamFuture2.inputStream, StandardCharsets.UTF_8)), true);
+                inputStream2, StandardCharsets.UTF_8)), true);
 
         final QualityEncodingDetector detector = new QualityEncodingDetector();
 
@@ -121,22 +116,10 @@ public class Utils {
 
         reader1.close();
 
-        if (getBz2ReadResult(inputStreamFuture1.future) != 0) {
-            throw new RuntimeException("Failed to decompress " + fastqFile1);
-        }
-
-        if (reader2 != null) {
-            if (getBz2ReadResult(inputStreamFuture2.future) != 0) {
-                throw new RuntimeException("Failed to decompress " + fastqFile2);
-            }
-        }
-
         final FastqQualityFormat qualityFormat =  detector.generateBestGuess(
                 QualityEncodingDetector.FileContext.FASTQ, null);
 
         return qualityFormat;
-
-
     }
 
     public static QualityNormalizer getQualityNormalizer(FastqQualityFormat qualityType) {
@@ -158,7 +141,7 @@ public class Utils {
      * @param path
      * @return
      */
-    public static InputStreamFuture openFastqInputStream(Path path ) {
+    public static InputStream openFastqInputStream(Path path ) {
         final int marksize = 256;
         BufferedInputStream is;
 
@@ -167,108 +150,19 @@ public class Utils {
             is.mark( marksize );
 
             try {
-                return makeFutureStub(path, new BufferedInputStream( new GZIPInputStream( is ) ));
+                return new BufferedInputStream( new GZIPInputStream( is ) );
             } catch( IOException gzip ) {
                 is.reset();
                 try {
                     is.mark( marksize );
-
-                    new BufferedInputStream( new BZip2CompressorInputStream( is ) ); // it's a bz2 compression check
-                    is.close();
-
-                    return createBz2InputStream(path);
-
-//                    return makeFutureStub(path, new BufferedInputStream( new BZip2CompressorInputStream( is ) ));
+                    return new BufferedInputStream( new BZip2CompressorInputStream( is, true ) );
                 } catch( IOException bzip ) {
                     is.reset();
-                    return makeFutureStub(path, is);
+                    return is;
                 }
             }
         } catch( IOException ex ) {
             throw new RawReadsException( ex, ex.getMessage() );
-        }
-    }
-
-    public static InputStreamFuture createBz2InputStream(Path filePath) throws IOException {
-        String cmd = "bzip2";
-        CommandLine commandLine = new CommandLine(cmd);
-        commandLine.addArgument("-cd", false);
-        commandLine.addArgument(filePath.toAbsolutePath().toString(), false);
-
-        PipedOutputStream stdoutStream = new PipedOutputStream();
-
-        PipedInputStream bz2Stream = new PipedInputStream();
-        stdoutStream.connect(bz2Stream);
-
-        Executor apacheExecutor = new DefaultExecutor();
-        apacheExecutor.setExitValues(null);
-        apacheExecutor.setStreamHandler(new PumpStreamHandler(stdoutStream, System.err));
-
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-
-        Future<Integer> future = executor.submit(() -> apacheExecutor.execute(commandLine));
-
-        return new InputStreamFuture(filePath, bz2Stream, future);
-    }
-
-    public static Integer getBz2ReadResult(Future<Integer> future) {
-        try {
-            return future.get();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static InputStreamFuture makeFutureStub(Path filePath, InputStream inputStream) {
-        Future<Integer> future = new Future<Integer>() {
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                return false;
-            }
-
-            @Override
-            public boolean isCancelled() {
-                return false;
-            }
-
-            @Override
-            public boolean isDone() {
-                return false;
-            }
-
-            @Override
-            public Integer get() {
-                return 0;
-            }
-
-            @Override
-            public Integer get(long timeout, TimeUnit unit) {
-                return 0;
-            }
-        };
-        return new InputStreamFuture(filePath, inputStream, future);
-    }
-
-    public static class InputStreamFuture implements AutoCloseable {
-        public Path filePath;
-        public InputStream inputStream;
-        public Future<Integer> future;
-
-        public InputStreamFuture() {}
-
-        public InputStreamFuture(Path filePath, InputStream inputStream, Future<Integer> future) {
-            this.filePath = filePath;
-            this.inputStream = inputStream;
-            this.future = future;
-        }
-
-        @Override
-        public void close() throws Exception {
-            inputStream.close();
-            Integer exitCode = future.get();
-            if (0 != exitCode) {
-                throw new RuntimeException("Failed to decompress " + filePath + " bzip2 exit code " + exitCode);
-            }
         }
     }
 }

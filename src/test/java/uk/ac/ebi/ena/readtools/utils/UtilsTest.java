@@ -10,6 +10,8 @@
 */
 package uk.ac.ebi.ena.readtools.utils;
 
+import static org.junit.Assert.*;
+
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -23,11 +25,7 @@ import org.junit.Test;
 
 import htsjdk.samtools.fastq.FastqReader;
 
-import static org.junit.Assert.*;
-
 public class UtilsTest {
-    public static final int TEST_TIMEOUT_MS = 10_000;
-
     @Test
     public void testSingleFastqTest() throws IOException {
         String expectedUpper = "GACGGATCTATAGCAAAACT";
@@ -51,23 +49,13 @@ public class UtilsTest {
         Assert.assertEquals(expectedLower, recReadString2);
     }
 
-    @Test (timeout = TEST_TIMEOUT_MS)
+    @Test
     public void bz2Stream() throws IOException {
         Path filePath = Paths.get("src/test/resources/tst.fastq.bz2");
 
-        Utils.InputStreamFuture bz2res = Utils.createBz2InputStream(filePath);
-        BufferedReader br = new BufferedReader(new InputStreamReader(bz2res.inputStream, StandardCharsets.UTF_8));
+        InputStream bz2res = Utils.openFastqInputStream(filePath);
+        BufferedReader br = new BufferedReader(new InputStreamReader(bz2res, StandardCharsets.UTF_8));
 
-        System.out.println(br.readLine());
-        br.close();
-
-        Integer exitCode = Utils.getBz2ReadResult(bz2res.future);
-        System.out.println("exitCode " + exitCode);
-
-        System.out.println("\n=====================================");
-
-        bz2res = Utils.createBz2InputStream(filePath);
-        br = new BufferedReader(new InputStreamReader(bz2res.inputStream, StandardCharsets.UTF_8));
         List<String> sl = new ArrayList<>();
 
         while (true) {
@@ -77,19 +65,19 @@ public class UtilsTest {
             }
             sl.add(line);
         }
-        br.close();
+        bz2res.close();
 
-        exitCode = Utils.getBz2ReadResult(bz2res.future);
-        System.out.println("exitCode " + exitCode);
         System.out.print(sl);
+
+        assertEquals(32, sl.size());
     }
 
-    @Test (timeout = TEST_TIMEOUT_MS)
+    @Test
     public void bz2StreamTryResource() {
         Path filePath = Paths.get("src/test/resources/tst.fastq.bz2");
 
-        try (Utils.InputStreamFuture bz2res = Utils.createBz2InputStream(filePath)) {
-            BufferedReader br = new BufferedReader(new InputStreamReader(bz2res.inputStream, StandardCharsets.UTF_8));
+        try (InputStream bz2res = Utils.openFastqInputStream(filePath)) {
+            BufferedReader br = new BufferedReader(new InputStreamReader(bz2res, StandardCharsets.UTF_8));
 
             System.out.println(br.readLine());
         } catch (Exception exception) {
@@ -98,8 +86,8 @@ public class UtilsTest {
 
         System.out.println("\n=====================================");
 
-        try (Utils.InputStreamFuture bz2res = Utils.createBz2InputStream(filePath)) {
-            BufferedReader br = new BufferedReader(new InputStreamReader(bz2res.inputStream, StandardCharsets.UTF_8));
+        try (InputStream bz2res = Utils.openFastqInputStream(filePath)) {
+            BufferedReader br = new BufferedReader(new InputStreamReader(bz2res, StandardCharsets.UTF_8));
             List<String> sl = new ArrayList<>();
 
             while (true) {
@@ -110,37 +98,10 @@ public class UtilsTest {
                 sl.add(line);
             }
             System.out.print(sl);
+
+            assertEquals(32, sl.size());
         } catch (Exception exception) {
             exception.printStackTrace();
-        }
-    }
-
-    @Test (timeout = TEST_TIMEOUT_MS)
-    public void bz2StreamCorrupted() throws IOException {
-        Path filePath = Paths.get("src/test/resources/tst.fastq.bz2.cr");
-
-        Utils.InputStreamFuture bz2res = Utils.createBz2InputStream(filePath);
-        BufferedReader br = new BufferedReader(new InputStreamReader(bz2res.inputStream, StandardCharsets.UTF_8));
-
-        System.out.println(br.readLine());
-        br.close();
-
-        Integer exitCode = Utils.getBz2ReadResult(bz2res.future);
-        System.out.println("exitCode " + exitCode);
-
-        assertNotEquals(0, (int) exitCode);
-    }
-
-    @Test (timeout = TEST_TIMEOUT_MS)
-    public void bz2StreamTryResourceCorrupted() {
-        Path filePath = Paths.get("src/test/resources/tst.fastq.bz2.cr");
-
-        try (Utils.InputStreamFuture bz2res = Utils.createBz2InputStream(filePath)) {
-            BufferedReader br = new BufferedReader(new InputStreamReader(bz2res.inputStream, StandardCharsets.UTF_8));
-
-            System.out.println(br.readLine());
-        } catch (Exception e) {
-            assertTrue(e.getMessage().contains("Failed to decompress"));
         }
     }
 }
