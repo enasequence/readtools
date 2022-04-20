@@ -26,13 +26,11 @@ import uk.ac.ebi.ena.readtools.loader.fastq.DataSpot;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
 public class AutoNormalizerDataSpotProducerTest {
-    private static final long FASTQ_VALIDATION_MAX_DURATION_MS = 400_000;
+    private static final long FASTQ_VALIDATION_MAX_DURATION_MS = 4_000;
 
     @Test (timeout = FASTQ_VALIDATION_MAX_DURATION_MS + 1_000)
     public void test() throws Exception {
-//        Path filePath = Paths.get("src/test/resources/tst.fastq.bz2");
-//        Path filePath = Paths.get("src/test/resources/ERS10423544.fastq.gz");
-        Path filePath = Paths.get("src/test/resources/ERS10423544.fastq.bz2");
+        Path filePath = Paths.get("src/test/resources/tst.fastq.bz2");
 
         try (InputStream is = Utils.openFastqInputStream(filePath)) {
             Duration duration = Duration.ofMillis(FASTQ_VALIDATION_MAX_DURATION_MS);

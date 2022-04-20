@@ -97,13 +97,11 @@ public class Utils {
      * @return
      */
     public static FastqQualityFormat detectFastqQualityFormat(String fastqFile1, String fastqFile2) {
-        InputStream inputStream1 = openFastqInputStream(Paths.get(fastqFile1));
-        InputStream inputStream2 = fastqFile2 == null ? null : openFastqInputStream(Paths.get(fastqFile2));
-
         FastqReader reader1 = new FastqReader(null, new BufferedReader(new InputStreamReader(
-                inputStream1, StandardCharsets.UTF_8)), true);
+                openFastqInputStream(Paths.get(fastqFile1)), StandardCharsets.UTF_8)), true);
+
         FastqReader reader2 = fastqFile2 == null ? null : new FastqReader(null, new BufferedReader(new InputStreamReader(
-                inputStream2, StandardCharsets.UTF_8)), true);
+                openFastqInputStream(Paths.get(fastqFile2)), StandardCharsets.UTF_8)), true);
 
         final QualityEncodingDetector detector = new QualityEncodingDetector();
 
