@@ -21,7 +21,7 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
 public abstract class
-AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
+AbstractReadConverter<T extends Spot> implements Converter<T> {
     private static final int YIELD_CYCLES = 362;//16384;
 
     private final Duration runDuration;

@@ -95,8 +95,7 @@ FastqScanner
 
             FastqReadReadConverter dp = new FastqReadReadConverter(
                     is, runDuration, "", rf.getFilename());
-            dp.setName( stream_name );
-            
+
             dp.setWriter(new ReadWriter<Read, Spot>()
             {
                 @Override
@@ -142,8 +141,7 @@ FastqScanner
 
 
             log.info( "Processing file " + rf.getFilename() );
-            dp.start();
-            dp.join();
+            dp.run();
             logProcessedReadNumber( count.get() );
             logFlushMsg( String.format( ", result: %s\n", null == dp.getStoredException() ? "OK" : String.valueOf( dp.getStoredException() ) ) );
 

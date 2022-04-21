@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.common.producer;
+package uk.ac.ebi.ena.readtools.common.converter;
 
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -36,7 +36,6 @@ public class AutoNormalizerReadProducerTest {
             Duration duration = Duration.ofMillis(FASTQ_VALIDATION_MAX_DURATION_MS);
             FastqReadReadConverter dp =
                     new FastqReadReadConverter(is, duration, "", filePath.toString());
-            dp.setName(filePath.toFile().getName());
             dp.setWriter(new ReadWriter<Read, Spot>() {
                 @Override
                 public void cascadeErrors() throws ReadWriterException {
@@ -57,8 +56,7 @@ public class AutoNormalizerReadProducerTest {
                     return true;
                 }
             });
-            dp.start();
-            dp.join();
+            dp.run();
             if (!dp.isOk()) {
                 if (dp.getStoredException() instanceof ConverterException) {
                     dp.getStoredException().printStackTrace();

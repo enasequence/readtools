@@ -13,7 +13,12 @@ package uk.ac.ebi.ena.readtools.fastq.ena;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -101,48 +106,42 @@ public class Fastq2Sam {
 
         dataSpotToFastqSpotConsumer.setWriter(fastqSpotToBamConsumer);
 
-        ArrayList<FastqReadReadConverter> producers = new ArrayList<>();
+        ArrayList<FastqReadReadConverter> converters = new ArrayList<>();
+
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        List<Future<?>> futures = Collections.synchronizedList(new ArrayList<>());
 
         int attr = 1;
         for (String f_name : p.files) {
             final String default_attr = Integer.toString(attr++);
 
-            FastqReadReadConverter producer = new FastqReadReadConverter(
+            FastqReadReadConverter converter = new FastqReadReadConverter(
                     FileCompression.valueOf(p.compression).open(f_name, p.use_tar), default_attr, f_name);
-            producer.setWriter(dataSpotToFastqSpotConsumer);
-            producer.setName(f_name);
-            producers.add(producer);
-            producer.start();
+            converter.setWriter(dataSpotToFastqSpotConsumer);
+            converters.add(converter);
+
+            futures.add(executorService.submit(converter::run));
         }
 
-        boolean again = false;
-        do {
-            for (FastqReadReadConverter producer : producers) {
-                if (producer.isAlive() && producer.isOk()) {
-                    try {
-                        producer.join();
-                    } catch (InterruptedException ie) {
-                        again = true;
-                    }
-                } else if (!producer.isOk()) {
-                    if (producer.getStoredException() instanceof ReadWriterMemoryLimitException) {
-                        throw new ReadWriterMemoryLimitException(producer.getStoredException());
-                    }
-                    throw new ConverterException(producer.getStoredException());
-                }
+        futures.forEach(f -> {
+            try {
+                f.get();
+            } catch (InterruptedException ignored) {
+            } catch (ExecutionException e) {
+                throw new ConverterException(e);
             }
-        } while (again);
+        });
 
-        for (FastqReadReadConverter producer : producers) {
-            if (!producer.isOk()) {
-                if (producer.getStoredException() instanceof ReadWriterMemoryLimitException) {
-                    throw new ReadWriterMemoryLimitException(producer.getStoredException());
+        for (FastqReadReadConverter converter : converters) {
+            if (!converter.isOk()) {
+                if (converter.getStoredException() instanceof ReadWriterMemoryLimitException) {
+                    throw new ReadWriterMemoryLimitException(converter.getStoredException());
                 }
-                throw new RuntimeException(producer.getStoredException());
+                throw new RuntimeException(converter.getStoredException());
             }
 
-            totalReadCount += producer.getReadCount();
-            totalBaseCount += producer.getBaseCount();
+            totalReadCount += converter.getReadCount();
+            totalBaseCount += converter.getBaseCount();
         }
 
         dataSpotToFastqSpotConsumer.cascadeErrors();

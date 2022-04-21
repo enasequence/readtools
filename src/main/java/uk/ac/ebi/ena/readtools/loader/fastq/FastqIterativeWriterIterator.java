@@ -13,10 +13,10 @@ package uk.ac.ebi.ena.readtools.loader.fastq;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -31,7 +31,7 @@ import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
 
 public class
 FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedRead, Spot> {
-    private static final long CYCLE_TIMEFRAME = 0L;
+
     private BlockingQueue<PairedRead> queue = new SynchronousQueue<PairedRead>();
     private AtomicReference<PairedRead> current_element = new AtomicReference<PairedRead>();
     private AtomicBoolean was_cascade_errors = new AtomicBoolean(false);
@@ -44,75 +44,67 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
                                  READ_TYPE read_type,
                                  File[] files,
                                  final QualityNormalizer normalizers[]) throws SecurityException, IOException {
-        ReadWriter<Read, PairedRead> consumer = null;
+        ReadWriter<Read, PairedRead> writer = null;
 
         switch (read_type) {
             case SINGLE:
-                consumer = new SingleFastqConsumer();
+                writer = new SingleFastqConsumer();
                 break;
             case PAIRED:
-                consumer = new PairedFastqWriter(tmp_folder, spill_page_size, spill_page_size_bytes, spill_abandon_limit_bytes);
+                writer = new PairedFastqWriter(tmp_folder, spill_page_size, spill_page_size_bytes, spill_abandon_limit_bytes);
                 break;
             default:
                 throw new UnsupportedOperationException();
         }
 
-        consumer.setWriter(this);
+        writer.setWriter(this);
 
-        ArrayList<ReadConverter> producers = new ArrayList<>();
+        ArrayList<ReadConverter> converters = new ArrayList<>();
+
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        List<Future<?>> futures = Collections.synchronizedList(new ArrayList<>());
 
         int attr = 1;
-
         for (File file : files) {
             final String default_attr = Integer.toString(attr++);
             final int nindex = normalizers.length == files.length ? attr - 2 : 0;
 
-            ReadConverter producer = new ReadConverter(FileCompression.open(file), normalizers[nindex], default_attr);
-            producer.setWriter(consumer);
-            producer.setName(file.getPath());
-            producers.add(producer);
-            producer.start();
+            ReadConverter converter = new ReadConverter(FileCompression.open(file), normalizers[nindex], default_attr);
+            converter.setWriter(writer);
+            converters.add(converter);
+
+            futures.add(executorService.submit(converter::run));
         }
 
-        new Thread(lifecycle(producers, consumer), "lifecycle").start();
+        ReadWriter<Read, PairedRead> finalWriter = writer;
+        executorService.submit(() -> lifecycle(converters, futures, finalWriter));
     }
 
-    private Runnable
-    lifecycle(final ArrayList<ReadConverter> producers,
-              final ReadWriter<?, ?> consumer_root) {
-        return new Runnable() {
-            public void
-            run() {
+    private void
+    lifecycle(final ArrayList<ReadConverter> converters,
+              final List<Future<?>> futures,
+              final ReadWriter<?, ?> writer) {
+
+        try {
+            futures.forEach(f -> {
                 try {
-                    boolean again = false;
-                    do {
-                        for (ReadConverter producer : producers) {
-                            if (producer.isAlive()) {
-                                try {
-                                    producer.join(CYCLE_TIMEFRAME);
-                                } catch (InterruptedException ie) {
-                                    again = true;
-                                    System.out.printf("%s was interrupted\n", producer.getName());
-                                }
-                            } else if (!producer.isOk()) {
-                                throw new ConverterException(producer.getStoredException());
-                            }
-                        }
-                    } while (again);
+                    f.get();
+                } catch (InterruptedException ignored) {
+                } catch (ExecutionException e) {
+                    throw new ConverterException(e);
+                }
+            });
 
-                    for (ReadConverter producer : producers) {
-                        if (!producer.isOk()) {
-                            throw new ConverterException(producer.getStoredException());
-                        }
-                    }
-
-                    consumer_root.cascadeErrors();
-
-                } catch (Exception dfe) {
-                    storedException = dfe;
+            for (ReadConverter converter : converters) {
+                if (!converter.isOk()) {
+                    throw new ConverterException(converter.getStoredException());
                 }
             }
-        };
+            writer.cascadeErrors();
+
+        } catch (Exception dfe) {
+            storedException = dfe;
+        }
     }
 
     @Override
