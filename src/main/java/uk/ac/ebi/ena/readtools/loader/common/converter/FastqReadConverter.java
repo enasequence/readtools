@@ -23,7 +23,7 @@ import uk.ac.ebi.ena.readtools.utils.Utils;
 /**
  * Detects quality normalizer automatically based on the given file.
  */
-public class FastqReadReadConverter extends AbstractReadConverter<Read> {
+public class FastqReadConverter extends AbstractReadConverter<Read> {
 
     private final String filePath;
 
@@ -31,7 +31,7 @@ public class FastqReadReadConverter extends AbstractReadConverter<Read> {
 
     private volatile ReadReader readReader;
 
-    public FastqReadReadConverter(InputStream istream, String defaultAttr, String filePath) {
+    public FastqReadConverter(InputStream istream, String defaultAttr, String filePath) {
         super(istream);
 
         this.defaultAttr = defaultAttr;
@@ -45,7 +45,7 @@ public class FastqReadReadConverter extends AbstractReadConverter<Read> {
      * @param defaultAttr
      * @param filePath
      */
-    public FastqReadReadConverter(InputStream istream, Duration runDuration, String defaultAttr, String filePath) {
+    public FastqReadConverter(InputStream istream, Duration runDuration, String defaultAttr, String filePath) {
         super(istream, runDuration);
 
         this.defaultAttr = defaultAttr;

@@ -14,7 +14,7 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 
 public class
-SingleFastqConsumer implements ReadWriter<Read, PairedRead>
+SingleFastqWriter implements ReadWriter<Read, PairedRead>
 {
     ReadWriter<PairedRead, ?> readWriter;
     boolean is_ok = true;

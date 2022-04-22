@@ -30,13 +30,13 @@ import htsjdk.samtools.util.FastqQualityFormat;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
-import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqConsumer;
+import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqWriter;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
 public class Fastq2Sam {
@@ -68,14 +68,14 @@ public class Fastq2Sam {
     }
 
     public void create(Params p) throws IOException {
-        ReadWriter<Read, PairedRead> dataSpotToFastqSpotConsumer = null;
+        ReadWriter<Read, PairedRead> dataSpotToFastqReadWriter = null;
         boolean paired = false;
 
         if (null == p.files || p.files.size() < 1 || p.files.size() > 2) {
             throw new IllegalArgumentException("Invalid number of input files : " + p.files.size());
         } else if (1 == p.files.size()) {
             //single
-            dataSpotToFastqSpotConsumer = new SingleFastqConsumer();
+            dataSpotToFastqReadWriter = new SingleFastqWriter();
             paired = false;
         } else if (2 == p.files.size()) {
             //same file names;
@@ -84,7 +84,7 @@ public class Fastq2Sam {
                         "Paired files cannot be same. File1 : " + p.files.get(0) + ", File2 : " + p.files.get(1));
             }
 
-            dataSpotToFastqSpotConsumer = new PairedFastqWriter(
+            dataSpotToFastqReadWriter = new PairedFastqWriter(
                     new File(p.tmp_root), p.spill_page_size, p.spill_page_size_bytes, p.spill_abandon_limit_bytes);
             paired = true;
         }
@@ -101,12 +101,12 @@ public class Fastq2Sam {
 
         QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);
 
-        Fastq2BamConsumer fastqSpotToBamConsumer = new Fastq2BamConsumer(
+        Fastq2BamWriter fastqSpotToBamWriter = new Fastq2BamWriter(
                 normalizer, p.sample_name, p.data_file, p.tmp_root, p.convertUracil, paired);
 
-        dataSpotToFastqSpotConsumer.setWriter(fastqSpotToBamConsumer);
+        dataSpotToFastqReadWriter.setWriter(fastqSpotToBamWriter);
 
-        ArrayList<FastqReadReadConverter> converters = new ArrayList<>();
+        ArrayList<FastqReadConverter> converters = new ArrayList<>();
 
         ExecutorService executorService = Executors.newCachedThreadPool();
         List<Future<?>> futures = Collections.synchronizedList(new ArrayList<>());
@@ -115,9 +115,9 @@ public class Fastq2Sam {
         for (String f_name : p.files) {
             final String default_attr = Integer.toString(attr++);
 
-            FastqReadReadConverter converter = new FastqReadReadConverter(
+            FastqReadConverter converter = new FastqReadConverter(
                     FileCompression.valueOf(p.compression).open(f_name, p.use_tar), default_attr, f_name);
-            converter.setWriter(dataSpotToFastqSpotConsumer);
+            converter.setWriter(dataSpotToFastqReadWriter);
             converters.add(converter);
 
             futures.add(executorService.submit(converter::run));
@@ -132,7 +132,7 @@ public class Fastq2Sam {
             }
         });
 
-        for (FastqReadReadConverter converter : converters) {
+        for (FastqReadConverter converter : converters) {
             if (!converter.isOk()) {
                 if (converter.getStoredException() instanceof ReadWriterMemoryLimitException) {
                     throw new ReadWriterMemoryLimitException(converter.getStoredException());
@@ -144,8 +144,8 @@ public class Fastq2Sam {
             totalBaseCount += converter.getBaseCount();
         }
 
-        dataSpotToFastqSpotConsumer.cascadeErrors();
-        fastqSpotToBamConsumer.unwind();
+        dataSpotToFastqReadWriter.cascadeErrors();
+        fastqSpotToBamWriter.unwind();
         System.out.println(String.format("READS: %d; BASES: %d", totalReadCount, totalBaseCount));
     }
 

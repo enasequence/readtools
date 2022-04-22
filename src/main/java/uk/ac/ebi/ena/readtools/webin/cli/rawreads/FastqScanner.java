@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
@@ -93,7 +93,7 @@ FastqScanner
         {
             String stream_name = rf.getFilename();
 
-            FastqReadReadConverter dp = new FastqReadReadConverter(
+            FastqReadConverter dp = new FastqReadConverter(
                     is, runDuration, "", rf.getFilename());
 
             dp.setWriter(new ReadWriter<Read, Spot>()
@@ -175,9 +175,9 @@ FastqScanner
                         
         if( null != converterException)
         {
-            ValidationMessage dataProducerError = ValidationMessage.error( converterException.getMessage() );
-            dataProducerError.appendOrigin(new ValidationOrigin("line number", converterException.getLineNo()));
-            fileResult.add(dataProducerError);
+            ValidationMessage readConverterError = ValidationMessage.error( converterException.getMessage() );
+            readConverterError.appendOrigin(new ValidationOrigin("line number", converterException.getLineNo()));
+            fileResult.add(readConverterError);
         } else
         {
             fileResult.add(ValidationMessage.info( String.format( "Collected %d reads", count.get())));

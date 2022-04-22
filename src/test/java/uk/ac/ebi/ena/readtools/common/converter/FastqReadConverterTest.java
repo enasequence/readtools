@@ -18,14 +18,14 @@ import java.time.Duration;
 import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
-public class AutoNormalizerReadProducerTest {
+public class FastqReadConverterTest {
     private static final long FASTQ_VALIDATION_MAX_DURATION_MS = 4_000;
 
     @Test (timeout = FASTQ_VALIDATION_MAX_DURATION_MS + 1_000)
@@ -34,8 +34,8 @@ public class AutoNormalizerReadProducerTest {
 
         try (InputStream is = Utils.openFastqInputStream(filePath)) {
             Duration duration = Duration.ofMillis(FASTQ_VALIDATION_MAX_DURATION_MS);
-            FastqReadReadConverter dp =
-                    new FastqReadReadConverter(is, duration, "", filePath.toString());
+            FastqReadConverter dp =
+                    new FastqReadConverter(is, duration, "", filePath.toString());
             dp.setWriter(new ReadWriter<Read, Spot>() {
                 @Override
                 public void cascadeErrors() throws ReadWriterException {
@@ -60,10 +60,10 @@ public class AutoNormalizerReadProducerTest {
             if (!dp.isOk()) {
                 if (dp.getStoredException() instanceof ConverterException) {
                     dp.getStoredException().printStackTrace();
-                    throw new Exception("DataProducerException");
+                    throw new Exception("ReadConverterException");
                 } else {
                     dp.getStoredException().printStackTrace();
-                    throw new Exception("Not DataProducerException");
+                    throw new Exception("Not ReadConverterException");
                 }
             } else {
                 if (dp.getReadCount() <= 0) {

@@ -48,7 +48,7 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
 
         switch (read_type) {
             case SINGLE:
-                writer = new SingleFastqConsumer();
+                writer = new SingleFastqWriter();
                 break;
             case PAIRED:
                 writer = new PairedFastqWriter(tmp_folder, spill_page_size, spill_page_size_bytes, spill_abandon_limit_bytes);
