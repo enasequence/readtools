@@ -47,6 +47,8 @@ public class Sam2Fastq {
 	public static final boolean INCLUDE_NON_PRIMARY_ALIGNMENTS = false;
 	public static final boolean INCLUDE_NON_PF_READS = false;
 
+	private long totalReadCount = 0, totalBaseCount = 0;
+
 	private static void printUsage(JCommander jc) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("\n");
@@ -106,6 +108,9 @@ public class Sam2Fastq {
 		d.prefix = params.prefix;
 		d.run();
 
+		totalReadCount = d.totalReadCount;
+		totalBaseCount = d.totalBaseCount;
+
 		if( d.exception != null )
 			throw d.exception;
 	}
@@ -119,7 +124,15 @@ public class Sam2Fastq {
 		params.reverse = true;
 		create(params);
 	}
-	
+
+	public long getTotalReadCount() {
+		return totalReadCount;
+	}
+
+	public long getTotalBaseCount() {
+		return totalBaseCount;
+	}
+
 	private static abstract class Dumper implements Runnable {
 		protected File samFile;
 		protected byte[] ref = null;
@@ -130,6 +143,8 @@ public class Sam2Fastq {
 		protected Exception exception;
 		private boolean reverse = false;
 		protected AtomicBoolean brokenPipe;
+
+		public long totalReadCount = 0, totalBaseCount = 0;
 
 		public Dumper(File samFile, CRAMReferenceSource referenceSource, int nofStreams, String fastqBaseName,
 				boolean gzip, long maxRecords, boolean reverse, int defaultQS, AtomicBoolean brokenPipe)
@@ -194,10 +209,14 @@ public class Sam2Fastq {
 					continue;
 				}
 
+				++totalReadCount;
+
 				String readName = currentRecord.getReadName();
 
 				byte[] readBases = Arrays.copyOf(currentRecord.getReadBases(), currentRecord.getReadBases().length);
 				byte[] baseQualities = currentRecord.getBaseQualityString().getBytes(StandardCharsets.UTF_8);
+
+				totalBaseCount += readBases.length;
 
 				if (reverse && currentRecord.getReadNegativeStrandFlag()) {
 					SequenceUtil.reverseComplement(readBases);

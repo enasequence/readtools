@@ -10,6 +10,10 @@
 */
 package uk.ac.ebi.ena.readtools.sam;
 
+import htsjdk.samtools.util.Log;
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -18,18 +22,19 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import htsjdk.samtools.util.Log;
-
-
+/**
+ * The expected TotalReadCount and TotalBaseCount in the following tests were calculated using these tools on sra-login:<br/>
+ * - ~/tools/putils/bam_stats<br/>
+ * - ~/tools/putils/cram_stats
+ */
 public class
 Sam2FastqTest
 {
 	@Test
 	public void convertCram2Fastq() throws Exception {
-		File output = generateFastqFiles("SRR2989699.cram");
+		GeneratedFastqResult genRes = generateFastqFiles("SRR2989699.cram");
+
+		File output = genRes.output;
 
 		Assert.assertEquals( "@SRR2989699.5\n"
 						   + "CGCCACGAGCTGGTTGTCTATGGGACAAGTGATGTGGTTGATAACCTCCCATTGCTATCTCA\n"
@@ -48,6 +53,9 @@ Sam2FastqTest
 						   + "+\n"
 						   + "GGGGEGFGDFFFFEFFFGEEFFEFFFGEGGGGGGFCFEFFFDGGEDFEFDEDEFEEAD=ECD\n",
 				             new String( Files.readAllBytes( Paths.get( output.getPath() + ".fastq" ) ), StandardCharsets.UTF_8 ) );
+
+		Assert.assertEquals(4l, genRes.sam2Fastq.getTotalReadCount());
+		Assert.assertEquals(248l, genRes.sam2Fastq.getTotalBaseCount());
 	}
 
 	@Test
@@ -56,10 +64,15 @@ Sam2FastqTest
 		String fileNamePrefix = "28239_1822";
 		String fileExt = ".cram";
 
-		File output = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+		GeneratedFastqResult genRes = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+
+		File output = genRes.output;
 
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_1");
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_2");
+
+		Assert.assertEquals(6l, genRes.sam2Fastq.getTotalReadCount());
+		Assert.assertEquals(900l, genRes.sam2Fastq.getTotalBaseCount());
 	}
 
 	@Test
@@ -68,9 +81,14 @@ Sam2FastqTest
 		String fileNamePrefix = "S0567a_E1_L1__aln.sort.mapped.rmdupse_adna_v2";
 		String fileExt = ".bam";
 
-		File output = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+		GeneratedFastqResult genRes = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+
+		File output = genRes.output;
 
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "");
+
+		Assert.assertEquals(20l, genRes.sam2Fastq.getTotalReadCount());
+		Assert.assertEquals(1249l, genRes.sam2Fastq.getTotalBaseCount());
 	}
 
 	@Test
@@ -79,10 +97,15 @@ Sam2FastqTest
 		String fileNamePrefix = "8855_124";
 		String fileExt = ".bam";
 
-		File output = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+		GeneratedFastqResult genRes = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+
+		File output = genRes.output;
 
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_1");
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_2");
+
+		Assert.assertEquals(234l, genRes.sam2Fastq.getTotalReadCount());
+		Assert.assertEquals(7020l, genRes.sam2Fastq.getTotalBaseCount());
 	}
 
 	@Test
@@ -91,11 +114,16 @@ Sam2FastqTest
 		String fileNamePrefix = "M2241_BLV_sense";
 		String fileExt = ".bam";
 
-		File output = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+		GeneratedFastqResult genRes = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+
+		File output = genRes.output;
 
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_1");
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_2");
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "");
+
+		Assert.assertEquals(129l, genRes.sam2Fastq.getTotalReadCount());
+		Assert.assertEquals(13029l, genRes.sam2Fastq.getTotalBaseCount());
 	}
 
 	@Test
@@ -104,28 +132,31 @@ Sam2FastqTest
 		String fileNamePrefix = "reverse-read";
 		String fileExt = ".sam";
 
-		File output = generateFastqFiles(baseDir + fileNamePrefix + fileExt);
+		File output = generateFastqFiles(baseDir + fileNamePrefix + fileExt).output;
 
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_1");
 		assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_2");
 	}
 
-	private File generateFastqFiles(String source) throws Exception {
+	private GeneratedFastqResult generateFastqFiles(String source) throws Exception {
 		File output = File.createTempFile( "FASTQ", "FASTQ" );
 		output.delete();
 
-		Sam2Fastq.Params params = new Sam2Fastq.Params();
 		URL url = Sam2FastqTest.class.getClassLoader().getResource( source);
 		File file = new File( url.getFile() );
 
+		Sam2Fastq.Params params = new Sam2Fastq.Params();
 		params.samFile = file;
 		params.reverse = true;
 		params.nofStreams = 3;
 		params.fastqBaseName = output.getPath();
-		Log.setGlobalLogLevel( params.logLevel );
-		new Sam2Fastq().create( params );
 
-		return output;
+		Log.setGlobalLogLevel( params.logLevel );
+
+		Sam2Fastq sam2Fastq = new Sam2Fastq();
+		sam2Fastq.create( params );
+
+		return new GeneratedFastqResult(sam2Fastq, output);
 	}
 
 	private void assertFastqResult(String expectedFilePrefix, String actualFilePrefix, String fileIndex) throws URISyntaxException, IOException {
@@ -135,5 +166,15 @@ Sam2FastqTest
 		String actualFastq = new String(Files.readAllBytes(Paths.get( actualFilePrefix + fileIndex + ".fastq" ) ),StandardCharsets.UTF_8);
 
 		Assert.assertEquals(expectedFastq, actualFastq);
+	}
+
+	private static class GeneratedFastqResult {
+		public Sam2Fastq sam2Fastq;
+		public File output;
+
+		public GeneratedFastqResult(Sam2Fastq sam2Fastq, File output) {
+			this.sam2Fastq = sam2Fastq;
+			this.output = output;
+		}
 	}
 }
