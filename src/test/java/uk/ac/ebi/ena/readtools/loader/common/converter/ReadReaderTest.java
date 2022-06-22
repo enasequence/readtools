@@ -38,6 +38,18 @@ ReadReaderTest {
 		Assert.assertTrue( ReadReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603\t\t2:N:0:331" ).matches() );
 
 		Assert.assertTrue( ReadReader.p_casava_1_8_name.matcher( "@M00825:71:000000000-AARLA:1:1101:16089:1603 1:N:0:331 COMMENT" ).matches() );
+
+		Assert.assertTrue( ReadReader.p_base_name
+				.matcher( "@A00372:119:HNJM2DMXX:1:1101:17282:5055:N:0:CGGTTACGGC+AAGACTATAG#0/1" ).matches() );
+
+		Assert.assertTrue( ReadReader.p_casava_1_8_name
+				.matcher( "@EAS139:136:FC706VJ:2:5:1000:12850 1:Y:18:ATCACGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBCCCC?<A?BC?7@@???????DBBA@@@@A@@" ).matches() );
+
+
+		Assert.assertFalse( ReadReader.p_casava_1_8_name
+				.matcher( "@A00372:119:HNJM2DMXX:1:1101:9588:1752:N:0:CGGTTACGGC+AAGACTATAG#0/1" ).matches() );
+		Assert.assertFalse( ReadReader.p_casava_1_8_name
+				.matcher( "@A00372:119:HNJM2DMXX:1:1101:17282:5055:N:0:CGGTTACGGC+AAGACTATAG#0/1" ).matches() );
 	}
 
 	@Test
