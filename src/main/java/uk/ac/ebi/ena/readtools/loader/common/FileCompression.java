@@ -50,14 +50,14 @@ FileCompression
             switch( this )
             {
             case BZ2:
-                is = new BZip2CompressorInputStream( new BufferedInputStream( is ), true );
+                is = new BZip2CompressorInputStream( new BufferedInputStream( is, (1024 * 1024) ), true );
                 break;
             case GZIP:
             case GZ:
-                is =  new GZIPInputStream( new BufferedInputStream( is ) );
+                is =  new GZIPInputStream( new BufferedInputStream( is, (1024 * 1024) ), 8192 );
                 break;
             case ZIP:
-                is = new ZipInputStream( new BufferedInputStream( is ) );
+                is = new ZipInputStream( new BufferedInputStream( is, (1024 * 1024) ) );
                 break;
     
             case NONE:
@@ -74,7 +74,7 @@ FileCompression
                 tais.getNextTarEntry();
                 is = tais;
             }
-            return new BufferedInputStream( is );
+            return new BufferedInputStream( is, (1024 * 1024) );
         } catch( IOException e )
         {
             try

@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -117,24 +118,42 @@ SPACE HERE
      */
     private final String defaultReadIndex;
 
-    private final QualityNormalizer normalizer;
+    private final Consumer<Read> readNormalizationConsumer;
 
     private final int expectedBaseLength;
 
-    public ReadReader(QualityNormalizer normalizer, String readIndex ) {
-        this.normalizer = normalizer;
-        this.defaultReadIndex = readIndex;
-        expectedBaseLength = -1;
+    /**
+     * Creates a reader that does not perform any quality normalization.
+     */
+    public ReadReader(String readIndex) {
+        this(null, readIndex);
     }
 
     public ReadReader(QualityNormalizer normalizer) {
         this(normalizer, null);
     }
 
-    public ReadReader(QualityNormalizer normalizer, int expected_length ) {
-        this.normalizer = normalizer;
-        this.defaultReadIndex = null;
-        expectedBaseLength = expected_length;
+    public ReadReader(QualityNormalizer normalizer, String readIndex ) {
+        this(normalizer, readIndex, -1);
+    }
+
+    public ReadReader(QualityNormalizer normalizer, int expectedLength ) {
+        this(normalizer, null, expectedLength);
+    }
+
+    public ReadReader(QualityNormalizer normalizer, String readIndex, int expectedLength ) {
+        if (normalizer == null) {
+            readNormalizationConsumer = read -> {};
+        } else {
+            readNormalizationConsumer = read -> {
+                byte[] quals = read.quals.getBytes(StandardCharsets.UTF_8);
+                normalizer.normalize(quals);
+                read.quals = new String(quals, StandardCharsets.UTF_8);
+            };
+        }
+
+        this.defaultReadIndex = readIndex;
+        this.expectedBaseLength = expectedLength;
     }
 
     public Read read(InputStream inputStream) throws IOException {
@@ -186,7 +205,7 @@ SPACE HERE
             case CASAVA18:
                 if( !params.m_casava_1_8_name.reset( line ).find() )
                     throw new ConverterException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, ReadReader.ReadStyle.CASAVA18 ) );
-                read.name = String.format( "%s/%s", params.m_casava_1_8_name.group( 1 ), params.m_casava_1_8_name.group( 3 ) );
+                read.name = params.m_casava_1_8_name.group( 1 ) + "/" + params.m_casava_1_8_name.group( 3 );
                 break;
 
             case FASTQ:
@@ -302,7 +321,7 @@ SPACE HERE
                 throw new ConverterException( params.line_no, "Empty lines not allowed" );
         }
 
-        normalizer.normalize( read.quals.getBytes(StandardCharsets.UTF_8) );
+        readNormalizationConsumer.accept(read);
     }
 
     // reads stream line till line separator

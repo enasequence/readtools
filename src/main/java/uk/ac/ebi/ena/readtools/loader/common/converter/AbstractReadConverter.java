@@ -94,7 +94,6 @@ AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
                 if (!readWriter.isOk())
                     throw new ConverterPanicException();
 
-                Thread.sleep(1);
             } while (keepRunning.get());
         } catch (ConverterEOFException ignored) {
         } catch (ConverterPanicException e) {

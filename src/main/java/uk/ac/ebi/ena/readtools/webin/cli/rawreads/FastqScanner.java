@@ -51,6 +51,18 @@ public abstract class
 FastqScanner
 {
     private static final int MAX_LABEL_SET_SIZE = 10;
+
+    /**
+     * If the files are paired perfectly and there are no invalid duplicates then pairing level will be above this threshold
+     * and equal to 100%.<br><br>
+     * If there far are too many duplicates present then pairing level will result in more than 100%, the pairing calculation
+     * algorithm will identify this suspicious increase and lower the pairing percentage in such a way that if there are
+     * extremely large number of duplicates then pairing percentage will fall below this threshold. This then will be a sign
+     * that files are either malformed (have lots of invalid duplicates) or not properly paired.<br><br>
+     * To summarise, the calculated pairing percentage will be lower than this threshold when either:<br>
+     * 1) There is a large number of duplicate reads in files<br>
+     * 2) The reads files are incorrectly paired i.e. large number of unpaired reads than paired reads.
+     */
     private static final int PAIRING_THRESHOLD = 20;
     
     //TODO remove duplication
@@ -105,24 +117,25 @@ FastqScanner
                 @Override public void
                 write(Read spot )
                 {
-                	String readKey;
+                	String readNameWithoutIndex;
                 	String readIndex;
 
                 	try
                 	{
-                		readKey = PairedFastqWriter.getReadKey( spot.name);
+                		readNameWithoutIndex = PairedFastqWriter.getReadKey( spot.name);
                 		readIndex = PairedFastqWriter.getReadIndex( spot.name);
                 	} catch ( ReadWriterException dee )
                 	{
-                    	readKey  = spot.name;
+                    	readNameWithoutIndex  = spot.name;
                     	readIndex = stream_name;
                 	}
                 	
-                    if( labels.size() < MAX_LABEL_SET_SIZE )
-                        labels.add( readIndex );
+                    if( labels.size() < MAX_LABEL_SET_SIZE ) {
+                        labels.add(readIndex);
+                    }
                     
                     count.incrementAndGet();
-                    pairing.add( readKey );
+                    pairing.add( readNameWithoutIndex );
                     duplications.add( spot.name);
                     
                     if( 0 == count.get() % print_freq )
@@ -201,9 +214,14 @@ FastqScanner
         {
             //terminal error
             result.add( ValidationMessage.error( "Unusual amount of files. Can accept only 1 or 2, but got " + ( null == rfs ? "null" : rfs.length ) ) );
-        }   
-        
+        }
+
+        /** Should ideally have low to 0 number of duplicates. */
         BloomWrapper duplications = new BloomWrapper( expected_size );
+
+        /** Should ideally have high but not too high number of duplicates. A very high number will point to presence
+         * of invalid duplicates.
+         * To keep memory consumption lower, because we can tolerate false positive here, use lower expected read size. */
         BloomWrapper pairing = new BloomWrapper( expected_size / 10 );
 
         for( RawReadsFile rf : rfs )
@@ -230,8 +248,7 @@ FastqScanner
             if( 2 == labelset.size() )
             {
                 paired.set( true );
-                double pairing_level = (double)pairing.getPossibleDuplicateCount() / ( (double)( pairing.getAddsNumber() - pairing.getPossibleDuplicateCount() ) );
-                pairing_level = 100 * ( 1 < pairing_level ? 1/ pairing_level : pairing_level );
+                double pairing_level = calculatePairingLevel(pairing);
                 result.add(ValidationMessage.info(String.format( "Pairing percentage: %.2f%%", pairing_level )));
 
                 //TODO: estimate bloom false positives impact
@@ -281,11 +298,8 @@ FastqScanner
             String msg = "Performing additional checks for file " + rf.getFilename();
             log.info( msg );
 
-            long index = 1;
-
             FastqIterativeWriter wrapper = new FastqIterativeWriter();
-            wrapper.setFiles( new File[] { new File( rf.getFilename() ) } );  
-            wrapper.setNormalizers( new QualityNormalizer[] { new StandardQualityNormalizer() } );
+            wrapper.setFiles( new File[] { new File( rf.getFilename() ) } );
             wrapper.setReadType( READ_TYPE.SINGLE );
 
             Iterator<String> read_name_iterator = new DelegateIterator<PairedRead, String>( wrapper.iterator() ) {
@@ -294,15 +308,17 @@ FastqScanner
                     return obj.forward.name;
                 }
             };
-            
+
+            long index = 1;
+
             while( read_name_iterator.hasNext() )
             {
                 String read_name = read_name_iterator.next();
-                if( duplications.getSuspected().contains( read_name ) )
+                if( duplications.getPossibleDuplicates().contains( read_name ) )
                 {
                     counts.put( read_name, counts.getOrDefault( read_name, 0 ) + 1 );
                     Set<String> dlist = results.getOrDefault( read_name, new LinkedHashSet<>() );
-                    dlist.add( String.format( "%s, read %s", rf.getFilename(), index ) );
+                    dlist.add( rf.getFilename() + ", read " + index);
                     results.put( read_name, dlist );
                 }
                 index ++;
@@ -311,8 +327,50 @@ FastqScanner
         
         return results.entrySet()
                       .stream()
+                      //only read names occurring more than once are considered duplicates
                       .filter( e-> counts.get(e.getKey()) > 1 )
                       .limit( limit )
                       .collect( Collectors.toMap( e -> e.getKey(), e -> e.getValue(), ( v1, v2 ) -> v1, LinkedHashMap::new ) );
+    }
+
+    /**
+     * Best explained with a help of an example where AddCount = 10.<br><br>
+     * AddCount : 10, PossibleDuplicates : 0, PairingLevel : 0.00%<br>
+     * AddCount : 10, PossibleDuplicates : 1, PairingLevel : 11.11%<br>
+     * AddCount : 10, PossibleDuplicates : 2, PairingLevel : 25.00%<br>
+     * AddCount : 10, PossibleDuplicates : 3, PairingLevel : 42.86%<br>
+     * AddCount : 10, PossibleDuplicates : 4, PairingLevel : 66.67%<br>
+     * AddCount : 10, PossibleDuplicates : 5, PairingLevel : 100.00%<br>
+     * (The further down we get from this point means the higher gets the number of invalid duplicate reads.)<br>
+     * AddCount : 10, PossibleDuplicates : 6, PairingLevel : 66.67%<br>
+     * AddCount : 10, PossibleDuplicates : 7, PairingLevel : 42.86%<br>
+     * AddCount : 10, PossibleDuplicates : 8, PairingLevel : 25.00%<br>
+     * AddCount : 10, PossibleDuplicates : 9, PairingLevel : 11.11%<br>
+     * AddCount : 10, PossibleDuplicates : 10, PairingLevel : 0.00%<br>
+     */
+    private double calculatePairingLevel(BloomWrapper pairing) {
+        double possiblePairedCount = pairing.getPossibleDuplicateCount();
+
+        double addCount = pairing.getAddCount();
+
+        double unpairedCount = addCount - possiblePairedCount;
+
+        double pairedToUnpairedRatio = possiblePairedCount / unpairedCount;
+
+        double pairingLevel;
+
+        //Ratio being more than 1 indicates there are might be more than 1 duplicates (i.e. invalid duplicates) present
+        //for some reads.
+        if (pairedToUnpairedRatio > 1) {
+            //Lower the pairing level in such case to so that if there are too many invalid duplicates the pairing level will
+            //then go below the PAIRING_THRESHOLD and the validation will fail.
+            pairingLevel = 1 / pairedToUnpairedRatio;
+        } else {
+            pairingLevel = pairedToUnpairedRatio;
+        }
+
+        pairingLevel = 100 * pairingLevel;
+
+        return pairingLevel;
     }
 }

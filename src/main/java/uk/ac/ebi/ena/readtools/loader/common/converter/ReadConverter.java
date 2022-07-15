@@ -26,6 +26,12 @@ public class ReadConverter extends AbstractReadConverter<Read> {
         readReader = new ReadReader(normalizer, defaultAttr);
     }
 
+    public ReadConverter(InputStream istream, String defaultAttr) {
+        super(istream);
+
+        readReader = new ReadReader(defaultAttr);
+    }
+
     @Override
     public Read convert(InputStream inputStream) throws IOException {
         return readReader.read(inputStream);

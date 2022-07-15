@@ -10,16 +10,6 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
@@ -29,10 +19,23 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 public class
 FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedRead, Spot> {
     private static final long CYCLE_TIMEFRAME = 0L;
-    private BlockingQueue<PairedRead> queue = new SynchronousQueue<PairedRead>();
+
+    /** This used to be SynchronousQueue but was replaced due to its high CPU overhead. This one has overhead as well
+     * (possibly due to slow consumer), but it is much lower. Increasing capacity helps but not massively. */
+    private BlockingQueue<PairedRead> queue = new ArrayBlockingQueue<>(1_000);
     private AtomicReference<PairedRead> current_element = new AtomicReference<PairedRead>();
     private AtomicBoolean was_cascade_errors = new AtomicBoolean(false);
     private Exception storedException;
@@ -65,9 +68,16 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
 
         for (File file : files) {
             final String default_attr = Integer.toString(attr++);
-            final int nindex = normalizers.length == files.length ? attr - 2 : 0;
 
-            ReadConverter producer = new ReadConverter(FileCompression.open(file), normalizers[nindex], default_attr);
+            ReadConverter producer;
+            if (normalizers != null) {
+                int nindex = normalizers.length == files.length ? attr - 2 : 0;
+
+                producer = new ReadConverter(FileCompression.open(file), normalizers[nindex], default_attr);
+            } else {
+                producer = new ReadConverter(FileCompression.open(file), default_attr);
+            }
+
             producer.setWriter(consumer);
             producer.setName(file.getPath());
             producers.add(producer);
@@ -84,8 +94,9 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
             public void
             run() {
                 try {
-                    boolean again = false;
+                    boolean again;
                     do {
+                        again = false;
                         for (ReadConverter producer : producers) {
                             if (producer.isAlive()) {
                                 try {
