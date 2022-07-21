@@ -10,10 +10,10 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+
 import java.io.File;
 import java.util.Iterator;
-
-import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 
 public class
 FastqIterativeWriter implements Iterable<PairedRead> {
@@ -31,6 +31,8 @@ FastqIterativeWriter implements Iterable<PairedRead> {
     private READ_TYPE read_type;
     private QualityNormalizer[] normalizers;
 
+    private Long readLimit = null;
+
     @Override
     public Iterator<PairedRead>
     iterator() {
@@ -42,7 +44,8 @@ FastqIterativeWriter implements Iterable<PairedRead> {
                     spill_abandon_limit_bytes,
                     read_type,
                     files,
-                    normalizers);
+                    normalizers,
+                    readLimit);
         } catch (Throwable t) {
             t.printStackTrace();
         }
@@ -106,5 +109,13 @@ FastqIterativeWriter implements Iterable<PairedRead> {
     public void
     setNormalizers(QualityNormalizer[] normalizers) {
         this.normalizers = normalizers;
+    }
+
+    public Long getReadLimit() {
+        return readLimit;
+    }
+
+    public void setReadLimit(Long readLimit) {
+        this.readLimit = readLimit;
     }
 }

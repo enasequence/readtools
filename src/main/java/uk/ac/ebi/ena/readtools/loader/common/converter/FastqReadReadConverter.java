@@ -10,18 +10,16 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.time.Duration;
-
 import htsjdk.samtools.util.FastqQualityFormat;
-
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
- * Detects quality normalizer automatically based on the given file.
+ * Similar to {@link ReadConverter}. except here, quality normalization method is chosen automatically.
  */
 public class FastqReadReadConverter extends AbstractReadConverter<Read> {
 
@@ -41,12 +39,12 @@ public class FastqReadReadConverter extends AbstractReadConverter<Read> {
     /**
      *
      * @param istream
-     * @param runDuration - Run for the given duration of time.
+     * @param readLimit Only read limited amount of reads.
      * @param defaultAttr
      * @param filePath
      */
-    public FastqReadReadConverter(InputStream istream, Duration runDuration, String defaultAttr, String filePath) {
-        super(istream, runDuration);
+    public FastqReadReadConverter(InputStream istream, Long readLimit, String defaultAttr, String filePath) {
+        super(istream, readLimit);
 
         this.defaultAttr = defaultAttr;
         this.filePath = filePath;

@@ -10,22 +10,15 @@
 */
 package uk.ac.ebi.ena.readtools.fastq.ena;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
-
 import htsjdk.samtools.util.FastqQualityFormat;
-
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
@@ -33,6 +26,11 @@ import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqConsumer;
 import uk.ac.ebi.ena.readtools.utils.Utils;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Fastq2Sam {
     private long totalReadCount = 0, totalBaseCount = 0;
@@ -101,14 +99,14 @@ public class Fastq2Sam {
 
         dataSpotToFastqSpotConsumer.setWriter(fastqSpotToBamConsumer);
 
-        ArrayList<FastqReadReadConverter> producers = new ArrayList<>();
+        ArrayList<ReadConverter> producers = new ArrayList<>();
 
         int attr = 1;
         for (String f_name : p.files) {
             final String default_attr = Integer.toString(attr++);
 
-            FastqReadReadConverter producer = new FastqReadReadConverter(
-                    FileCompression.valueOf(p.compression).open(f_name, p.use_tar), default_attr, f_name);
+            ReadConverter producer = new ReadConverter(
+                FileCompression.valueOf(p.compression).open(f_name, p.use_tar), default_attr);
             producer.setWriter(dataSpotToFastqSpotConsumer);
             producer.setName(f_name);
             producers.add(producer);
@@ -117,7 +115,7 @@ public class Fastq2Sam {
 
         boolean again = false;
         do {
-            for (FastqReadReadConverter producer : producers) {
+            for (ReadConverter producer : producers) {
                 if (producer.isAlive() && producer.isOk()) {
                     try {
                         producer.join();
@@ -133,7 +131,7 @@ public class Fastq2Sam {
             }
         } while (again);
 
-        for (FastqReadReadConverter producer : producers) {
+        for (ReadConverter producer : producers) {
             if (!producer.isOk()) {
                 if (producer.getStoredException() instanceof ReadWriterMemoryLimitException) {
                     throw new ReadWriterMemoryLimitException(producer.getStoredException());

@@ -10,6 +10,9 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -19,19 +22,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnels;
-
 public class 
 BloomWrapper 
 {
     //Bloom bloom;
-    private final BloomFilter<String> bloom;
-    private final double falsePositiveProbability = 0.01;
-    private final AtomicLong addCount = new AtomicLong();
-    private final AtomicLong possibleDuplicateCount = new AtomicLong();
-    private final int possibleDuplicatesRetainLimit;
-    private final Set<String> possibleDuplicates;
+    private BloomFilter<String> bloom;
+    private double falsePositiveProbability = 0.01;
+    private AtomicLong addCount = new AtomicLong();
+    private AtomicLong possibleDuplicateCount = new AtomicLong();
+    private int possibleDuplicatesRetainLimit;
+    private Set<String> possibleDuplicates;
     
     
     public 
@@ -138,5 +138,18 @@ BloomWrapper
     contains( String readName )
     {
         return bloom.mightContain( readName );
+    }
+
+    public BloomWrapper getCopy() {
+        BloomWrapper res = new BloomWrapper(1);
+        res.bloom = this.bloom.copy();
+        res.addCount = new AtomicLong(this.addCount.get());
+        res.possibleDuplicateCount = new AtomicLong(this.possibleDuplicateCount.get());
+        res.possibleDuplicatesRetainLimit = this.possibleDuplicatesRetainLimit;
+        res.possibleDuplicates = new HashSet<>(res.possibleDuplicatesRetainLimit);
+        res.possibleDuplicates.addAll(this.possibleDuplicates);
+
+
+        return res;
     }
 }

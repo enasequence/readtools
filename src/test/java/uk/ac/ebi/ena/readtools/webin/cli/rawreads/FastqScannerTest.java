@@ -10,6 +10,11 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
+import org.junit.Assert;
+import org.junit.Test;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage.Severity;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -18,36 +23,27 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage.Severity;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
-
-
-public class 
-FastqScannerTest 
+public class
+FastqScannerTest
 {
     private static final int expected_reads = 10_000;
     
-    static class 
+    static class
     MyScanner extends FastqScanner
     {
 		public
-		MyScanner( int expected_size ) 
+		MyScanner( int expected_size )
 		{
 			super( expected_size );
 		}
 
 		
-	    @Override protected void 
+	    @Override protected void
 	    logProcessedReadNumber( long count )
 	    {
 	        String msg = String.format( "\rProcessed %16d read(s)", count );
@@ -64,7 +60,7 @@ FastqScannerTest
     }
 
     
-    @Test public void 
+    @Test public void
     testSingle() throws Throwable
     {
         URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.gz" );
@@ -79,9 +75,9 @@ FastqScannerTest
 
         Assert.assertTrue( vr.isValid() );
     }
+
     
-    
-    @Test public void 
+    @Test public void
     testSingleDuplications() throws Throwable
     {
         URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.dup.gz" );
@@ -98,7 +94,7 @@ FastqScannerTest
     }
 
 
-    @Test public void 
+    @Test public void
     testPaired() throws Throwable
     {
         URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_0.txt.gz" );
@@ -113,9 +109,9 @@ FastqScannerTest
         
         Assert.assertTrue( vr.isValid() );
     }
+
     
-    
-    @Test public void 
+    @Test public void
     testPair() throws Throwable
     {
         URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.gz" );
@@ -133,8 +129,8 @@ FastqScannerTest
         
         Assert.assertTrue( vr.isValid() );
     }
-    
-    
+
+
     
     private Path
     saveRandomized(String content, Path folder, boolean gzip, String... suffix) throws IOException
@@ -151,7 +147,7 @@ FastqScannerTest
         Assert.assertTrue( Files.isRegularFile( path ) );
         return path;
     }
-    
+
 
     private File
     createOutputFolder() throws IOException
@@ -166,8 +162,7 @@ FastqScannerTest
     /* 1. Single run with duplication */
     /* 2. Paired run with one file with duplication */
     /* 3. Paired run with two files with duplication in first file */
-    /* 4. Paired run with two files with duplication from first file in second file */
-    /* 5. Paired run with two files with duplication from second file in second file */
+    /* 4. Paired run with two files with duplication from second file in second file */
     @Test public void 
     testCase1() throws Throwable
     {
@@ -228,29 +223,7 @@ FastqScannerTest
         
         Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
-    
-    /* 4. Paired run with two files with duplication from first file in second file */
-    /* logically this is not true. The suffixes can be inherited from the file streams */
-    @Test public void 
-    testCase4() throws Throwable
-    {
-        File output_dir = createOutputFolder();
-        Path f1 = saveRandomized( "@NAME\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-1", "gz" );
-        Path f2 = saveRandomized( "@NAME\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-2", "gz" );
-        FastqScanner fs = new MyScanner( expected_reads );
-        RawReadsFile rf1 = new RawReadsFile();
-        rf1.setFilename( f1.toFile().getCanonicalPath() );
-        
-        RawReadsFile rf2 = new RawReadsFile();
-        rf2.setFilename( f2.toFile().getCanonicalPath() );
 
-        ValidationResult vr = new ValidationResult();
-
-        fs.checkFiles( vr, rf1, rf2 );
-        
-        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
-    }
-    
     /* */
     @Test public void 
     testCase5() throws Throwable
@@ -271,7 +244,6 @@ FastqScannerTest
 
         fs.checkFiles( vr, rf1, rf2 );
 
-        Assert.assertTrue( fs.getPaired() );
         Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
 
@@ -566,43 +538,30 @@ FastqScannerTest
     }
 
     @Test
-    public void testRunDuration() throws Throwable {
-        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "T966_R1.fastq.gz" );
+    public void test4PairedFastqs() throws Throwable {
+        URL url1 = FastqScannerTest.class.getClassLoader().getResource( "10x/4fastq/I1.fastq" );
+        URL url2 = FastqScannerTest.class.getClassLoader().getResource( "10x/4fastq/R1.fastq" );
+        URL url3 = FastqScannerTest.class.getClassLoader().getResource( "10x/4fastq/R2.fastq" );
+        URL url4 = FastqScannerTest.class.getClassLoader().getResource( "10x/4fastq/R3.fastq" );
 
-        //Adjust this if the file above is changed.
-        long fileReadCount = 3829;
+        FastqScanner fs = new MyScanner( expected_reads );
 
-        //Lower further if scanner completes faster than this.
-        Duration expectedRunDuration = Duration.ofMillis(1);
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( new File( url1.getFile() ).getCanonicalPath() );
 
-        RawReadsFile rf = new RawReadsFile();
-        rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
+        RawReadsFile rf2 = new RawReadsFile();
+        rf2.setFilename( new File( url2.getFile() ).getCanonicalPath() );
+
+        RawReadsFile rf3 = new RawReadsFile();
+        rf3.setFilename( new File( url3.getFile() ).getCanonicalPath() );
+
+        RawReadsFile rf4 = new RawReadsFile();
+        rf4.setFilename( new File( url4.getFile() ).getCanonicalPath() );
 
         ValidationResult vr = new ValidationResult();
 
-        long processedReadCount[] = {0};
-        FastqScanner fastqScanner = new FastqScanner(expectedRunDuration, expected_reads) {
-            @Override
-            protected void logProcessedReadNumber(long count) {
-                processedReadCount[0] = count;
-            }
+        fs.checkFiles( vr, rf1, rf2, rf3, rf4 );
 
-            @Override protected void logFlushMsg(String message) { }
-        };
-
-        LocalDateTime before = LocalDateTime.now();
-
-        fastqScanner.checkFiles( vr, rf );
-
-        LocalDateTime after = LocalDateTime.now();
-
-        Duration actualRunDuration = Duration.between(before, after);
-
-        Assert.assertTrue(actualRunDuration.getNano() >= expectedRunDuration.getNano());
-
-        //If the scanner returned within the the time budget as it was supposed to
-        //then processed read count should be lower than total read count in the file.
-        //Which means the timeout functionality worked.
-        Assert.assertTrue(processedReadCount[0] > 0 && processedReadCount[0] < fileReadCount);
+        Assert.assertTrue( vr.isValid() );
     }
 }

@@ -10,13 +10,7 @@
 */
 package uk.ac.ebi.ena.readtools.common.producer;
 
-import java.io.InputStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Duration;
-
 import org.junit.Test;
-
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
 import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
@@ -24,6 +18,10 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
+
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class AutoNormalizerReadProducerTest {
     private static final long FASTQ_VALIDATION_MAX_DURATION_MS = 4_000;
@@ -33,9 +31,8 @@ public class AutoNormalizerReadProducerTest {
         Path filePath = Paths.get("src/test/resources/tst.fastq.bz2");
 
         try (InputStream is = Utils.openFastqInputStream(filePath)) {
-            Duration duration = Duration.ofMillis(FASTQ_VALIDATION_MAX_DURATION_MS);
             FastqReadReadConverter dp =
-                    new FastqReadReadConverter(is, duration, "", filePath.toString());
+                    new FastqReadReadConverter(is, "", filePath.toString());
             dp.setName(filePath.toFile().getName());
             dp.setWriter(new ReadWriter<Read, Spot>() {
                 @Override
