@@ -75,7 +75,6 @@ FastqScanner
     }
 
     /**
-     *
      * @param readLimit Only process limited number of reads per file. Prevents from processing all reads in a given file.
      * @param expected_size
      */
@@ -190,7 +189,7 @@ FastqScanner
         {
             fileResult.add(ValidationMessage.info( String.format( "Collected %d reads", count.get())));
             fileResult.add(ValidationMessage.info( String.format( "Collected %d read labels: %s", labelset.size(), labelset )));
-            fileResult.add(ValidationMessage.info( String.format( "Has possible duplicate read names: " + duplications.hasPossibleDuplicates())));
+            fileResult.add(ValidationMessage.info( String.format( "Has possible duplicate read name(s): " + duplications.hasPossibleDuplicates())));
         }
     }
     

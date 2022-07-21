@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Similar to {@link ReadConverter}. except here, quality normalization method is chosen automatically.
+ * Similar to {@link ReadConverter}. except here, quality normalization strategy is chosen automatically.
  */
 public class FastqReadReadConverter extends AbstractReadConverter<Read> {
 

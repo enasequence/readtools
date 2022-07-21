@@ -176,7 +176,6 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
 
                 pairedReadUpdated = current_element.compareAndSet(null, newPairedRead);
 
-                //keep repeating as long as they are no errors and nothing gets retrieved from the queue.
             } while (!errorsOccurred && !pairedReadUpdated);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
