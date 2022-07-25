@@ -42,8 +42,8 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
 {
     private static final Duration DEFAULT_QUICK_RUN_DURATION = Duration.ofMinutes(5);
 
-    private static final int QUICK_READ_LIMIT = 100_000;
-    private static final int EXTENDED_READ_LIMIT = 100_000_000;
+    private static final long QUICK_READ_LIMIT = 100_000;
+    private static final long EXTENDED_READ_LIMIT = 100_000_000;
 
     private ReadsManifest manifest;
 
@@ -139,12 +139,7 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
     {
         try
         {
-            int readLimit = manifest.isQuick() ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT;
-
-            //Higher expected size results in better accuracy of validation techniques used by FastqScanner.
-            int expectedSize = readLimit * 5;
-
-            FastqScanner fs = new FastqScanner((long)readLimit, expectedSize ) {
+            FastqScanner fs = new FastqScanner(manifest.isQuick() ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT) {
                 @Override
                 protected void logProcessedReadNumber( long count ) { }
 

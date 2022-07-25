@@ -13,7 +13,7 @@ package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.AutoNormalizeQualityReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,6 +43,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
@@ -56,6 +59,8 @@ FastqScanner
     private static final int    DEFAULT_PRINT_FREQ = 1_000;
     private static final String PRINT_FREQ_PROPERTY_NAME = "webincli.scanner.print.freq";
     private static final int    print_freq = Integer.valueOf( System.getProperty( PRINT_FREQ_PROPERTY_NAME, String.valueOf( DEFAULT_PRINT_FREQ ) ) );
+
+    private static final Pattern READ_KEY_INDEX_SPLIT_PATTERN = Pattern.compile("^(.*)(?:[\\.|:|/|_])([1-9][0-9]*)$");
 
     private static final Logger log = LoggerFactory.getLogger( FastqScanner.class );
     
@@ -72,6 +77,13 @@ FastqScanner
     FastqScanner( int expected_size )
     {
         this(null, expected_size);
+    }
+
+    /**
+     * @param readLimit Only process limited number of reads per file. Prevents from processing all reads in a given file.
+     */
+    public FastqScanner(Long readLimit) {
+        this(readLimit, readLimit.intValue() * 5);
     }
 
     /**
@@ -96,10 +108,9 @@ FastqScanner
         {
             String stream_name = rf.getFilename();
 
-            FastqReadReadConverter dp = new FastqReadReadConverter(
+            AutoNormalizeQualityReadConverter dp = new AutoNormalizeQualityReadConverter(
                     is, readLimit, "", rf.getFilename());
             dp.setName( stream_name );
-            
             dp.setWriter(new ReadWriter<Read, Spot>()
             {
                 @Override
@@ -113,11 +124,11 @@ FastqScanner
 
                 	try
                 	{
-                		readNameWithoutIndex = PairedFastqWriter.getReadKey( spot.name);
-                		readIndex = PairedFastqWriter.getReadIndex( spot.name);
-                	} catch ( ReadWriterException dee )
+                		readNameWithoutIndex = getReadKey(spot.name);
+                		readIndex = getReadIndex( spot.name);
+                	} catch ( IllegalArgumentException dee )
                 	{
-                    	readNameWithoutIndex  = spot.name;
+                    	readNameWithoutIndex = spot.name;
                     	readIndex = stream_name;
                 	}
                 	
@@ -203,6 +214,7 @@ FastqScanner
         if( null == rfs || rfs.length == 0) {
             //terminal error
             result.add( ValidationMessage.error( "No file provided." ));
+            return;
         }
 
         /**
@@ -210,117 +222,124 @@ FastqScanner
          * within the file only.
          */
 
-        RawReadsFile mainFile = null;
-        BloomWrapper mainFileDuplications = null;
-        BloomWrapper mainFilePairing = null;
+        RawReadsFile mainFile = rfs[0];
 
-        List<PairedFilesPairingPercentage> pairedFilesPairingPercentages = new ArrayList<>();
+        /** Should ideally have high number of duplicates as it will point to higher pairing percentage.
+         * To keep memory consumption lower, because we can tolerate false positive here, use lower expected read size. */
+        BloomWrapper mainFileOnlyPairing = new BloomWrapper( expected_size / 10 );
 
-        for( RawReadsFile rf : rfs ) {
-            /** Should ideally have a low to 0 number of duplicates. */
-            BloomWrapper currentFileDuplications = new BloomWrapper( expected_size );
+        long mainFileReadCount = checkForDuplicatesAndAddPairingInformation(result, mainFile, mainFileOnlyPairing);
 
-            /** Should ideally have high number of duplicates as it will point to higher pairing percentage.
-             * To keep memory consumption lower, because we can tolerate false positive here, use lower expected read size. */
-            BloomWrapper mainFileAndCurrentFilePairing;
+        if (!result.isValid() || rfs.length == 1) {
+            return;
+        }
 
-            if (mainFile == null) {
-                mainFileAndCurrentFilePairing = new BloomWrapper( expected_size / 10 );
-            } else {
-                mainFileAndCurrentFilePairing = mainFilePairing.getCopy();
+        List<PairedFiles> pairedFiles = new ArrayList<>();
+
+        //Note that i = 1. Meaning, we are now going to deal with every other file in the group as main file has already
+        //been processed above.
+        for (int i = 1; i < rfs.length; i++) {
+            RawReadsFile currentFile = rfs[i];
+
+            //Make a copy of the main file's pairing information so we do not have re-create it for every other file.
+            BloomWrapper currentAndMainFilePairing = mainFileOnlyPairing.getCopy();
+
+            //Check for duplicates in the current file and add its pairing information to main file's pairing information
+            //to determine how well these two are paired.
+            long currentFileReadCount = checkForDuplicatesAndAddPairingInformation(
+                result, currentFile, currentAndMainFilePairing);
+
+            if (!result.isValid()) {
+                break;
             }
 
-            ValidationResult fileResult;
-            if( rf.getReportFile() == null ) {
-                fileResult = result.create(new ValidationOrigin("file", rf.getFilename()));
-            } else {
-                fileResult = result.create( rf.getReportFile().toFile(), new ValidationOrigin("file", rf.getFilename() ) );
-            }
+            //Calculate pairing percentage between current file and main file to determine how well they are paired.
 
-            Set<String> flabelset = new HashSet<>();
-            checkSingleFile( fileResult, rf, flabelset, mainFileAndCurrentFilePairing, currentFileDuplications );
-            labelset.addAll( flabelset );
+            long readCount = Math.max(mainFileReadCount, currentFileReadCount);
 
-            //extra check for suspected reads
-            if( currentFileDuplications.hasPossibleDuplicates() ) {
-                // read name, list
-                Map<String, Set<String>> duplicates = findAllduplications( currentFileDuplications, 100, rf );
+            long pairedCount = currentAndMainFilePairing.getPossibleDuplicateCount();
 
-                ValidationResult duplicationResult = result.create();
-                duplicates.entrySet().stream().forEach( e -> duplicationResult.add(ValidationMessage.error(
-                    String.format( "Multiple (%d) occurrences of read name \"%s\" at: %s\n",
-                        e.getValue().size(),
-                        e.getKey(),
-                        e.getValue().toString()))));
+            double pairingPercentage = 100 * ((double)pairedCount / (double)readCount);
 
-                if( duplicationResult.isValid() ) {
-                    result.add(ValidationMessage.info( "No actual duplicate read names found." ));
-                } else {
-                    break;
-                }
-            }
-
-            if (mainFile == null) {
-                mainFile = rf;
-
-                mainFileDuplications = currentFileDuplications;
-                mainFilePairing = mainFileAndCurrentFilePairing;
-            } else {
-                long readCount = Math.max(mainFileDuplications.getAddCount(), currentFileDuplications.getAddCount());
-
-                long possibleDuplicateCount = mainFileAndCurrentFilePairing.getPossibleDuplicateCount();
-
-                double pairingPercentage = 100 * ((double)possibleDuplicateCount / (double)readCount);
-
-                pairedFilesPairingPercentages.add(new PairedFilesPairingPercentage(
-                    mainFile.getFilename(), rf.getFilename(), pairingPercentage));
-            }
+            pairedFiles.add(new PairedFiles(
+                mainFile.getFilename(), currentFile.getFilename(), pairingPercentage));
         }
         
         if (!result.isValid())
             return;
 
-        //following is only relevant if we are dealing with more than 1 fastqs which are supposedly paired.
-        if (rfs.length > 1) {
-            if( labelset.size() <= rfs.length ) {
-                paired.set( true );
+        //Label set size and low pairing percentage validation.
 
-                PairedFilesPairingPercentage lowestPairingPercentagePair = null;
-                double lowestPercentage = Double.MAX_VALUE;
-                for (PairedFilesPairingPercentage pfpp : pairedFilesPairingPercentages) {
-                    if (pfpp.pairingPercentage < lowestPercentage) {
-                        lowestPercentage = pfpp.pairingPercentage;
-                        lowestPairingPercentagePair = pfpp;
-                    }
-                }
+        if( labelset.size() <= rfs.length ) {
+            paired.set( true );
 
-                //TODO: estimate bloom false positives impact
-                if( lowestPercentage < (double)PAIRING_THRESHOLD ) {
-                    //terminal error
-                    result.add(ValidationMessage.error(
-                        String.format( "Detected paired fastq submission with less than %d%% of paired reads between %s and %s",
-                            PAIRING_THRESHOLD, lowestPairingPercentagePair.fileName1, lowestPairingPercentagePair.fileName2 )));
-                } else {
-                    result.add(ValidationMessage.info("Pairing percentage is at acceptable level."));
-                }
-            } else if( labelset.size() > rfs.length ) {
-                result.add(ValidationMessage.error(String.format(
-                        "When submitting paired reads using two Fastq files the reads must follow Illumina paired read naming conventions. "
-                                + "This was not the case for the submitted Fastq files: %s. Unable to determine pairing from set: %s",
-                        rfs,
-                        labelset.stream().limit( 10 ).collect( Collectors.joining( ",", "", 10 < labelset.size() ? "..." : "" ) ) )));
+            PairedFiles lowestPairingPercentagePair = pairedFiles.stream()
+                .sorted(Comparator.comparingDouble(pair -> pair.pairingPercentage))
+                .findFirst().get();
+
+            //TODO: estimate bloom false positives impact
+            if( lowestPairingPercentagePair.pairingPercentage < (double)PAIRING_THRESHOLD ) {
+                //terminal error
+                result.add(ValidationMessage.error(
+                    String.format( "Detected paired fastq submission with less than %d%% of paired reads between %s and %s",
+                        PAIRING_THRESHOLD, lowestPairingPercentagePair.fileName1, lowestPairingPercentagePair.fileName2 )));
             }
+        } else if( labelset.size() > rfs.length ) {
+            result.add(ValidationMessage.error(String.format(
+                "When submitting paired reads using two Fastq files the reads must follow Illumina paired read naming conventions. "
+                    + "This was not the case for the submitted Fastq files: %s. Unable to determine pairing from set: %s",
+                rfs,
+                labelset.stream().limit( 10 ).collect( Collectors.joining( ",", "", 10 < labelset.size() ? "..." : "" ) ) )));
         }
     }
 
+    /**
+     * Check the file for duplicate read names and updates the given bloom wrapper with pairing information.
+     * @param result
+     * @param rf
+     * @param pairing
+     * @return Number of read processed from the given file.
+     * @throws Throwable
+     */
+    private long checkForDuplicatesAndAddPairingInformation(
+        ValidationResult result, RawReadsFile rf, BloomWrapper pairing) throws Throwable {
+
+        ValidationResult fileResult = rf.getReportFile() == null
+            ? result.create(new ValidationOrigin("file", rf.getFilename()))
+            : result.create( rf.getReportFile().toFile(), new ValidationOrigin("file", rf.getFilename() ) );
+
+        /** Should ideally have a low to 0 number of duplicates. */
+        BloomWrapper duplications = new BloomWrapper( expected_size );
+
+        Set<String> flabelset = new HashSet<>();
+        checkSingleFile( fileResult, rf, flabelset, pairing, duplications );
+        labelset.addAll( flabelset );
+
+        //extra check for suspected reads
+        if( duplications.hasPossibleDuplicates() ) {
+            // read name, list
+            Map<String, Set<String>> duplicates = findAllduplications( duplications, 100, rf );
+
+            ValidationResult duplicationResult = result.create();
+            duplicates.entrySet().stream().forEach( e -> duplicationResult.add(ValidationMessage.error(
+                String.format( "Multiple (%d) occurrences of read name \"%s\" at: %s\n",
+                    e.getValue().size(),
+                    e.getKey(),
+                    e.getValue().toString()))));
+
+            if( duplicationResult.isValid() ) {
+                result.add(ValidationMessage.info( "No actual duplicate read names found." ));
+            }
+        }
+
+        return duplications.getAddCount();
+    }
     
-    private Map<String, Set<String>>
-    findAllduplications(BloomWrapper duplications, int limit, RawReadsFile rf)
-    {
+    private Map<String, Set<String>> findAllduplications(BloomWrapper duplications, int limit, RawReadsFile rf) {
         Map<String, Integer> counts = new HashMap<>( limit );
         Map<String, Set<String>> results = new LinkedHashMap<>( limit );
 
-        String msg = "Performing additional checks for file " + rf.getFilename();
+        String msg = "Verifying possible duplicates for file " + rf.getFilename();
         log.info( msg );
 
         FastqIterativeWriter wrapper = new FastqIterativeWriter();
@@ -329,19 +348,17 @@ FastqScanner
         wrapper.setReadLimit(readLimit);
 
         Iterator<String> read_name_iterator = new DelegateIterator<PairedRead, String>( wrapper.iterator() ) {
-            @Override public String convert( PairedRead obj )
-            {
+            @Override
+            public String convert( PairedRead obj ) {
                 return obj.forward.name;
             }
         };
 
         long index = 1;
 
-        while( read_name_iterator.hasNext() )
-        {
+        while( read_name_iterator.hasNext() ) {
             String read_name = read_name_iterator.next();
-            if( duplications.getPossibleDuplicates().contains( read_name ) )
-            {
+            if( duplications.getPossibleDuplicates().contains( read_name ) ) {
                 counts.put( read_name, counts.getOrDefault( read_name, 0 ) + 1 );
                 Set<String> dlist = results.getOrDefault( read_name, new LinkedHashSet<>() );
                 dlist.add( rf.getFilename() + ", read " + index);
@@ -358,13 +375,30 @@ FastqScanner
                       .collect( Collectors.toMap( e -> e.getKey(), e -> e.getValue(), ( v1, v2 ) -> v1, LinkedHashMap::new ) );
     }
 
-    private static class PairedFilesPairingPercentage {
+    private String getReadKey(String readName) {
+        return getReadPart(readName, 1);
+    }
+
+    private String getReadIndex(String readName) {
+        return getReadPart(readName, 2);
+    }
+
+    private String getReadPart(String readName, int group) {
+        Matcher m = READ_KEY_INDEX_SPLIT_PATTERN.matcher(readName);
+        if (m.find()) {
+            return m.group(group);
+        }
+
+        throw new IllegalArgumentException(String.format("Readname [%s] does not match regexp.", readName));
+    }
+
+    private static class PairedFiles {
         public String fileName1;
         public String fileName2;
 
-        double pairingPercentage;
+        public double pairingPercentage;
 
-        public PairedFilesPairingPercentage(String fileName1, String fileName2, double pairingPercentage) {
+        public PairedFiles(String fileName1, String fileName2, double pairingPercentage) {
             this.fileName1 = fileName1;
             this.fileName2 = fileName2;
             this.pairingPercentage = pairingPercentage;

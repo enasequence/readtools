@@ -564,4 +564,46 @@ FastqScannerTest
 
         Assert.assertTrue( vr.isValid() );
     }
+
+    @Test
+    public void testMultiplePairedFastqsWithLowPairingPercentage() throws Throwable {
+        File output_dir = createOutputFolder();
+
+        //Following files' pairing arrangment is:
+        //f1 & f2 = 100%
+        //f1 & f3 = 0%
+        //f1 & f4 = 50%
+
+        Path f1 = saveRandomized( "@NAME1/1\nACGT\n+\n1234\n"
+                                + "@NAME2/1\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-1", "gz" );
+
+        Path f2 = saveRandomized( "@NAME1/2\nACGT\n+\n1234\n"
+                                + "@NAME2/2\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-2", "gz" );
+
+        Path f3 = saveRandomized( "@NAME3/3\nACGT\n+\n1234\n"
+                                + "@NAME4/3\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-3", "gz" );
+
+        Path f4 = saveRandomized( "@NAME2/4\nACGT\n+\n1234\n"
+                                + "@NAME4/4\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-4", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+
+        RawReadsFile rf2 = new RawReadsFile();
+        rf2.setFilename( f2.toFile().getCanonicalPath() );
+
+        RawReadsFile rf3 = new RawReadsFile();
+        rf3.setFilename( f3.toFile().getCanonicalPath() );
+
+        RawReadsFile rf4 = new RawReadsFile();
+        rf4.setFilename( f4.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2, rf3, rf4 );
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
+    }
 }

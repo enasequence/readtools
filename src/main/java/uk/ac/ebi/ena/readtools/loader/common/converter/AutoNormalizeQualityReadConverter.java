@@ -19,20 +19,21 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Similar to {@link ReadConverter}. except here, quality normalization strategy is chosen automatically.
+ * Similar to {@link ReadConverter}. except here, quality normalization strategy is chosen automatically and quality
+ * normalization is always performed.
  */
-public class FastqReadReadConverter extends AbstractReadConverter<Read> {
+public class AutoNormalizeQualityReadConverter extends AbstractReadConverter<Read> {
 
     private final String filePath;
 
-    private final String defaultAttr;
+    private final String defaultReadIndex;
 
     private volatile ReadReader readReader;
 
-    public FastqReadReadConverter(InputStream istream, String defaultAttr, String filePath) {
+    public AutoNormalizeQualityReadConverter(InputStream istream, String defaultReadIndex, String filePath) {
         super(istream);
 
-        this.defaultAttr = defaultAttr;
+        this.defaultReadIndex = defaultReadIndex;
         this.filePath = filePath;
     }
 
@@ -40,13 +41,13 @@ public class FastqReadReadConverter extends AbstractReadConverter<Read> {
      *
      * @param istream
      * @param readLimit Only read limited amount of reads.
-     * @param defaultAttr
+     * @param defaultReadIndex
      * @param filePath
      */
-    public FastqReadReadConverter(InputStream istream, Long readLimit, String defaultAttr, String filePath) {
+    public AutoNormalizeQualityReadConverter(InputStream istream, Long readLimit, String defaultReadIndex, String filePath) {
         super(istream, readLimit);
 
-        this.defaultAttr = defaultAttr;
+        this.defaultReadIndex = defaultReadIndex;
         this.filePath = filePath;
     }
 
@@ -57,7 +58,7 @@ public class FastqReadReadConverter extends AbstractReadConverter<Read> {
 
             QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);
 
-            readReader = new ReadReader(normalizer, defaultAttr);
+            readReader = new ReadReader(normalizer, defaultReadIndex);
         } catch (Exception ex) {
             throw new ConverterException(ex);
         }

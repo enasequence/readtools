@@ -12,7 +12,7 @@ package uk.ac.ebi.ena.readtools.common.producer;
 
 import org.junit.Test;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.FastqReadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.AutoNormalizeQualityReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
@@ -31,8 +31,8 @@ public class AutoNormalizerReadProducerTest {
         Path filePath = Paths.get("src/test/resources/tst.fastq.bz2");
 
         try (InputStream is = Utils.openFastqInputStream(filePath)) {
-            FastqReadReadConverter dp =
-                    new FastqReadReadConverter(is, "", filePath.toString());
+            AutoNormalizeQualityReadConverter dp =
+                    new AutoNormalizeQualityReadConverter(is, "", filePath.toString());
             dp.setName(filePath.toFile().getName());
             dp.setWriter(new ReadWriter<Read, Spot>() {
                 @Override

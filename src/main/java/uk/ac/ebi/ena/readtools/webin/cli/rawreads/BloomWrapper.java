@@ -25,9 +25,10 @@ import java.util.stream.Collectors;
 public class 
 BloomWrapper 
 {
+    private static final double falsePositiveProbability = 0.01;
+
     //Bloom bloom;
     private BloomFilter<String> bloom;
-    private double falsePositiveProbability = 0.01;
     private AtomicLong addCount = new AtomicLong();
     private AtomicLong possibleDuplicateCount = new AtomicLong();
     private int possibleDuplicatesRetainLimit;
@@ -37,15 +38,16 @@ BloomWrapper
     public 
     BloomWrapper( long expectedReads )
     {
-        this( expectedReads, 100_000 );
+        this( expectedReads, 25 );
     }
 
 
     /**
      *
      * @param expectedReads Expected number of reads that will be added into this instance.
-     * @param possibleDuplicatesRetainLimit Maximum number of possible duplicates to retain in memory. Once the limit
-     *                                      is reached, more potential duplicate reads names will be dropped.
+     * @param possibleDuplicatesRetainLimit Maximum number of possible duplicates to retain in memory for reporting and
+     *                                      duplicate verification. Once the limit is reached, more possible
+     *                                      duplicate reads names will be dropped.
      */
     BloomWrapper( long expectedReads, int possibleDuplicatesRetainLimit)
     {
@@ -148,7 +150,6 @@ BloomWrapper
         res.possibleDuplicatesRetainLimit = this.possibleDuplicatesRetainLimit;
         res.possibleDuplicates = new HashSet<>(res.possibleDuplicatesRetainLimit);
         res.possibleDuplicates.addAll(this.possibleDuplicates);
-
 
         return res;
     }

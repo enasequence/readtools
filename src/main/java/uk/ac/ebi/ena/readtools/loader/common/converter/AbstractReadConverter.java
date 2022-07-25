@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 
 public abstract class
 AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
-    private static final int YIELD_CYCLES = 362;//16384;
+    private static final int YIELD_CYCLES_FOR_ERROR_CHECKING = 362;//16384;
 
     protected final InputStream  istream;
 
@@ -85,7 +85,7 @@ AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
 
             do {
                 synchronized (readWriter) {
-                    for (int yield = YIELD_CYCLES; yield > 0 && keepRunning.get(); --yield)
+                    for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning.get(); --yield)
                         readWriter.write(convert());
                 }
 

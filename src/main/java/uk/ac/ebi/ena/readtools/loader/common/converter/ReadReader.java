@@ -118,41 +118,41 @@ SPACE HERE
      */
     private final String defaultReadIndex;
 
-    private final Consumer<Read> readNormalizationConsumer;
+    private final Consumer<Read> readQualityNormalizer;
 
     private final int expectedBaseLength;
 
     /**
      * Creates a reader that does not perform any quality normalization.
      */
-    public ReadReader(String readIndex) {
-        this(null, readIndex);
+    public ReadReader(String defaultReadIndex) {
+        this(null, defaultReadIndex);
     }
 
     public ReadReader(QualityNormalizer normalizer) {
         this(normalizer, null);
     }
 
-    public ReadReader(QualityNormalizer normalizer, String readIndex ) {
-        this(normalizer, readIndex, -1);
+    public ReadReader(QualityNormalizer normalizer, String defaultReadIndex ) {
+        this(normalizer, defaultReadIndex, -1);
     }
 
     public ReadReader(QualityNormalizer normalizer, int expectedLength ) {
         this(normalizer, null, expectedLength);
     }
 
-    public ReadReader(QualityNormalizer normalizer, String readIndex, int expectedLength ) {
+    public ReadReader(QualityNormalizer normalizer, String defaultReadIndex, int expectedLength ) {
         if (normalizer == null) {
-            readNormalizationConsumer = read -> {};
+            readQualityNormalizer = read -> {}; //No normalization is performed.
         } else {
-            readNormalizationConsumer = read -> {
+            readQualityNormalizer = read -> {
                 byte[] quals = read.quals.getBytes(StandardCharsets.UTF_8);
                 normalizer.normalize(quals);
                 read.quals = new String(quals, StandardCharsets.UTF_8);
             };
         }
 
-        this.defaultReadIndex = readIndex;
+        this.defaultReadIndex = defaultReadIndex;
         this.expectedBaseLength = expectedLength;
     }
 
@@ -160,7 +160,7 @@ SPACE HERE
         boolean recordStarted = false;
 
         Read read = new Read();
-        read.readIndex = defaultReadIndex;
+        read.defaultReadIndex = defaultReadIndex;
 
         try {
             readBaseName(inputStream, read);
@@ -321,7 +321,7 @@ SPACE HERE
                 throw new ConverterException( params.line_no, "Empty lines not allowed" );
         }
 
-        readNormalizationConsumer.accept(read);
+        readQualityNormalizer.accept(read);
     }
 
     // reads stream line till line separator

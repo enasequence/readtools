@@ -21,7 +21,7 @@ public class Read implements Serializable, Spot {
 
     static final long serialVersionUID = 1L;
 
-    public String readIndex;
+    public String defaultReadIndex;
 
     public String name; // name for bases
     public String bases;// bases

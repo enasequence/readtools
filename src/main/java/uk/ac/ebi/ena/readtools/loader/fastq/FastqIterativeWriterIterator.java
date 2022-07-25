@@ -71,7 +71,7 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
             final String default_attr = Integer.toString(attr++);
 
             //A producer extends Thread class and runs asynchronously.
-            //Producer reads data from files and send it here where it gets collected inside a queue.
+            //Producer reads data from files and sends it here where it gets collected inside a queue.
             //The data in the queue is them read back as the iterator gets used.
             //The producing and the consuming, therefore, happens asynchronously.
             ReadConverter producer;
@@ -158,13 +158,18 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
     @Override
     public boolean
     hasNext() {
+        //There is a flaw in this method. If the producer stops due to an error, while the current thread is in the
+        //loop below, then a 'false' value will be returned from this method telling the user of the iterator that
+        //there is no element left causing iteration to stop normally. But the right way to end would be to
+        //throw the exception that was caught in 'storedException' so the user can know that execution actually failed.
+        //TODO update this class so that end of data is detected reliably and errors are thrown and caught properly.
         if (null != storedException) {
             throw new RuntimeException(storedException);
         }
 
         try {
             boolean errorsOccurred;
-            boolean pairedReadUpdated;
+            boolean currentPairedReadUpdated;
             do {
                 errorsOccurred = was_cascade_errors.get();
 
@@ -174,9 +179,9 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
                 //being slow to start generating the data.
                 PairedRead newPairedRead = queue.poll(2L, TimeUnit.SECONDS);
 
-                pairedReadUpdated = current_element.compareAndSet(null, newPairedRead);
+                currentPairedReadUpdated = current_element.compareAndSet(null, newPairedRead);
 
-            } while (!errorsOccurred && !pairedReadUpdated);
+            } while (!errorsOccurred && !currentPairedReadUpdated);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
