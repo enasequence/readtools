@@ -144,16 +144,16 @@ public class Utils {
         BufferedInputStream is;
 
         try {
-            is = new BufferedInputStream( Files.newInputStream( path ) );
+            is = new BufferedInputStream( Files.newInputStream( path ), 1024 * 1024 );
             is.mark( marksize );
 
             try {
-                return new BufferedInputStream( new GZIPInputStream( is ) );
+                return new GZIPInputStream( is, 8192 );
             } catch( IOException gzip ) {
                 is.reset();
                 try {
                     is.mark( marksize );
-                    return new BufferedInputStream( new BZip2CompressorInputStream( is, true ) );
+                    return new BZip2CompressorInputStream( is, true );
                 } catch( IOException bzip ) {
                     is.reset();
                     return is;

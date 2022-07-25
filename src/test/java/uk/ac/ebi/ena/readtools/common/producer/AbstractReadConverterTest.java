@@ -10,40 +10,29 @@
 */
 package uk.ac.ebi.ena.readtools.common.producer;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.time.Duration;
-import java.time.LocalDateTime;
-
 import org.junit.Assert;
 import org.junit.Test;
-
 import uk.ac.ebi.ena.readtools.loader.common.converter.AbstractReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+
 public class AbstractReadConverterTest {
 
     @Test
-    public void testRunDuration() throws InterruptedException {
-        long waitTimeBeforeDummySpotMillis = 1;
-        int dummySpotProduceCount = 5000;
-        long expectedRunDurationSec = 1;
+    public void testRunLimit() throws InterruptedException {
+        long readLimit = 10;
 
-        AbstractReadConverter adp = new AbstractReadConverter(null, Duration.ofSeconds(expectedRunDurationSec)) {
+        AbstractReadConverter adp = new AbstractReadConverter(null, readLimit) {
             @Override
             public Spot convert(InputStream inputStream) throws IOException {
                 //To prevent the test from running indefinitely (just in case).
-                if (getReadCount() > dummySpotProduceCount) {
+                if (getReadCount() > readLimit + 1) {
                     throw new EOFException();
-                }
-
-                try {
-                    Thread.sleep(waitTimeBeforeDummySpotMillis);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
                 }
 
                 return new Spot() {
@@ -86,16 +75,9 @@ public class AbstractReadConverterTest {
             }
         });
 
-        LocalDateTime before = LocalDateTime.now();
-
         adp.start();
         adp.join();
 
-        LocalDateTime after = LocalDateTime.now();
-
-        long actualRunDurationSec = Duration.between(before, after).getSeconds();
-
-        Assert.assertTrue(actualRunDurationSec >= expectedRunDurationSec);
-        Assert.assertTrue(adp.getReadCount() > 0 && adp.getReadCount() < dummySpotProduceCount);
+        Assert.assertEquals(readLimit, adp.getReadCount());
     }
 }

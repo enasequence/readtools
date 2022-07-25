@@ -10,19 +10,8 @@
 */
 package uk.ac.ebi.ena.readtools.validator;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
 import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.cram.CRAMException;
-
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.BamScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.FastqScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
@@ -38,10 +27,23 @@ import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 import uk.ac.ebi.ena.webin.cli.validator.response.ReadsValidationResponse;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
 public class ReadsValidator 
 implements Validator<ReadsManifest, ReadsValidationResponse> 
 {
     private static final Duration DEFAULT_QUICK_RUN_DURATION = Duration.ofMinutes(5);
+
+    private static final long QUICK_READ_LIMIT = 100_000;
+    private static final long EXTENDED_READ_LIMIT = 100_000_000;
 
     private ReadsManifest manifest;
 
@@ -72,24 +74,22 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
         AtomicBoolean paired = new AtomicBoolean();
 
         List<RawReadsFile> files = createReadFiles();
+        if (files != null && files.size() > 0) {
+            Filetype fileType = files.get(0).getFiletype();
 
-        // TODO: remove for loop
-        for( RawReadsFile rf : files )
-        {
-            if( Filetype.fastq.equals( rf.getFiletype() ) )
+            if( Filetype.fastq.equals( fileType ) )
             {
                 readFastqFile( result, files, paired );
-            } else if( Filetype.bam.equals( rf.getFiletype() ) )
+            } else if( Filetype.bam.equals( fileType ) )
             {
                 readBamFile( result, files, paired );
-            } else if( Filetype.cram.equals( rf.getFiletype() ) )
+            } else if( Filetype.cram.equals( fileType ) )
             {
-                 readCramFile( result, files, paired );
+                readCramFile( result, files, paired );
             } else
             {
-                throw new RuntimeException( "Unsupported file type: " + rf.getFiletype().name() );
+                throw new RuntimeException( "Unsupported file type: " + fileType.name() );
             }
-            break;
         }
 
         ReadsValidationResponse resp = new ReadsValidationResponse();
@@ -139,21 +139,12 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
     {
         try
         {
-            if( files.size() > 2 )
-            {
-                result.add(ValidationMessage.error("More than two fastq files were provided: " + files.size()));
-                return;
-            }
-
-            FastqScanner fs = new FastqScanner(
-                    manifest.isQuick() ? DEFAULT_QUICK_RUN_DURATION : null, manifest.getPairingHorizon() ) {
+            FastqScanner fs = new FastqScanner(manifest.isQuick() ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT) {
                 @Override
                 protected void logProcessedReadNumber( long count ) { }
 
                 @Override
-                protected void logFlushMsg( String msg ) {
-                    ReadsValidator.this.logFlushMsg( msg );
-                }
+                protected void logFlushMsg( String msg ) {}
             };
 
             fs.checkFiles( result, files.toArray( new RawReadsFile[files.size()] ));
@@ -215,8 +206,6 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
     private List<RawReadsFile> 
     createReadFiles()
     {
-        ReadsManifest manifest = this.manifest;
-
         RawReadsFile.AsciiOffset asciiOffset = null;
         RawReadsFile.QualityScoringSystem qualityScoringSystem = null;
 
@@ -285,13 +274,5 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
         }
 
         return f;
-    }
-
-    
-    private void
-    logFlushMsg( String msg )
-    {
-        System.out.print( msg );
-        System.out.flush();
     }
 }

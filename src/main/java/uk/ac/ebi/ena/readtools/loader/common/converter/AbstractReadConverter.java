@@ -10,25 +10,23 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
-import java.io.BufferedInputStream;
-import java.io.EOFException;
-import java.io.InputStream;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.function.Supplier;
-
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
+import java.io.BufferedInputStream;
+import java.io.EOFException;
+import java.io.InputStream;
+import java.util.function.Supplier;
+
 public abstract class
 AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
-    private static final int YIELD_CYCLES = 362;//16384;
-
-    private final Duration runDuration;
-
-    private volatile long readCount = 0, baseCount = 0;
+    private static final int YIELD_CYCLES_FOR_ERROR_CHECKING = 362;//16384;
 
     protected final InputStream  istream;
+
+    protected final Long readLimit;
+
+    private volatile long readCount = 0, baseCount = 0;
 
     protected volatile ReadWriter<T, ?> readWriter;
     protected volatile boolean      is_ok = true;
@@ -41,11 +39,11 @@ AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
     /**
      *
      * @param istream
-     * @param runDuration - Run for the given duration of time.
+     * @param readLimit Only read limited amount of reads.
      */
-    protected AbstractReadConverter(InputStream istream, Duration runDuration) {
+    protected AbstractReadConverter(InputStream istream, Long readLimit) {
         this.istream = new BufferedInputStream( istream, 1024 * 1024 );
-        this.runDuration = runDuration;
+        this.readLimit = readLimit;
     }
 
     /**
@@ -87,14 +85,13 @@ AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
 
             do {
                 synchronized (readWriter) {
-                    for (int yield = YIELD_CYCLES; yield > 0; --yield)
+                    for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning.get(); --yield)
                         readWriter.write(convert());
                 }
 
                 if (!readWriter.isOk())
                     throw new ConverterPanicException();
 
-                Thread.sleep(1);
             } while (keepRunning.get());
         } catch (ConverterEOFException ignored) {
         } catch (ConverterPanicException e) {
@@ -113,11 +110,10 @@ AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
     protected void end() {}
 
     private Supplier<Boolean> createKeepRunning() {
-        if (runDuration == null) {
+        if (readLimit == null) {
             return () -> true;
         } else {
-            LocalDateTime startTime = LocalDateTime.now();
-            return () -> startTime.plus(runDuration).isAfter(LocalDateTime.now());
+            return () -> readCount < readLimit;
         }
     }
 

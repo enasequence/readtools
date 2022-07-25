@@ -10,6 +10,9 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -19,59 +22,67 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnels;
-
 public class 
 BloomWrapper 
 {
+    private static final double falsePositiveProbability = 0.01;
+
     //Bloom bloom;
-    private final BloomFilter<String> bloom;
-    private final double edup = 0.01;
-    private final AtomicLong adds_no = new AtomicLong();
-    private final AtomicLong susp_no = new AtomicLong();
-    private final int collect_max; 
-    private final Set<String> suspected;
+    private BloomFilter<String> bloom;
+    private AtomicLong addCount = new AtomicLong();
+    private AtomicLong possibleDuplicateCount = new AtomicLong();
+    private int possibleDuplicatesRetainLimit;
+    private Set<String> possibleDuplicates;
     
     
     public 
-    BloomWrapper( long expected_reads )
+    BloomWrapper( long expectedReads )
     {
-        this( expected_reads, 100_000 );
+        this( expectedReads, 25 );
     }
-    
-    
-    BloomWrapper( long expected_reads, int collect_max )
+
+
+    /**
+     *
+     * @param expectedReads Expected number of reads that will be added into this instance.
+     * @param possibleDuplicatesRetainLimit Maximum number of possible duplicates to retain in memory for reporting and
+     *                                      duplicate verification. Once the limit is reached, more possible
+     *                                      duplicate reads names will be dropped.
+     */
+    BloomWrapper( long expectedReads, int possibleDuplicatesRetainLimit)
     {
-        this.collect_max = collect_max;
-        this.bloom = BloomFilter.create( Funnels.unencodedCharsFunnel(), expected_reads, edup );
-        suspected = new HashSet<>( this.collect_max );
+        this.possibleDuplicatesRetainLimit = possibleDuplicatesRetainLimit;
+        this.bloom = BloomFilter.create( Funnels.unencodedCharsFunnel(), expectedReads, falsePositiveProbability);
+        possibleDuplicates = new HashSet<>( this.possibleDuplicatesRetainLimit);
     }
 
 
     public void
-    add( String read_name )
+    add( String readName )
     {
-        adds_no.incrementAndGet();
+        addCount.incrementAndGet();
         
-        if( bloom.mightContain( read_name ) )
+        if( bloom.mightContain( readName ) )
         {
-            susp_no.incrementAndGet();
-            if( suspected.size() < collect_max )
+            possibleDuplicateCount.incrementAndGet();
+            if( possibleDuplicates.size() < possibleDuplicatesRetainLimit)
             {
-                suspected.add( read_name );
+                possibleDuplicates.add( readName );
             }
         } else
         {
-            bloom.put( read_name );
+            bloom.put( readName );
         }
     }
-    
-    
+
+
+    /**
+     * @return Number of times read names were added into this instance.
+     */
     public long
-    getAddsNumber()
+    getAddCount()
     {
-        return adds_no.get();
+        return addCount.get();
     }
     
     
@@ -85,14 +96,14 @@ BloomWrapper
     public Long
     getPossibleDuplicateCount()
     {
-        return susp_no.get();
+        return possibleDuplicateCount.get();
     }
 
     
     public Set<String>
-    getSuspected()
+    getPossibleDuplicates()
     {
-        return suspected;
+        return possibleDuplicates;
     }
     
     
@@ -112,8 +123,8 @@ BloomWrapper
             if( contains( read_name ) )
             {
                 counts.put( read_name, counts.getOrDefault( read_name, 0 ) + 1 );
-                Set<String> dlist = result.getOrDefault( read_name, new LinkedHashSet<>() ); //findDuplicateLocations( read_name );
-                dlist.add( String.format( "%s", index.get() ) );
+                Set<String> dlist = result.getOrDefault( read_name, new LinkedHashSet<>() );
+                dlist.add( String.valueOf(index.get()));
                 result.put( read_name, dlist );
             }
             //TODO
@@ -126,8 +137,20 @@ BloomWrapper
     
    
     public boolean 
-    contains( String read_name )
+    contains( String readName )
     {
-        return bloom.mightContain( read_name );
+        return bloom.mightContain( readName );
+    }
+
+    public BloomWrapper getCopy() {
+        BloomWrapper res = new BloomWrapper(1);
+        res.bloom = this.bloom.copy();
+        res.addCount = new AtomicLong(this.addCount.get());
+        res.possibleDuplicateCount = new AtomicLong(this.possibleDuplicateCount.get());
+        res.possibleDuplicatesRetainLimit = this.possibleDuplicatesRetainLimit;
+        res.possibleDuplicates = new HashSet<>(res.possibleDuplicatesRetainLimit);
+        res.possibleDuplicates.addAll(this.possibleDuplicates);
+
+        return res;
     }
 }

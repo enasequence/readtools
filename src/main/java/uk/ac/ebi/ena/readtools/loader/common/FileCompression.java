@@ -32,6 +32,8 @@ FileCompression
     BGZIP,
     BGZ,
     NONE;
+
+    private static final int DEFAULT_BUFFER_SIZE = 1024 * 1204;
     
 
     public InputStream
@@ -50,14 +52,14 @@ FileCompression
             switch( this )
             {
             case BZ2:
-                is = new BZip2CompressorInputStream( new BufferedInputStream( is ), true );
+                is = new BZip2CompressorInputStream( new BufferedInputStream( is, DEFAULT_BUFFER_SIZE ), true );
                 break;
             case GZIP:
             case GZ:
-                is =  new GZIPInputStream( new BufferedInputStream( is ) );
+                is =  new GZIPInputStream( new BufferedInputStream( is, DEFAULT_BUFFER_SIZE ), 8192 );
                 break;
             case ZIP:
-                is = new ZipInputStream( new BufferedInputStream( is ) );
+                is = new ZipInputStream( new BufferedInputStream( is, DEFAULT_BUFFER_SIZE ) );
                 break;
     
             case NONE:
@@ -74,7 +76,7 @@ FileCompression
                 tais.getNextTarEntry();
                 is = tais;
             }
-            return new BufferedInputStream( is );
+            return new BufferedInputStream( is, DEFAULT_BUFFER_SIZE );
         } catch( IOException e )
         {
             try

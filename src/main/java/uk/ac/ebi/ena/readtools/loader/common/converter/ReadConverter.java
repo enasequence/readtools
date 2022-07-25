@@ -10,20 +10,42 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
+import java.io.IOException;
+import java.io.InputStream;
+
+/**
+ * Similar to {@link AutoNormalizeQualityReadConverter}, but here, base quality normalizer is provided explicitly. If no normalizer
+ * is provided then normalization is not performed.
+ */
 public class ReadConverter extends AbstractReadConverter<Read> {
 
     private final ReadReader readReader;
 
-    public ReadConverter(InputStream istream, QualityNormalizer normalizer, String defaultAttr) {
+    public ReadConverter(InputStream istream, String defaultReadIndex) {
         super(istream);
 
-        readReader = new ReadReader(normalizer, defaultAttr);
+        readReader = new ReadReader(defaultReadIndex);
+    }
+
+    public ReadConverter(InputStream istream, Long readLimit, String defaultReadIndex) {
+        super(istream, readLimit);
+
+        readReader = new ReadReader(defaultReadIndex);
+    }
+
+    public ReadConverter(InputStream istream, QualityNormalizer normalizer, String defaultReadIndex) {
+        super(istream);
+
+        readReader = new ReadReader(normalizer, defaultReadIndex);
+    }
+
+    public ReadConverter(InputStream istream, Long readLimit, QualityNormalizer normalizer, String defaultReadIndex) {
+        super(istream, readLimit);
+
+        readReader = new ReadReader(normalizer, defaultReadIndex);
     }
 
     @Override

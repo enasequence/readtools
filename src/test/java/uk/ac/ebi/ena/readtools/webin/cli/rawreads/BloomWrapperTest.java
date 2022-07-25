@@ -50,8 +50,8 @@ BloomWrapperTest
         rns.add( "1" );
         rns.add( "2" );
         rns.add( "2" );
-        Assert.assertEquals( 5, rns.getAddsNumber() );
-        Assert.assertEquals( 1, rns.getSuspected().size() );
+        Assert.assertEquals( 5, rns.getAddCount() );
+        Assert.assertEquals( 1, rns.getPossibleDuplicates().size() );
         Assert.assertEquals( Long.valueOf( 3L ), rns.getPossibleDuplicateCount() );
     }
     
@@ -181,7 +181,7 @@ BloomWrapperTest
         set1.removeAll( set2 );
        
         Assert.assertTrue( String.format( "Not found in bloom %d, set size %d", not_contains, set1.size() ), 
-                                          not_contains >= set1.size() - ( (double)rns.getAddsNumber() * 0.019 /* TODO check for Bloom degradation */) );
+                                          not_contains >= set1.size() - ( (double)rns.getAddCount() * 0.019 /* TODO check for Bloom degradation */) );
     }
     
     
