@@ -316,7 +316,7 @@ FastqScanner
         labelset.addAll( flabelset );
 
         //extra check for suspected reads
-        if( duplications.hasPossibleDuplicates() ) {
+        if(fileResult.isValid() && duplications.hasPossibleDuplicates() ) {
             // read name, list
             Map<String, Set<String>> duplicates = findAllduplications( duplications, 100, rf );
 

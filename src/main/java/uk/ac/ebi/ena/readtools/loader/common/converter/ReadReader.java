@@ -300,9 +300,9 @@ SPACE HERE
                 {
                     line = readLine( is );
                     if( line.trim().length() > 0 )
-                        throw new ConverterException( params.line_no, String.format( "Trailing character(s) [%s] after expected number of quals [%d]",
-                                line,
-                                expectedQualLength ) );
+                        throw new ConverterException( params.line_no, String.format(
+                            "Found extra character(s) after expected number (%d) of quals. Extra characters : [%s]",
+                            expectedQualLength, line) );
                 } catch( IOException e )
                 {
                     ;
@@ -405,7 +405,7 @@ SPACE HERE
     }
 
     private static DataSpotReaderParams defaultParams() {
-        return new DataSpotReaderParams( 1L,
+        return new DataSpotReaderParams( 0L,
                 true,
                 (ReadStyle) null,
                 p_bases.matcher( "" ),
