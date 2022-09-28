@@ -10,11 +10,18 @@
 */
 package uk.ac.ebi.ena.readtools.fastq.ena;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
+
 import htsjdk.samtools.util.FastqQualityFormat;
+
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
@@ -26,11 +33,6 @@ import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqConsumer;
 import uk.ac.ebi.ena.readtools.utils.Utils;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Fastq2Sam {
     private long totalReadCount = 0, totalBaseCount = 0;

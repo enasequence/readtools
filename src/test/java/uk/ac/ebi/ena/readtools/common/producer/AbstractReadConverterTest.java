@@ -10,16 +10,17 @@
 */
 package uk.ac.ebi.ena.readtools.common.producer;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.junit.Assert;
 import org.junit.Test;
+
 import uk.ac.ebi.ena.readtools.loader.common.converter.AbstractReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
-
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
 
 public class AbstractReadConverterTest {
 

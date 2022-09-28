@@ -10,13 +10,13 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
-import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
-
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.InputStream;
 import java.util.function.Supplier;
+
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
 public abstract class
 AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {

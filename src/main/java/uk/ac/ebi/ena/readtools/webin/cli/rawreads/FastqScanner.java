@@ -10,23 +10,6 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.AutoNormalizeQualityReadConverter;
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
-import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
-import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
-import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
-import uk.ac.ebi.ena.readtools.loader.fastq.Read;
-import uk.ac.ebi.ena.readtools.utils.Utils;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
-
 import java.io.File;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -46,6 +29,23 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import uk.ac.ebi.ena.readtools.loader.common.converter.AutoNormalizeQualityReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
+import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
+import uk.ac.ebi.ena.readtools.loader.fastq.Read;
+import uk.ac.ebi.ena.readtools.utils.Utils;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
 public abstract class 
