@@ -10,9 +10,6 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnels;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -21,6 +18,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
 
 public class 
 BloomWrapper 

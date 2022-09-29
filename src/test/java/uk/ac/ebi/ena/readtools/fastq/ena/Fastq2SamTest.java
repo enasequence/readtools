@@ -11,19 +11,8 @@
 package uk.ac.ebi.ena.readtools.fastq.ena;
 
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.fastq.FastqReader;
-import htsjdk.samtools.fastq.FastqRecord;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.junit.Assert;
-import org.junit.Test;
-import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
-import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.TestCase.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,8 +25,21 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.TestCase.fail;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.junit.Assert;
+import org.junit.Test;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.fastq.FastqReader;
+import htsjdk.samtools.fastq.FastqRecord;
+
+import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
+import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 
 /**
  * TODO The tests in here need to compare data between source fastq(s) and generated bam file as well.

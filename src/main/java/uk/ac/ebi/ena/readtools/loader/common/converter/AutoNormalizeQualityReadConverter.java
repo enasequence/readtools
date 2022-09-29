@@ -10,13 +10,14 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import htsjdk.samtools.util.FastqQualityFormat;
+
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * Similar to {@link ReadConverter}. except here, quality normalization strategy is chosen automatically and quality

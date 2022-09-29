@@ -100,10 +100,10 @@ SPACE HERE
 //    final static private Pattern p_casava_1_8_name = Pattern.compile( "^@([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+) ([12]):[YN]:[0-9]*[02468]:[ACGTN]+$" );
     // relaxed regular expression
     final static Pattern p_casava_1_8_name = Pattern.compile(
-            "^@([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9_-]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)( +|\t+)([12]):[YN]:[0-9]*[02468]:.*$" );
+            "^@([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9_-]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)(|:.*)( +|\\t+)([0-9]+):[YN]:[0-9]*[02468]($|:.*$)" );
 
     // regexs
-    final static Pattern p_base_name = Pattern.compile( "^@(\\S*)( .*$|\t.*$|$)" ); // for name of the record
+    final static Pattern p_base_name = Pattern.compile( "^@(\\S*)( .*$|\\t.*$|$)" ); // for name of the record
     final static private Pattern p_bases     = Pattern.compile( "^([ACGTNUactgnu.]*?)\\+$" ); // bases, trailing '+' is obligatory
     final static private Pattern p_qual_name = Pattern.compile( "^(\\S*)(?: .*$|$)" );  // name of quality record
     //  Pattern p_quals     = Pattern.compile( "^([\\!\\\"\\#\\$\\%\\&\\'\\(\\)\\*\\+,\\-\\.\\/0-9:;<=>\\?\\@A-I]+)$" ); //qualities
@@ -205,7 +205,7 @@ SPACE HERE
             case CASAVA18:
                 if( !params.m_casava_1_8_name.reset( line ).find() )
                     throw new ConverterException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, ReadReader.ReadStyle.CASAVA18 ) );
-                read.name = params.m_casava_1_8_name.group( 1 ) + "/" + params.m_casava_1_8_name.group( 3 );
+                read.name = params.m_casava_1_8_name.group( 1 ) + "/" + params.m_casava_1_8_name.group( 4 );
                 break;
 
             case FASTQ:

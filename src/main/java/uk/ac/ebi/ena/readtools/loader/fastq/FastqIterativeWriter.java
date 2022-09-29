@@ -10,10 +10,10 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
-import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
-
 import java.io.File;
 import java.util.Iterator;
+
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 
 public class
 FastqIterativeWriter implements Iterable<PairedRead> {

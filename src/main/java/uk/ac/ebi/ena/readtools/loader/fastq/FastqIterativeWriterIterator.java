@@ -10,15 +10,6 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
-import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
-import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
-import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,6 +19,15 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
+import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
 
 public class
 FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedRead, Spot> {

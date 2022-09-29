@@ -10,18 +10,19 @@
 */
 package uk.ac.ebi.ena.readtools.common.producer;
 
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.junit.Test;
-import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+
 import uk.ac.ebi.ena.readtools.loader.common.converter.AutoNormalizeQualityReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
-
-import java.io.InputStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class AutoNormalizerReadProducerTest {
     private static final long FASTQ_VALIDATION_MAX_DURATION_MS = 4_000;

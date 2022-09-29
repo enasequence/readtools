@@ -18,7 +18,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.IlluminaQualityNormalizer;
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
@@ -53,6 +52,22 @@ ReadReaderTest {
 				.matcher( "@A00372:119:HNJM2DMXX:1:1101:9588:1752:N:0:CGGTTACGGC+AAGACTATAG#0/1" ).matches() );
 		Assert.assertFalse( ReadReader.p_casava_1_8_name
 				.matcher( "@A00372:119:HNJM2DMXX:1:1101:17282:5055:N:0:CGGTTACGGC+AAGACTATAG#0/1" ).matches() );
+
+		Assert.assertFalse( ReadReader.p_casava_1_8_name
+				.matcher( "@ 9:N:0:ACAGCAAC" ).matches() );
+
+		Assert.assertTrue( ReadReader.p_casava_1_8_name
+				.matcher( "@A00730:546:HWCTCDRXY:2:2101:1090:1031 9:N:0:ACAGCAAC" ).matches() );
+		Assert.assertTrue( ReadReader.p_casava_1_8_name
+				.matcher( "@E00528:414:HVNJLCCXY:1:1101:7598:1854 1:N:0" ).matches() );
+		Assert.assertTrue( ReadReader.p_casava_1_8_name
+				.matcher( "@A00730:546:HWCTCDRXY:2:2101:1090:1031:ACAGCAAC+ACAGCAAC 4:N:0:ACAGCAAC" ).matches() );
+		Assert.assertTrue( ReadReader.p_casava_1_8_name
+				.matcher( "@A00730:546:HWCTCDRXY:2:2101:1090:1031:ACAGCAAC+ACAGCAAC 422:N:0:ACAGCAAC" ).matches() );
+		Assert.assertTrue( ReadReader.p_casava_1_8_name
+				.matcher( "@A00730:546:HWCTCDRXY:2:2101:1090:1031:ACAGCAAC+ACAGCAAC\t422:N:0:ACAGCAAC" ).matches() );
+		Assert.assertFalse( ReadReader.p_casava_1_8_name
+				.matcher( "@A00730:546:HWCTCDRXY:2:2101:1090:1031:ACAGCAAC+ACAGCAAC\n422:N:0:ACAGCAAC" ).matches() );
 	}
 
 	@Test

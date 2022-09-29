@@ -10,11 +10,11 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
-import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.loader.fastq.Read;
-
 import java.io.IOException;
 import java.io.InputStream;
+
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
 /**
  * Similar to {@link AutoNormalizeQualityReadConverter}, but here, base quality normalizer is provided explicitly. If no normalizer
