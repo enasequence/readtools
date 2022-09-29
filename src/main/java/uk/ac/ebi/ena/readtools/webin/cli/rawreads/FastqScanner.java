@@ -60,7 +60,7 @@ FastqScanner
     private static final String PRINT_FREQ_PROPERTY_NAME = "webincli.scanner.print.freq";
     private static final int    print_freq = Integer.valueOf( System.getProperty( PRINT_FREQ_PROPERTY_NAME, String.valueOf( DEFAULT_PRINT_FREQ ) ) );
 
-    private static final Pattern READ_KEY_INDEX_SPLIT_PATTERN = Pattern.compile("^(.*)(?:[\\.|:|/|_])([1-9][0-9]*)$");
+    private static final Pattern READ_PAIR_NUMBER_SPLIT_PATTERN = Pattern.compile("^(.*)(?:[\\.|:|/|_])([1-9][0-9]*)$");
 
     private static final Logger log = LoggerFactory.getLogger( FastqScanner.class );
     
@@ -119,25 +119,25 @@ FastqScanner
                 @Override public void
                 write(Read spot )
                 {
-                	String readNameWithoutIndex;
-                	String readIndex;
+                	String readNameWithoutPairNumber;
+                	String pairNumber;
 
                 	try
                 	{
-                		readNameWithoutIndex = getReadKey(spot.name);
-                		readIndex = getReadIndex( spot.name);
+                		readNameWithoutPairNumber = getReadKey(spot.name);
+                		pairNumber = getPairNumber(spot.name);
                 	} catch ( IllegalArgumentException dee )
                 	{
-                    	readNameWithoutIndex = spot.name;
-                    	readIndex = stream_name;
+                    	readNameWithoutPairNumber = spot.name;
+                    	pairNumber = stream_name;
                 	}
                 	
                     if( labels.size() < MAX_LABEL_SET_SIZE ) {
-                        labels.add(readIndex);
+                        labels.add(pairNumber);
                     }
                     
                     count.incrementAndGet();
-                    pairing.add( readNameWithoutIndex );
+                    pairing.add( readNameWithoutPairNumber );
                     duplications.add( spot.name);
                     
                     if( 0 == count.get() % print_freq )
@@ -379,12 +379,12 @@ FastqScanner
         return getReadPart(readName, 1);
     }
 
-    private String getReadIndex(String readName) {
+    private String getPairNumber(String readName) {
         return getReadPart(readName, 2);
     }
 
     private String getReadPart(String readName, int group) {
-        Matcher m = READ_KEY_INDEX_SPLIT_PATTERN.matcher(readName);
+        Matcher m = READ_PAIR_NUMBER_SPLIT_PATTERN.matcher(readName);
         if (m.find()) {
             return m.group(group);
         }
