@@ -68,6 +68,9 @@ ReadReaderTest {
 				.matcher( "@A00730:546:HWCTCDRXY:2:2101:1090:1031:ACAGCAAC+ACAGCAAC\t422:N:0:ACAGCAAC" ).matches() );
 		Assert.assertFalse( ReadReader.p_casava_1_8_name
 				.matcher( "@A00730:546:HWCTCDRXY:2:2101:1090:1031:ACAGCAAC+ACAGCAAC\n422:N:0:ACAGCAAC" ).matches() );
+
+		Assert.assertTrue( ReadReader.p_casava_1_8_name
+				.matcher( "@JAXVAFT.MTP3.D21.48_239647 M00990:616:000000000-JKYVV:1:1101:20204:2129 1:N:0:TTACTGTGCG+GATTCCTA" ).matches() );
 	}
 
 	@Test
