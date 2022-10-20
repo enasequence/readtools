@@ -465,13 +465,13 @@ FastqScannerTest
                         "CGCCCGCTCCTTGCGCACACGCCAGGCAGCGCCGCCGCAGCCCCACGGCG\n" +
                         "+\n" +
                         "FFFFFFFFFFFFFFFFFFFFFFFFFFF,FFFFFFFFFFFFFFFFFFFFFF",
-                output_dir.toPath(), true, "fastq-10-3-2", "gz" );
+                output_dir.toPath(), true, "fastq-10-2-3", "gz" );
         Path f4 = saveRandomized(
                 "@A00730:546:HWCTCDRXY:2:2101:1090:1031 1:N:0:ACAGCAAC\n" +
                         "ACAGCAAC\n" +
                         "+\n" +
                         "FFFFFFFF",
-                output_dir.toPath(), true, "fastq-10-4-2", "gz" );
+                output_dir.toPath(), true, "fastq-10-2-4", "gz" );
 
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
@@ -508,7 +508,7 @@ FastqScannerTest
                         "TACGGAGGATGCGAGCGTTATCCGGATTTATTGGGTTTAAAGGGTGCGTAGGCGGGATGCCAAGTCAGCGGTAAAAAAGCGGTGCTCAACGCCGTCGAGCCGTTGAAACTGGCGTTCTTGAGTGGGCGAGAAGTATGCGGAATGCGTGGTGTAGCGGTGAAATGCATAGATATCACGCAGAACTCCGATTGCGAAGGCAGCATACCGGCTCCCTACTGACGCTGAGGCACGAAAGCGCGGGGAGCAAACA\n" +
                         "+\n" +
                         "1>AA?AA?AFFBE1E0AECGAGHCGGGEHG2FF1/EEEEFFHC/F/?AFGGE1E/E/EFFE1BG>FF1>EGEAF1GF?E0/@/CCGHF1?B/@/A@//-.>->.<<DD0==GE<<@CEH0CGCCACA@-9?BBBFG0F?--@GF0;.C?E--/9F?;-9-/B9BFFBFFF:FFFFF-----;9BBFB@BB-BB-@@A-F-AFFFF/--9-;E-BF-//B/AF?AAFEE-9--9-9/9-;=;;=-A-FFF9",
-                output_dir.toPath(), true, "fastq-10-1-3", "gz" );
+                output_dir.toPath(), true, "fastq-10-3-1", "gz" );
         Path f2 = saveRandomized(
                 "@JAXVAFT.MTP3.D21.48_239647 M00990:616:000000000-JKYVV:1:1101:20204:2129 2:N:0:TTACTGTGCG+GATTCCTA\n" +
                         "GAAGGTGACGAAGTTTGTACGGAATGATTGGACGTAAGGGAAGCGCAGACGGTCCTGCAAGTCTGGAGTGAAACGGATGAGCTGAACTCATGCATAGCTTTGGAAACTGGAAGACTAGAGAGCAGGAGAAGGCGGTGGAACTCCATATGTAGCGGTAAAAGGCGTAGATATATGGAAGAACACCAATGACGAAGGCGGCCGCCTGGCCTGTTGCTGACGCTGAGGCACGAAAGCGTGGGGAGCAAGTAAG\n" +
@@ -522,7 +522,7 @@ FastqScannerTest
                         "GTGCTGAAGGGAGGCTTATACGAGTATAATGGGTGTAAAGGGAGCGTAGGCGGGATGCCAAGGCCGCGGTAAAAAAGCGGGGTTCACGGCCGTCGGGCCGTTGAAACTGGCGTTCTTGAGTGGGCGAGAAGTATGCGGAATGCGTGGTGTAGCGGTGAAATGCATATATATCACGCAGAACTCCGATTACGAAGGCAGCATACCGGCGCCCTACTGACGCTGAGGCACGACAGCGTGGGGAGCAAACAGG\n" +
                         "+\n" +
                         "-/9//-/--9;//////;---9/////9/--BB/9;//-------9---9-;////9///-9--999/9--999--999..0..-------:-----<.=0DD<=0-<-.<0F1<1000<//C?/DF>2@1//</022//CB//<00F<E///F2>F>2222F2FB222GE?/>11B1BE?CEAGF>B0>FF@CB122@EAAECEEE0E1GAB/A000B1FGAGAEAFGA0EE?AG?E11FDBDFA>>1>",
-                output_dir.toPath(), true, "fastq-10-1-3", "gz" );
+                output_dir.toPath(), true, "fastq-10-3-2", "gz" );
 
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
@@ -533,6 +533,76 @@ FastqScannerTest
         ValidationResult vr = new ValidationResult();
 
         fs.checkFiles( vr, rf1, rf2 );
+
+        Assert.assertTrue( fs.getPaired() );
+        Assert.assertEquals( 0, vr.count(Severity.ERROR) );
+    }
+
+    @Test public void
+    testCase10_4() throws Throwable
+    {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@JAXVAFT/1\n" +
+                        "TACGTAGGTGGCGAGCGTTATCCGGAATGATTGGGCGTAAAGGGTGCGCAGGCGGTCCTGCAAGTCTGGAGTGAAACGCATGAGCTCAACTCATGCATGGCTTTGGAAACTGGAGGACTGGAGAGCAGGAGAGGGCGGTGGAACTCCATGTGTAGCGGTAAAATGCGTAGATATATGGAAGAACACCAGTGGCGAAGGTGGTTGCCTGGCCTGCTGCTGACGCCGAGGCACTAAAGCTGCGGGAGCAAAA\n" +
+                        "+\n" +
+                        "ABBBA4CABDAFG2AEEGEGFDFGGEEGGDFFHGHGAAEEADDE1BFEGGC?1E?>E@GEHHFHDHHFHBA3?344B/E//?3?DGFGHBG3??FDGHGFHBBG?C11DGDBB00//GFGHB01/<<0C<.<.AA<<--:.;CG00;CHH0CC0;0@B;C?BFFFGGGG@999C;0FBB0/:F.FF?E.9/BE--9-.9999..99BFE?F/..;:FFBB9AD----9@E../;//;///9----;A//.",
+                output_dir.toPath(), true, "fastq-10-4-1", "gz" );
+        Path f2 = saveRandomized(
+                "@JAXVAFT/2\n" +
+                        "GAAGGTGACGAAGTTTGTACGGAATGATTGGACGTAAGGGAAGCGCAGACGGTCCTGCAAGTCTGGAGTGAAACGGATGAGCTGAACTCATGCATAGCTTTGGAAACTGGAAGACTAGAGAGCAGGAGAAGGCGGTGGAACTCCATATGTAGCGGTAAAAGGCGTAGATATATGGAAGAACACCAATGACGAAGGCGGCCGCCTGGCCTGTTGCTGACGCTGAGGCACGAAAGCGTGGGGAGCAAGTAAG\n" +
+                        "+\n" +
+                        ";///--;--///-//--9;///FB//;/-9---//;/-/..-9:0....9..;.900009:0///0:GBGFGF?<0CGC=0000<000GGEHFD=0/<1111FFFG1F1D>11<>11G1GG?111?11///CCHGGGD0BB11DFB1B//<@<B1HHF<</E/1F22BEFFGBDFGF2/F>1B220//0FEEEE@//EA/CGFA///FGHFHE/E0E01FB11EFA0EAC0E1EAB11@@1113B1>>11",
+                output_dir.toPath(), true, "fastq-10-4-2", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+        RawReadsFile rf2 = new RawReadsFile();
+        rf2.setFilename( f2.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
+
+        Assert.assertTrue( fs.getPaired() );
+        Assert.assertEquals( 0, vr.count(Severity.ERROR) );
+    }
+
+    @Test public void
+    testCase10_5() throws Throwable
+    {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@1:1101:1027:4805 1:N:0:TTACGGTGTCATGAGG\n" +
+                        "TACGTAGGTGGCGAGCGTTATCCGGAATGATTGGGCGTAAAGGGTGCGCAGGCGGTCCTGCAAGTCTGGAGTGAAACGCATGAGCTCAACTCATGCATGGCTTTGGAAACTGGAGGACTGGAGAGCAGGAGAGGGCGGTGGAACTCCATGTGTAGCGGTAAAATGCGTAGATATATGGAAGAACACCAGTGGCGAAGGTGGTTGCCTGGCCTGCTGCTGACGCCGAGGCACTAAAGCTGCGGGAGCAAAA\n" +
+                        "+\n" +
+                        "ABBBA4CABDAFG2AEEGEGFDFGGEEGGDFFHGHGAAEEADDE1BFEGGC?1E?>E@GEHHFHDHHFHBA3?344B/E//?3?DGFGHBG3??FDGHGFHBBG?C11DGDBB00//GFGHB01/<<0C<.<.AA<<--:.;CG00;CHH0CC0;0@B;C?BFFFGGGG@999C;0FBB0/:F.FF?E.9/BE--9-.9999..99BFE?F/..;:FFBB9AD----9@E../;//;///9----;A//.",
+                output_dir.toPath(), true, "fastq-10-5-1", "gz" );
+        Path f2 = saveRandomized(
+                "@1:1101:1027:4805 2:N:0:TTACGGTGTCATGAGG\n" +
+                        "GAAGGTGACGAAGTTTGTACGGAATGATTGGACGTAAGGGAAGCGCAGACGGTCCTGCAAGTCTGGAGTGAAACGGATGAGCTGAACTCATGCATAGCTTTGGAAACTGGAAGACTAGAGAGCAGGAGAAGGCGGTGGAACTCCATATGTAGCGGTAAAAGGCGTAGATATATGGAAGAACACCAATGACGAAGGCGGCCGCCTGGCCTGTTGCTGACGCTGAGGCACGAAAGCGTGGGGAGCAAGTAAG\n" +
+                        "+\n" +
+                        ";///--;--///-//--9;///FB//;/-9---//;/-/..-9:0....9..;.900009:0///0:GBGFGF?<0CGC=0000<000GGEHFD=0/<1111FFFG1F1D>11<>11G1GG?111?11///CCHGGGD0BB11DFB1B//<@<B1HHF<</E/1F22BEFFGBDFGF2/F>1B220//0FEEEE@//EA/CGFA///FGHFHE/E0E01FB11EFA0EAC0E1EAB11@@1113B1>>11",
+                output_dir.toPath(), true, "fastq-10-5-2", "gz" );
+        Path f3 = saveRandomized(
+                "@1:1101:1027:4805 3:N:0:TTACGGTGTCATGAGG\n" +
+                        "GAAGGTGACGAAGTTTGTACGGAATGATTGGACGTAAGGGAAGCGCAGACGGTCCTGCAAGTCTGGAGTGAAACGGATGAGCTGAACTCATGCATAGCTTTGGAAACTGGAAGACTAGAGAGCAGGAGAAGGCGGTGGAACTCCATATGTAGCGGTAAAAGGCGTAGATATATGGAAGAACACCAATGACGAAGGCGGCCGCCTGGCCTGTTGCTGACGCTGAGGCACGAAAGCGTGGGGAGCAAGTAAG\n" +
+                        "+\n" +
+                        ";///--;--///-//--9;///FB//;/-9---//;/-/..-9:0....9..;.900009:0///0:GBGFGF?<0CGC=0000<000GGEHFD=0/<1111FFFG1F1D>11<>11G1GG?111?11///CCHGGGD0BB11DFB1B//<@<B1HHF<</E/1F22BEFFGBDFGF2/F>1B220//0FEEEE@//EA/CGFA///FGHFHE/E0E01FB11EFA0EAC0E1EAB11@@1113B1>>11",
+                output_dir.toPath(), true, "fastq-10-5-3", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+        RawReadsFile rf2 = new RawReadsFile();
+        rf2.setFilename( f2.toFile().getCanonicalPath() );
+        RawReadsFile rf3 = new RawReadsFile();
+        rf3.setFilename( f3.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2, rf3 );
 
         Assert.assertTrue( fs.getPaired() );
         Assert.assertEquals( 0, vr.count(Severity.ERROR) );
