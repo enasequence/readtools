@@ -13,6 +13,7 @@ package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -77,6 +78,23 @@ FastqScannerTest
         Assert.assertTrue( vr.isValid() );
     }
 
+
+    @Test public void
+    testSingle2() throws Throwable
+    {
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/SPOP-87C_plKO2-min.fastq.gz" );
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf = new RawReadsFile();
+
+        rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf );
+
+        Assert.assertTrue( vr.isValid() );
+    }
+
     
     @Test public void
     testSingleDuplications() throws Throwable
@@ -130,7 +148,6 @@ FastqScannerTest
         
         Assert.assertTrue( vr.isValid() );
     }
-
 
     
     private Path
