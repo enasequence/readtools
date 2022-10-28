@@ -149,6 +149,25 @@ FastqScannerTest
         Assert.assertTrue( vr.isValid() );
     }
 
+    @Test public void
+    testPaired2() throws Throwable
+    {
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/CI26.26-min.fastq.gz" );
+        URL  url2 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/RRCI26.26-min.fastq.gz" );
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( new File( url1.getFile() ).getCanonicalPath() );
+
+        RawReadsFile rf2 = new RawReadsFile();
+        rf2.setFilename( new File( url2.getFile() ).getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
+
+        Assert.assertTrue( vr.isValid() );
+    }
+
     
     private Path
     saveRandomized(String content, Path folder, boolean gzip, String... suffix) throws IOException
