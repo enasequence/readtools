@@ -13,7 +13,6 @@ package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

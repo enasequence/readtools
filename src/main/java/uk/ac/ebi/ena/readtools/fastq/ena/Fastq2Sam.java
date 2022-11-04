@@ -63,14 +63,14 @@ public class Fastq2Sam {
     }
 
     public void create(Params p) throws IOException {
-        ReadWriter<Read, PairedRead> dataSpotToFastqSpotConsumer = null;
+        ReadWriter<Read, PairedRead> readWriter = null;
         boolean paired = false;
 
         if (null == p.files || p.files.size() < 1 || p.files.size() > 2) {
             throw new IllegalArgumentException("Invalid number of input files : " + p.files.size());
         } else if (1 == p.files.size()) {
             //single
-            dataSpotToFastqSpotConsumer = new SingleFastqConsumer();
+            readWriter = new SingleFastqConsumer();
             paired = false;
         } else if (2 == p.files.size()) {
             //same file names;
@@ -79,7 +79,7 @@ public class Fastq2Sam {
                         "Paired files cannot be same. File1 : " + p.files.get(0) + ", File2 : " + p.files.get(1));
             }
 
-            dataSpotToFastqSpotConsumer = new PairedFastqWriter(
+            readWriter = new PairedFastqWriter(
                     new File(p.tmp_root), p.spill_page_size, p.spill_page_size_bytes, p.spill_abandon_limit_bytes);
             paired = true;
         }
@@ -96,10 +96,10 @@ public class Fastq2Sam {
 
         QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);
 
-        Fastq2BamConsumer fastqSpotToBamConsumer = new Fastq2BamConsumer(
+        Fastq2BamConsumer fastqToBamConsumer = new Fastq2BamConsumer(
                 normalizer, p.sample_name, p.data_file, p.tmp_root, p.convertUracil, paired);
 
-        dataSpotToFastqSpotConsumer.setWriter(fastqSpotToBamConsumer);
+        readWriter.setWriter(fastqToBamConsumer);
 
         ArrayList<ReadConverter> producers = new ArrayList<>();
 
@@ -107,12 +107,12 @@ public class Fastq2Sam {
         for (String f_name : p.files) {
             final String default_attr = Integer.toString(attr++);
 
-            ReadConverter producer = new ReadConverter(
+            ReadConverter converter = new ReadConverter(
                 FileCompression.valueOf(p.compression).open(f_name, p.use_tar), default_attr);
-            producer.setWriter(dataSpotToFastqSpotConsumer);
-            producer.setName(f_name);
-            producers.add(producer);
-            producer.start();
+            converter.setWriter(readWriter);
+            converter.setName(f_name);
+            producers.add(converter);
+            converter.start();
         }
 
         boolean again = false;
@@ -145,8 +145,8 @@ public class Fastq2Sam {
             totalBaseCount += producer.getBaseCount();
         }
 
-        dataSpotToFastqSpotConsumer.cascadeErrors();
-        fastqSpotToBamConsumer.unwind();
+        readWriter.cascadeErrors();
+        fastqToBamConsumer.unwind();
         System.out.println(String.format("READS: %d; BASES: %d", totalReadCount, totalBaseCount));
     }
 

@@ -82,6 +82,30 @@ public class Fastq2SamTest {
         Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
     }
 
+    // @Test only run manually if needed
+    public void twoLargeFilesManualTest() throws IOException, ConverterException, ReadWriterException {
+        Fastq2Sam.Params params = new Fastq2Sam.Params();
+        params.tmp_root = System.getProperty("java.io.tmpdir");
+        params.sample_name = "SM-001";
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+        params.compression = FileCompression.GZ.name();
+        params.files = Arrays.asList(
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("1_W205W_FKDL210230843-1a_1.fq.gz").getFile()).getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("1_W205W_FKDL210230843-1a_2.fq.gz").getFile()).getAbsolutePath());
+
+        params.spill_page_size_bytes = 1024L * 1024L;
+        params.spill_abandon_limit_bytes = 2L * 1024L * 1024L;
+
+        Fastq2Sam fastq2Sam = new Fastq2Sam();
+        fastq2Sam.create(params);
+
+        Assert.assertTrue(new File(params.data_file).length() > 0);
+        Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
+        Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
+    }
+
     @Test
     public void testMemoryPaging() throws IOException, ConverterException, ReadWriterException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();

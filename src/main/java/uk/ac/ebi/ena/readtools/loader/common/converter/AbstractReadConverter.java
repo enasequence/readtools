@@ -89,9 +89,17 @@ AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
                         readWriter.write(convert());
                 }
 
-                if (!readWriter.isOk())
+                if (!readWriter.isOk()) {
                     throw new ConverterPanicException();
+                }
 
+                // sleep 1 returned from git history
+                // it prevents multi-FASTQ to BAM conversion
+                // "Temp memory limit <spill_abandon_limit_bytes> bytes reached" error
+                // if removed FASTQ file threads will pile up large numbers of unpaired reads
+                // before pairing them, causing the error
+                // TODO: implement a proper threads synchronization
+                Thread.sleep(1);
             } while (keepRunning.get());
         } catch (ConverterEOFException ignored) {
         } catch (ConverterPanicException e) {
