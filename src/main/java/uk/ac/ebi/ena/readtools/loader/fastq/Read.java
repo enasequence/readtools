@@ -23,13 +23,14 @@ public class Read implements Serializable, Spot {
 
     public String defaultReadIndex;
 
-    public String name; // name for bases
+    public String key; // name for bases
+    public String index; // read index
     public String bases;// bases
     public String quals;
 
     @Override
     public String getName() {
-        return name;
+        return key;
     }
 
     @Override
@@ -40,7 +41,9 @@ public class Read implements Serializable, Spot {
     public String toString() {
         return new StringBuilder()
                 .append("base_name = [")
-                .append(name)
+                .append(key)
+                .append(" ")
+                .append(index)
                 .append("]\n")
                 .append("bases = [")
                 .append(bases)
@@ -54,6 +57,6 @@ public class Read implements Serializable, Spot {
     }
 
     public long getSizeBytes() {
-        return name.getBytes().length + bases.getBytes().length + quals.getBytes().length;
+        return key.getBytes().length + bases.getBytes().length + quals.getBytes().length;
     }
 }

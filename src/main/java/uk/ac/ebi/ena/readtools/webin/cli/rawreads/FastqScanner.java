@@ -60,8 +60,6 @@ FastqScanner
     private static final String PRINT_FREQ_PROPERTY_NAME = "webincli.scanner.print.freq";
     private static final int    print_freq = Integer.valueOf( System.getProperty( PRINT_FREQ_PROPERTY_NAME, String.valueOf( DEFAULT_PRINT_FREQ ) ) );
 
-    private static final Pattern READ_PAIR_NUMBER_SPLIT_PATTERN = Pattern.compile("^(.*)(?:[\\.|:|/|_])([1-9][0-9]*)$");
-
     private static final Logger log = LoggerFactory.getLogger( FastqScanner.class );
     
     private final int expected_size;
@@ -122,13 +120,11 @@ FastqScanner
                 	String readNameWithoutPairNumber;
                 	String pairNumber;
 
-                	try
-                	{
-                		readNameWithoutPairNumber = getReadKey(spot.name);
-                		pairNumber = getPairNumber(spot.name);
-                	} catch ( IllegalArgumentException dee )
-                	{
-                    	readNameWithoutPairNumber = spot.name;
+                	if (null != spot.index) {
+                		readNameWithoutPairNumber = spot.key;
+                		pairNumber = spot.index;
+                	} else {
+                    	readNameWithoutPairNumber = spot.key;
                     	pairNumber = stream_name;
                 	}
                 	
@@ -138,7 +134,7 @@ FastqScanner
                     
                     count.incrementAndGet();
                     pairing.add( readNameWithoutPairNumber );
-                    duplications.add( spot.name);
+                    duplications.add( spot.key); // name was here
                     
                     if( 0 == count.get() % print_freq )
                         logProcessedReadNumber( count.get() );
@@ -350,7 +346,7 @@ FastqScanner
         Iterator<String> read_name_iterator = new DelegateIterator<PairedRead, String>( wrapper.iterator() ) {
             @Override
             public String convert( PairedRead obj ) {
-                return obj.forward.name;
+                return obj.forward.key; // name was here
             }
         };
 
@@ -373,23 +369,6 @@ FastqScanner
                       .filter( e-> counts.get(e.getKey()) > 1 )
                       .limit( limit )
                       .collect( Collectors.toMap( e -> e.getKey(), e -> e.getValue(), ( v1, v2 ) -> v1, LinkedHashMap::new ) );
-    }
-
-    private String getReadKey(String readName) {
-        return getReadPart(readName, 1);
-    }
-
-    private String getPairNumber(String readName) {
-        return getReadPart(readName, 2);
-    }
-
-    private String getReadPart(String readName, int group) {
-        Matcher m = READ_PAIR_NUMBER_SPLIT_PATTERN.matcher(readName);
-        if (m.find()) {
-            return m.group(group);
-        }
-
-        throw new IllegalArgumentException(String.format("Readname [%s] does not match regexp.", readName));
     }
 
     private static class PairedFiles {

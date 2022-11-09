@@ -21,42 +21,17 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 
 public class
 PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
-    // Provided readname structure is @{readkey}{separator:1(.|/|:|_)}{index:1(0:1:2)}
-    static final Pattern split_regexp = Pattern.compile("^(.*)(?:[\\.|:|/|_])([12])$");
-    static public final int KEY = 1;
-    static public final int INDEX = 2;
+    Integer index1 = null;
+    Integer index2 = null;
 
     public PairedFastqWriter(File tmp_root, int spill_page_size, long spill_page_size_bytes, long spill_abandon_limit_bytes) {
         super(tmp_root, spill_page_size, spill_page_size_bytes, spill_abandon_limit_bytes);
     }
 
-    public static String
-    getReadKey(String readname) throws ReadWriterException {
-        return getReadPart(readname, KEY);
-    }
-
-    public static String
-    getReadIndex(String readname) throws ReadWriterException {
-        return getReadPart(readname, INDEX);
-    }
-
-    private static String
-    getReadPart(String readname, int group) throws ReadWriterException {
-        Matcher m = split_regexp.matcher(readname);
-        if (m.find())
-            return m.group(group);
-
-        throw new ReadWriterException(String.format("Readname [%s] does not match regexp", readname));
-    }
-
     @Override
     public String
     getKey(Read spot) {
-        try {
-            return getReadKey(spot.name);
-        } catch (ReadWriterException de) {
-            return spot.name;
-        }
+        return spot.key;
     }
 
     public List<Read>
@@ -69,16 +44,29 @@ PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
 
     public void
     append(List<Read> list, Read spot) throws ReadWriterException {
-        String readIndexStr;
-        try {
-            readIndexStr = getReadIndex(spot.name);
-        } catch (ReadWriterException de) {
-            readIndexStr = spot.defaultReadIndex;
-        }
+        String readIndexStr = (null == spot.index) ? spot.defaultReadIndex : spot.index;
 
         int readIndex = Integer.parseInt(readIndexStr) - 1;
-        if (null == list.get(readIndex)) {
-            list.set(readIndex, spot);
+
+        if (null == index1) {
+            index1 = readIndex;
+        } else {
+            if (null == index2 && readIndex != index1) {
+                index2 = readIndex;
+            }
+        }
+
+        int appliedIndex;
+        if (readIndex == index1) {
+            appliedIndex = 0;
+        } else if (readIndex == index2) {
+            appliedIndex = 1;
+        } else {
+            throw new RuntimeException("Unexpected read index " + spot);
+        }
+
+        if (null == list.get(appliedIndex)) {
+            list.set(appliedIndex, spot);
         } else {
             throw new RuntimeException("Got same spot twice: " + spot);
         }
