@@ -209,13 +209,12 @@ SPACE HERE
                 if (!params.m_base_name.reset(line).find())
                     throw new ConverterException(params.line_no, String.format("Line [%s] does not match %s regexp", line, ReadReader.ReadStyle.FASTQ));
 
-                String str = params.m_base_name.group(1);
-                if (str.length() > 2) {
-                    String substr = str.substring(str.length() - 2);
+                if (line.length() > 4 && line.startsWith("@")) {
+                    String ending = line.substring(line.length() - 2);
                     Pattern splitRegexp = Pattern.compile("^([\\.|:|/])([0-9])$");
-                    Matcher m = splitRegexp.matcher(substr);
+                    Matcher m = splitRegexp.matcher(ending);
                     if (m.find()) {
-                        read.key = str.substring(0, str.length() - 2);
+                        read.key = line.substring(1, line.length() - 2);
                         read.index = m.group(2);
 
                         break;
