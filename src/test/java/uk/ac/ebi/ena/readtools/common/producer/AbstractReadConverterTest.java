@@ -38,11 +38,6 @@ public class AbstractReadConverterTest {
 
                 return new Spot() {
                     @Override
-                    public String getName() {
-                        return "dummy";
-                    }
-
-                    @Override
                     public long getBaseCount() {
                         return 99;
                     }

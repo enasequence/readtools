@@ -34,7 +34,7 @@ SingleFastqConsumer implements ReadWriter<Read, PairedRead>
     public void
     write(Read spot ) throws ReadWriterException
     {
-        PairedRead pairedRead = new PairedRead(spot.key, spot);
+        PairedRead pairedRead = new PairedRead(spot.spotName.name, spot);
 
         if( null != readWriter)
             readWriter.write(pairedRead);

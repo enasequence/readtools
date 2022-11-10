@@ -201,8 +201,8 @@ SPACE HERE
             case CASAVA18:
                 if (!params.m_casava_1_8_name.reset(line).find())
                     throw new ConverterException(params.line_no, String.format("Line [%s] does not match %s regexp", line, ReadReader.ReadStyle.CASAVA18));
-                read.key = params.m_casava_1_8_name.group(1);
-                read.index = params.m_casava_1_8_name.group(3);
+                read.spotName.name = params.m_casava_1_8_name.group(1);
+                read.spotName.index = params.m_casava_1_8_name.group(3);
                 break;
 
             case FASTQ:
@@ -214,14 +214,14 @@ SPACE HERE
                     Pattern splitRegexp = Pattern.compile("^([\\.|:|/])([0-9])$");
                     Matcher m = splitRegexp.matcher(ending);
                     if (m.find()) {
-                        read.key = line.substring(1, line.length() - 2);
-                        read.index = m.group(2);
+                        read.spotName.name = line.substring(1, line.length() - 2);
+                        read.spotName.index = m.group(2);
 
                         break;
                     }
                 }
 
-                read.key = params.m_base_name.group(1);
+                read.spotName.name = params.m_base_name.group(1);
                 break;
 
             default:
@@ -281,7 +281,7 @@ SPACE HERE
 
                 if (expectedQualLength != value.length())
                     throw new ConverterException(params.line_no, String.format("%s Expected qual length [%d] does not match length of the read one[%d]",
-                            read.key, // name was here
+                            read.spotName.name, // name was here
                             expectedQualLength,
                             value.length()));
 
@@ -292,7 +292,7 @@ SPACE HERE
             //check against expected
             if (expectedQualLength >= 0 && expectedQualLength != value.length())
                 throw new ConverterException(params.line_no, String.format("%s Expected qual length [%d] does not match length of the read one[%d]",
-                        read.key, // name was here
+                        read.spotName.name, // name was here
                         expectedQualLength,
                         value.length()));
 

@@ -62,11 +62,6 @@ public class PairedRead implements Spot {
     }
 
     @Override
-    public String getName() {
-        return name;
-    }
-
-    @Override
     public long getBaseCount() {
         long fwd = forward != null ? forward.getBaseCount() : 0;
         long rev = reverse != null ? reverse.getBaseCount() : 0;

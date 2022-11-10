@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot.SpotName;
 
 public class 
 BloomWrapper 
@@ -32,7 +33,7 @@ BloomWrapper
     private AtomicLong addCount = new AtomicLong();
     private AtomicLong possibleDuplicateCount = new AtomicLong();
     private int possibleDuplicatesRetainLimit;
-    private Set<String> possibleDuplicates;
+    private Set<SpotName> possibleDuplicates;
     
     
     public 
@@ -58,11 +59,11 @@ BloomWrapper
 
 
     public void
-    add( String readName )
+    add(SpotName readName )
     {
         addCount.incrementAndGet();
         
-        if( bloom.mightContain( readName ) )
+        if( bloom.mightContain( readName.toString() ) )
         {
             possibleDuplicateCount.incrementAndGet();
             if( possibleDuplicates.size() < possibleDuplicatesRetainLimit)
@@ -71,7 +72,7 @@ BloomWrapper
             }
         } else
         {
-            bloom.put( readName );
+            bloom.put( readName.toString() );
         }
     }
 
@@ -100,24 +101,24 @@ BloomWrapper
     }
 
     
-    public Set<String>
+    public Set<SpotName>
     getPossibleDuplicates()
     {
         return possibleDuplicates;
     }
     
     
-    public Map<String, Set<String>>
-    findAllduplications( String[] read_names, int limit )
+    public Map<SpotName, Set<String>>
+    findAllduplications( SpotName[] read_names, int limit )
     {
-        Map<String, Integer>      counts = new HashMap<>( limit );
-        Map<String, Set<String>>  result = new HashMap<>( limit );
+        Map<SpotName, Integer>      counts = new HashMap<>( limit );
+        Map<SpotName, Set<String>>  result = new HashMap<>( limit );
         
         if( !hasPossibleDuplicates() )
             return result;
         
         AtomicInteger index = new AtomicInteger();
-        for( String read_name : read_names )
+        for( SpotName read_name : read_names )
         {
             index.incrementAndGet();
             if( contains( read_name ) )
@@ -132,14 +133,15 @@ BloomWrapper
                 break;
         }
         //return result;
-        return result.entrySet().stream().filter( e-> counts.get(e.getKey()) > 1 ).collect( Collectors.toMap(e -> e.getKey(), e -> e.getValue() ) );
+        return result.entrySet().stream().filter( e-> counts.get(e.getKey()) > 1 )
+                .collect( Collectors.toMap(e -> e.getKey(), e -> e.getValue() ) );
     }
     
    
     public boolean 
-    contains( String readName )
+    contains( SpotName readName )
     {
-        return bloom.mightContain( readName );
+        return bloom.mightContain( readName.toString() );
     }
 
     public BloomWrapper getCopy() {

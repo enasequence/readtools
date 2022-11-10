@@ -10,8 +10,43 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.writer;
 
+import java.util.Objects;
+
 public interface Spot {
-    String getName();
     long getBaseCount();
     long getSizeBytes();
+
+    public static class SpotName {
+        public String name;
+        public String index;
+
+        public SpotName() {
+        }
+
+        public SpotName(String name, String index) {
+            this.name = name;
+            this.index = index;
+        }
+
+        @Override
+        public String toString() {
+            return "SpotName{" +
+                    "name='" + name + '\'' +
+                    ", index='" + index + '\'' +
+                    '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            SpotName spotName = (SpotName) o;
+            return Objects.equals(name, spotName.name) && Objects.equals(index, spotName.index);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, index);
+        }
+    }
 }

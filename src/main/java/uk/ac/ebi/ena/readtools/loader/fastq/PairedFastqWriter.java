@@ -31,7 +31,7 @@ PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
     @Override
     public String
     getKey(Read spot) {
-        return spot.key;
+        return spot.spotName.name;
     }
 
     public List<Read>
@@ -44,7 +44,7 @@ PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
 
     public void
     append(List<Read> list, Read spot) throws ReadWriterException {
-        String readIndexStr = (null == spot.index) ? spot.defaultReadIndex : spot.index;
+        String readIndexStr = (null == spot.spotName.index) ? spot.defaultReadIndex : spot.spotName.index;
 
         int readIndex = Integer.parseInt(readIndexStr) - 1;
 

@@ -117,14 +117,10 @@ FastqScanner
                 @Override public void
                 write(Read spot )
                 {
-                	String readNameWithoutPairNumber;
                 	String pairNumber;
-
-                	if (null != spot.index) {
-                		readNameWithoutPairNumber = spot.key;
-                		pairNumber = spot.index;
+                	if (null != spot.spotName.index) {
+                		pairNumber = spot.spotName.index;
                 	} else {
-                    	readNameWithoutPairNumber = spot.key;
                     	pairNumber = stream_name;
                 	}
                 	
@@ -133,8 +129,8 @@ FastqScanner
                     }
                     
                     count.incrementAndGet();
-                    pairing.add( readNameWithoutPairNumber );
-                    duplications.add( spot.key); // name was here
+                    pairing.add(spot.spotName);
+                    duplications.add(spot.spotName); // name was here
                     
                     if( 0 == count.get() % print_freq )
                         logProcessedReadNumber( count.get() );
@@ -346,7 +342,7 @@ FastqScanner
         Iterator<String> read_name_iterator = new DelegateIterator<PairedRead, String>( wrapper.iterator() ) {
             @Override
             public String convert( PairedRead obj ) {
-                return obj.forward.key; // name was here
+                return obj.forward.spotName.name; // name was here
             }
         };
 
