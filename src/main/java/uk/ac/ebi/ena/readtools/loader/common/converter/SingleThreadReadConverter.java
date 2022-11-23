@@ -10,6 +10,10 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
@@ -18,28 +22,70 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Similar to {@link AutoNormalizeQualityReadConverter}, but here, base quality normalizer is provided explicitly. If no normalizer
  * is provided then normalization is not performed.
  */
-public class SingleThreadReadConverter {
+public class SingleThreadReadConverter<T extends Spot> {
     static final int YIELD_CYCLES_FOR_ERROR_CHECKING = 362;
     List<ReadReader> readers = new ArrayList<>();
-    List<InputStream> istreams = new ArrayList<>();
-    PairedFastqWriter writer;
+    final List<InputStream> istreams = new ArrayList<>();
+    final ReadWriter<Read, T> writer;
+    final Long readLimit;
 
     long readCount = 0, baseCount = 0;
 
     List<Integer> turnsList = new ArrayList<>();
     int turn;
-    private Exception storedException;
 
-    public SingleThreadReadConverter(InputStream... istreams) {
-        for (int readerIndex = 0; readerIndex < istreams.length; readerIndex++) {
-            this.istreams.add(istreams[readerIndex]);
+    public SingleThreadReadConverter(List<InputStream> istreams, ReadWriter<Read, T> writer) {
+        this.writer = writer;
+
+        for (int readerIndex = 0; readerIndex < istreams.size(); readerIndex++) {
+            this.istreams.add(istreams.get(readerIndex));
             readers.add(new ReadReader(String.valueOf(readerIndex + 1)));
             turnsList.add(readerIndex);
+        }
+
+        readLimit = 0L;
+    }
+
+    public SingleThreadReadConverter(List<InputStream> istreams, ReadWriter<Read, T> writer, Long readLimit) {
+        this.writer = writer;
+
+        for (int readerIndex = 0; readerIndex < istreams.size(); readerIndex++) {
+            this.istreams.add(istreams.get(readerIndex));
+            readers.add(new ReadReader(String.valueOf(readerIndex + 1)));
+            turnsList.add(readerIndex);
+        }
+
+        this.readLimit = readLimit;
+    }
+
+    public SingleThreadReadConverter(
+            List<InputStream> istreams,
+            List<QualityNormalizer> normalizers,
+            ReadWriter<Read, T> writer,
+            Long readLimit) {
+
+        this.writer = writer;
+
+        for (int readerIndex = 0; readerIndex < istreams.size(); readerIndex++) {
+            this.istreams.add(istreams.get(readerIndex));
+            readers.add(new ReadReader(normalizers.get(normalizers.size() == istreams.size() ? readerIndex : 0), String.valueOf(readerIndex + 1)));
+            turnsList.add(readerIndex);
+        }
+
+        this.readLimit = readLimit;
+    }
+
+    private boolean keepRunning() {
+        if (readLimit == null) {
+            return true;
+        } else {
+            return readCount < readLimit;
         }
     }
 
@@ -51,24 +97,24 @@ public class SingleThreadReadConverter {
         return baseCount;
     }
 
-    public Exception getStoredException() {
-        return storedException;
-    }
-
     public final void run() {
         try {
             do {
-                for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0; --yield) {
+                for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning(); --yield) {
                     writer.write(convert());
                 }
 
                 if (!writer.isOk()) {
                     throw new ConverterPanicException();
                 }
-            } while (turnsList.size() > 0);
+        } while (turnsList.size() > 0 && keepRunning());
         } catch (ConverterEOFException ignored) {
         } catch (Exception e) {
-            this.storedException = e;
+            if (e instanceof ReadWriterMemoryLimitException) {
+                throw e;
+            } else {
+                throw new RuntimeException(e);
+            }
         }
     }
 

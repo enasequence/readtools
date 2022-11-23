@@ -76,8 +76,7 @@ public class AbstractReadConverterTest {
             }
         });
 
-        adp.start();
-        adp.join();
+        adp.run();
 
         Assert.assertEquals(readLimit, adp.getReadCount());
     }

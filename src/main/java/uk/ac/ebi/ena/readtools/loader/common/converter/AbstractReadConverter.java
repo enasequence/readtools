@@ -12,26 +12,23 @@ package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.function.Supplier;
 
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
 public abstract class
-AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
-    private static final int YIELD_CYCLES_FOR_ERROR_CHECKING = 362;//16384;
-
+AbstractReadConverter<T extends Spot> {
+    static final int YIELD_CYCLES_FOR_ERROR_CHECKING = 362; // 16384;
     protected final InputStream  istream;
-
     protected final Long readLimit;
+    long readCount = 0, baseCount = 0;
+    protected ReadWriter<T, ?> readWriter;
 
-    private volatile long readCount = 0, baseCount = 0;
+    protected volatile boolean isOk = true;
+    protected volatile Throwable storedException;
 
-    protected volatile ReadWriter<T, ?> readWriter;
-    protected volatile boolean      is_ok = true;
-    protected volatile Throwable    stored_exception;
-    
     protected AbstractReadConverter(InputStream istream) {
         this(istream, null);
     }
@@ -67,47 +64,35 @@ AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
     public void setWriter(ReadWriter<T, ?> writer) {
         this.readWriter = writer;
     }
-    
+
     public boolean isOk() {
-        return is_ok;
-    }
-    
-    public Throwable getStoredException() {
-        return stored_exception;
+        return isOk;
     }
 
-    //TODO: scheduler should be fair and based on different principle
+    public Throwable getStoredException() {
+        return storedException;
+    }
+
     public final void run() {
         try {
-            Supplier<Boolean> keepRunning = createKeepRunning();
-
             begin();
 
             do {
-                synchronized (readWriter) {
-                    for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning.get(); --yield)
-                        readWriter.write(convert());
+                for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning(); yield--) {
+                    readWriter.write(convert());
                 }
 
                 if (!readWriter.isOk()) {
                     throw new ConverterPanicException();
                 }
-
-                // sleep 1 returned from git history
-                // it prevents multi-FASTQ to BAM conversion
-                // "Temp memory limit <spill_abandon_limit_bytes> bytes reached" error
-                // if removed FASTQ file threads will pile up large numbers of unpaired reads
-                // before pairing them, causing the error
-                // TODO: implement a proper threads synchronization
-                Thread.sleep(1);
-            } while (keepRunning.get());
+            } while (keepRunning());
         } catch (ConverterEOFException ignored) {
         } catch (ConverterPanicException e) {
-            is_ok = false;
-            this.stored_exception = e;
+            isOk = false;
+            this.storedException = e;
         } catch (Throwable e) {
-            this.stored_exception = e;
-            is_ok = false;
+            this.storedException = e;
+            isOk = false;
         } finally {
             end();
         }
@@ -117,11 +102,11 @@ AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
 
     protected void end() {}
 
-    private Supplier<Boolean> createKeepRunning() {
+    private boolean keepRunning() {
         if (readLimit == null) {
-            return () -> true;
+            return true;
         } else {
-            return () -> readCount < readLimit;
+            return readCount < readLimit;
         }
     }
 
@@ -144,4 +129,6 @@ AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
             throw new ConverterException(cause);
         }
     }
+
+    abstract public T convert(InputStream inputStream) throws IOException;
 }
