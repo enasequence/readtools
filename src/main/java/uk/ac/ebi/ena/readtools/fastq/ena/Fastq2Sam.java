@@ -81,8 +81,7 @@ public class Fastq2Sam {
             readWriter.setWriter(fastqToBamConsumer);
 
             ReadConverter converter = new ReadConverter(
-                    FileCompression.valueOf(p.compression).open(p.files.get(0), p.use_tar), "1");
-            converter.setWriter(readWriter);
+                    FileCompression.valueOf(p.compression).open(p.files.get(0), p.use_tar), readWriter, "1");
             converter.run();
 
             totalReadCount += converter.getReadCount();

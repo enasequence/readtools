@@ -104,48 +104,49 @@ FastqScanner {
             String stream_name = rf.getFilename();
 
             AutoNormalizeQualityReadConverter dp = new AutoNormalizeQualityReadConverter(
-                    is, readLimit, "", rf.getFilename());
-            dp.setWriter(new ReadWriter<Read, Spot>() {
-                @Override
-                public void cascadeErrors() throws ReadWriterException {
-                }
+                    is,
+                    new ReadWriter<Read, Spot>() {
+                        @Override
+                        public void cascadeErrors() throws ReadWriterException {
+                        }
 
-                @Override
-                public void
-                write(Read spot) {
-                    String readNameWithoutPairNumber;
-                    String pairNumber;
+                        @Override
+                        public void
+                        write(Read spot) {
+                            String readNameWithoutPairNumber;
+                            String pairNumber;
 
-                    try {
-                        readNameWithoutPairNumber = getReadKey(spot.name);
-                        pairNumber = getPairNumber(spot.name);
-                    } catch (IllegalArgumentException dee) {
-                        readNameWithoutPairNumber = spot.name;
-                        pairNumber = stream_name;
-                    }
+                            try {
+                                readNameWithoutPairNumber = getReadKey(spot.name);
+                                pairNumber = getPairNumber(spot.name);
+                            } catch (IllegalArgumentException dee) {
+                                readNameWithoutPairNumber = spot.name;
+                                pairNumber = stream_name;
+                            }
 
-                    if (labels.size() < MAX_LABEL_SET_SIZE) {
-                        labels.add(pairNumber);
-                    }
+                            if (labels.size() < MAX_LABEL_SET_SIZE) {
+                                labels.add(pairNumber);
+                            }
 
-                    count.incrementAndGet();
-                    pairing.add(readNameWithoutPairNumber);
-                    duplications.add(spot.name);
+                            count.incrementAndGet();
+                            pairing.add(readNameWithoutPairNumber);
+                            duplications.add(spot.name);
 
-                    if (0 == count.get() % print_freq)
-                        logProcessedReadNumber(count.get());
-                }
+                            if (0 == count.get() % print_freq)
+                                logProcessedReadNumber(count.get());
+                        }
 
-                @Override
-                public void setWriter(ReadWriter<Spot, ?> readWriter) {
-                    throw new RuntimeException("Not implemented");
-                }
+                        @Override
+                        public void setWriter(ReadWriter<Spot, ?> readWriter) {
+                            throw new RuntimeException("Not implemented");
+                        }
 
-                @Override
-                public boolean isOk() {
-                    return true;
-                }
-            });
+                        @Override
+                        public boolean isOk() {
+                            return true;
+                        }
+                    },
+                    readLimit, "", rf.getFilename());
 
             log.info("Processing file " + rf.getFilename());
             dp.run();

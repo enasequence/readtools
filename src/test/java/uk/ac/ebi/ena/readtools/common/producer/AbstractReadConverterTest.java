@@ -28,7 +28,30 @@ public class AbstractReadConverterTest {
     public void testRunLimit() throws InterruptedException {
         long readLimit = 10;
 
-        AbstractReadConverter adp = new AbstractReadConverter(null, readLimit) {
+        AbstractReadConverter adp = new AbstractReadConverter(
+                null,
+                new ReadWriter() {
+                    @Override
+                    public void cascadeErrors() throws ReadWriterException {
+
+                    }
+
+                    @Override
+                    public void write(Spot spot) throws ReadWriterException {
+
+                    }
+
+                    @Override
+                    public void setWriter(ReadWriter readWriter) {
+
+                    }
+
+                    @Override
+                    public boolean isOk() {
+                        return true;
+                    }
+                },
+                readLimit) {
             @Override
             public Spot convert(InputStream inputStream) throws IOException {
                 //To prevent the test from running indefinitely (just in case).
@@ -54,27 +77,6 @@ public class AbstractReadConverterTest {
                 };
             }
         };
-        adp.setWriter(new ReadWriter() {
-            @Override
-            public void cascadeErrors() throws ReadWriterException {
-
-            }
-
-            @Override
-            public void write(Spot spot) throws ReadWriterException {
-
-            }
-
-            @Override
-            public void setWriter(ReadWriter readWriter) {
-
-            }
-
-            @Override
-            public boolean isOk() {
-                return true;
-            }
-        });
 
         adp.run();
 

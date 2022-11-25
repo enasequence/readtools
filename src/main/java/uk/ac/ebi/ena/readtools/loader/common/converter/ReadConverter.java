@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
 /**
@@ -24,26 +25,34 @@ public class ReadConverter extends AbstractReadConverter<Read> {
 
     private final ReadReader readReader;
 
-    public ReadConverter(InputStream istream, String defaultReadIndex) {
-        super(istream);
+    public ReadConverter(InputStream istream, ReadWriter<Read, ?> writer, String defaultReadIndex) {
+        super(istream, writer);
 
         readReader = new ReadReader(defaultReadIndex);
     }
 
-    public ReadConverter(InputStream istream, Long readLimit, String defaultReadIndex) {
-        super(istream, readLimit);
+    public ReadConverter(InputStream istream, ReadWriter<Read, ?> writer, Long readLimit, String defaultReadIndex) {
+        super(istream, writer, readLimit);
 
         readReader = new ReadReader(defaultReadIndex);
     }
 
-    public ReadConverter(InputStream istream, QualityNormalizer normalizer, String defaultReadIndex) {
-        super(istream);
+    public ReadConverter(
+            InputStream istream, ReadWriter<Read, ?> writer, QualityNormalizer normalizer, String defaultReadIndex) {
+
+        super(istream, writer);
 
         readReader = new ReadReader(normalizer, defaultReadIndex);
     }
 
-    public ReadConverter(InputStream istream, Long readLimit, QualityNormalizer normalizer, String defaultReadIndex) {
-        super(istream, readLimit);
+    public ReadConverter(
+            InputStream istream,
+            ReadWriter<Read, ?> writer,
+            Long readLimit,
+            QualityNormalizer normalizer,
+            String defaultReadIndex) {
+
+        super(istream, writer, readLimit);
 
         readReader = new ReadReader(normalizer, defaultReadIndex);
     }

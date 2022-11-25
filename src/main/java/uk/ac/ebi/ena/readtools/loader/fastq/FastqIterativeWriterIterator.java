@@ -13,10 +13,7 @@ package uk.ac.ebi.ena.readtools.loader.fastq;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
+import uk.ac.ebi.ena.readtools.loader.common.converter.Converter;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.converter.SingleThreadReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
@@ -35,9 +33,8 @@ public class
 FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedRead, Spot> {
     /** This used to be SynchronousQueue but was replaced due to its high CPU overhead. This one has overhead as well
      * (possibly due to slow consumer), but it is much lower. Increasing capacity helps but not massively. */
-    private final BlockingQueue<PairedRead> queue = new ArrayBlockingQueue<>(1_000);
-    private final AtomicReference<PairedRead> currentElement = new AtomicReference<>();
-    private boolean wasCascadeErrors = false;
+    private final Converter converter;
+    private final Queue<PairedRead> queue = new LinkedList<>();
 
     FastqIterativeWriterIterator(File tmp_folder,
                                  int spill_page_size, //only for paired
@@ -45,7 +42,7 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
                                  long spill_abandon_limit_bytes,
                                  READ_TYPE read_type,
                                  File[] files,
-                                 final QualityNormalizer normalizers[],
+                                 final QualityNormalizer[] normalizers,
                                  Long readLimit) throws SecurityException, IOException {
 
         ReadWriter<Read, PairedRead> consumer;
@@ -65,43 +62,33 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
         consumer.setWriter(this);
 
         if (files.length == 1) {
-            ReadConverter converter;
             if (normalizers != null) {
                 converter = new ReadConverter(
-                        FileCompression.open(files[0]), readLimit, normalizers[0], "1");
+                        FileCompression.open(files[0]), consumer, readLimit, normalizers[0], "1");
             } else {
-                converter = new ReadConverter(FileCompression.open(files[0]), readLimit, "1");
+                converter = new ReadConverter(FileCompression.open(files[0]), consumer, readLimit, "1");
             }
-
-            converter.setWriter(consumer);
-            converter.run();
         } else {
             List<InputStream> istreams = new ArrayList<>();
             for (File file : files) {
                 istreams.add(FileCompression.open(file));
             }
 
-            SingleThreadReadConverter<PairedRead> converter = (normalizers != null)
+            converter = (normalizers != null)
                     ? new SingleThreadReadConverter<>(istreams, Arrays.asList(normalizers), consumer, readLimit)
                     : new SingleThreadReadConverter<>(istreams, consumer, readLimit);
-            converter.run();
         }
     }
 
     @Override
     public void
-    cascadeErrors() throws ReadWriterException {
-        wasCascadeErrors = true;
+    cascadeErrors() {
     }
 
     @Override
     public void
     write(PairedRead spot) throws ReadWriterException {
-        try {
-            queue.put(spot);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        queue.add(spot);
     }
 
     @Override
@@ -113,33 +100,22 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
     @Override
     public boolean
     hasNext() {
-        //There is a flaw in this method. If the producer stops due to an error, while the current thread is in the
-        //loop below, then a 'false' value will be returned from this method telling the user of the iterator that
-        //there is no element left causing iteration to stop normally. But the right way to end would be to
-        //throw the exception that was caught in 'storedException' so the user can know that execution actually failed.
-        //TODO update this class so that end of data is detected reliably and errors are thrown and caught properly.
-        try {
-            boolean currentPairedReadUpdated;
-            do {
-                //The timeout below is used as way to determine that end of data has been reached.
-                //This used to be 1 second but was increased because some unit tests kept randomly failing
-                //due to timeout occurring before the data got added to the queue.
-                //This is most probably due to converter being slow to start generating the data.
-                PairedRead newPairedRead = queue.poll(2L, TimeUnit.SECONDS);
-
-                currentPairedReadUpdated = currentElement.compareAndSet(null, newPairedRead);
-            } while (!wasCascadeErrors && !currentPairedReadUpdated);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return currentElement.get() != null;
+        iterate();
+        return !queue.isEmpty();
     }
 
     @Override
     public PairedRead
     next() {
-        return currentElement.getAndSet(null);
+        iterate();
+        return queue.poll();
+    }
+
+    private void
+    iterate() {
+        while (!converter.isDone() && queue.isEmpty()) {
+            converter.runOnce();
+        }
     }
 
     @Override

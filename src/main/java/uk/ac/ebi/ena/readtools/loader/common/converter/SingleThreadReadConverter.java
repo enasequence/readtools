@@ -28,8 +28,7 @@ import java.util.function.Supplier;
  * Similar to {@link AutoNormalizeQualityReadConverter}, but here, base quality normalizer is provided explicitly. If no normalizer
  * is provided then normalization is not performed.
  */
-public class SingleThreadReadConverter<T extends Spot> {
-    static final int YIELD_CYCLES_FOR_ERROR_CHECKING = 362;
+public class SingleThreadReadConverter<T extends Spot> implements Converter {
     List<ReadReader> readers = new ArrayList<>();
     final List<InputStream> istreams = new ArrayList<>();
     final ReadWriter<Read, T> writer;
@@ -97,7 +96,7 @@ public class SingleThreadReadConverter<T extends Spot> {
         return baseCount;
     }
 
-    public final void run() {
+    public void run() {
         try {
             do {
                 for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning(); --yield) {
@@ -107,7 +106,7 @@ public class SingleThreadReadConverter<T extends Spot> {
                 if (!writer.isOk()) {
                     throw new ConverterPanicException();
                 }
-        } while (turnsList.size() > 0 && keepRunning());
+            } while (!isDone());
         } catch (ConverterEOFException ignored) {
         } catch (Exception e) {
             if (e instanceof ReadWriterMemoryLimitException) {
@@ -116,6 +115,29 @@ public class SingleThreadReadConverter<T extends Spot> {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public void runOnce() {
+        try {
+            if (!isDone()) {
+                writer.write(convert());
+
+                if (!writer.isOk()) {
+                    throw new ConverterPanicException();
+                }
+            }
+        } catch (ConverterEOFException ignored) {
+        } catch (Exception e) {
+            if (e instanceof ReadWriterMemoryLimitException) {
+                throw e;
+            } else {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public boolean isDone() {
+        return (turnsList.isEmpty() || !keepRunning());
     }
 
     private Read convert() {

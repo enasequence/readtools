@@ -1,13 +1,13 @@
 /*
-* Copyright 2010-2021 EMBL - European Bioinformatics Institute
-* Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-* file except in compliance with the License. You may obtain a copy of the License at
-* http://www.apache.org/licenses/LICENSE-2.0
-* Unless required by applicable law or agreed to in writing, software distributed under the
-* License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-* CONDITIONS OF ANY KIND, either express or implied. See the License for the
-* specific language governing permissions and limitations under the License.
-*/
+ * Copyright 2010-2021 EMBL - European Bioinformatics Institute
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 import java.io.BufferedInputStream;
@@ -19,9 +19,8 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
 public abstract class
-AbstractReadConverter<T extends Spot> {
-    static final int YIELD_CYCLES_FOR_ERROR_CHECKING = 362; // 16384;
-    protected final InputStream  istream;
+AbstractReadConverter<T extends Spot> implements Converter {
+    protected final InputStream istream;
     protected final Long readLimit;
     long readCount = 0, baseCount = 0;
     protected ReadWriter<T, ?> readWriter;
@@ -29,17 +28,19 @@ AbstractReadConverter<T extends Spot> {
     protected volatile boolean isOk = true;
     protected volatile Throwable storedException;
 
-    protected AbstractReadConverter(InputStream istream) {
-        this(istream, null);
+    protected boolean isEofReached = false;
+
+    protected AbstractReadConverter(InputStream istream, ReadWriter<T, ?> writer) {
+        this(istream, writer, null);
     }
 
     /**
-     *
      * @param istream
      * @param readLimit Only read limited amount of reads.
      */
-    protected AbstractReadConverter(InputStream istream, Long readLimit) {
-        this.istream = new BufferedInputStream( istream, 1024 * 1024 );
+    protected AbstractReadConverter(InputStream istream, ReadWriter<T, ?> writer, Long readLimit) {
+        this.istream = new BufferedInputStream(istream, 1024 * 1024);
+        this.readWriter = writer;
         this.readLimit = readLimit;
     }
 
@@ -59,10 +60,6 @@ AbstractReadConverter<T extends Spot> {
      */
     public long getBaseCount() {
         return baseCount;
-    }
-    
-    public void setWriter(ReadWriter<T, ?> writer) {
-        this.readWriter = writer;
     }
 
     public boolean isOk() {
@@ -98,9 +95,35 @@ AbstractReadConverter<T extends Spot> {
         }
     }
 
-    protected void begin() {}
+    public void runOnce() {
+        try {
+            if (!isDone()) {
+                readWriter.write(convert());
 
-    protected void end() {}
+                if (!readWriter.isOk()) {
+                    throw new ConverterPanicException();
+                }
+            }
+        } catch (ConverterEOFException ignored) {
+            isEofReached = true;
+        } catch (ConverterPanicException e) {
+            isOk = false;
+            this.storedException = e;
+        } catch (Throwable e) {
+            this.storedException = e;
+            isOk = false;
+        }
+    }
+
+    public boolean isDone() {
+        return !keepRunning() || isEofReached;
+    }
+
+    protected void begin() {
+    }
+
+    protected void end() {
+    }
 
     private boolean keepRunning() {
         if (readLimit == null) {
@@ -121,11 +144,11 @@ AbstractReadConverter<T extends Spot> {
 
 
             return spot;
-        } catch( EOFException e ){
+        } catch (EOFException e) {
             throw new ConverterEOFException(readCount);
-        } catch( ConverterException e ){
+        } catch (ConverterException e) {
             throw e;
-        } catch( Throwable cause ) {
+        } catch (Throwable cause) {
             throw new ConverterException(cause);
         }
     }
