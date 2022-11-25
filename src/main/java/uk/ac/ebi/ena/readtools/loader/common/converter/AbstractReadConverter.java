@@ -135,13 +135,12 @@ AbstractReadConverter<T extends Spot> implements Converter {
 
     //Re-implement if you need special type of feeding
     private T convert() {
-        T spot = null;
+        T spot;
 
         try {
             spot = convert(istream);
             ++readCount;
             baseCount += spot.getBaseCount();
-
 
             return spot;
         } catch (EOFException e) {

@@ -26,7 +26,7 @@ import htsjdk.samtools.util.FastqQualityFormat;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
-import uk.ac.ebi.ena.readtools.loader.common.converter.SingleThreadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.MultiInputStreamConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
@@ -100,7 +100,7 @@ public class Fastq2Sam {
             for (String f: p.files) {
                 istreams.add(FileCompression.valueOf(p.compression).open(f, p.use_tar));
             }
-            SingleThreadReadConverter<PairedRead> converter = new SingleThreadReadConverter<>(istreams, readWriter);
+            MultiInputStreamConverter<PairedRead> converter = new MultiInputStreamConverter<>(istreams, readWriter);
             converter.run();
 
             totalReadCount += converter.getReadCount();

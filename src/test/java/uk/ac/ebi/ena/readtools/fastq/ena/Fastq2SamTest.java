@@ -136,11 +136,11 @@ public class Fastq2SamTest {
         params.data_file = Files.createTempFile(null, ".bam").toString();
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile()).getAbsolutePath(),
-                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile()).getAbsolutePath());
+                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1a.txt").getFile()).getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2a.txt").getFile()).getAbsolutePath());
 
-        params.spill_page_size_bytes = 400L;
-        params.spill_abandon_limit_bytes = 10L;
+        params.spill_page_size_bytes = 200L;
+        params.spill_abandon_limit_bytes = 201L;
 
         Fastq2Sam fastq2Sam = new Fastq2Sam();
 

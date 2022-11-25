@@ -174,15 +174,19 @@ AbstractPagedReadWriter<T1 extends Spot, T2 extends Spot> extends AbstractReadWr
 
     public List<T1>
     newListBucket() {
-        if (use_spill
-                && (spill_page_size <= super.spots.size() || spill_page_size_bytes <= super.spotsSizeBytes)) {
-            if (spill_abandon_limit_bytes > 0 && spill_total_bytes >= spill_abandon_limit_bytes) {
-                throw new ReadWriterMemoryLimitException(
-                        "Temp memory limit " + spill_abandon_limit_bytes + " bytes reached");
+        if (use_spill) {
+            if (spill_page_size <= super.spots.size()
+                    || spill_page_size_bytes <= super.spotsSizeBytes) {
+
+                if (spill_abandon_limit_bytes > 0 && spill_total_bytes >= spill_abandon_limit_bytes) {
+                    throw new ReadWriterMemoryLimitException(
+                            "Temp memory limit " + spill_abandon_limit_bytes + " bytes reached");
+                } else {
+                    spill_total_bytes += super.spotsSizeBytes;
+                    spillMap(super.spots);
+                    super.spots.clear();
+                }
             }
-            spill_total_bytes += super.spotsSizeBytes;
-            spillMap(super.spots);
-            super.spots.clear();
         }
 
         return super.newListBucket();

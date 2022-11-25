@@ -14,16 +14,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.converter.Converter;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
-import uk.ac.ebi.ena.readtools.loader.common.converter.SingleThreadReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.MultiInputStreamConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
@@ -75,8 +71,8 @@ FastqIterativeWriterIterator implements Iterator<PairedRead>, ReadWriter<PairedR
             }
 
             converter = (normalizers != null)
-                    ? new SingleThreadReadConverter<>(istreams, Arrays.asList(normalizers), consumer, readLimit)
-                    : new SingleThreadReadConverter<>(istreams, consumer, readLimit);
+                    ? new MultiInputStreamConverter<>(istreams, Arrays.asList(normalizers), consumer, readLimit)
+                    : new MultiInputStreamConverter<>(istreams, consumer, readLimit);
         }
     }
 

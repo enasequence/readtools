@@ -14,21 +14,18 @@ import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
-import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
 import java.io.EOFException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Similar to {@link AutoNormalizeQualityReadConverter}, but here, base quality normalizer is provided explicitly. If no normalizer
  * is provided then normalization is not performed.
  */
-public class SingleThreadReadConverter<T extends Spot> implements Converter {
+public class MultiInputStreamConverter<T extends Spot> implements Converter {
     List<ReadReader> readers = new ArrayList<>();
     List<InputStream> istreams = new ArrayList<>();
     final ReadWriter<Read, T> writer;
@@ -41,11 +38,11 @@ public class SingleThreadReadConverter<T extends Spot> implements Converter {
 
     int turn;
 
-    public SingleThreadReadConverter(List<InputStream> istreams, ReadWriter<Read, T> writer) {
+    public MultiInputStreamConverter(List<InputStream> istreams, ReadWriter<Read, T> writer) {
         this(istreams, writer, null);
     }
 
-    public SingleThreadReadConverter(List<InputStream> istreams, ReadWriter<Read, T> writer, Long readLimit) {
+    public MultiInputStreamConverter(List<InputStream> istreams, ReadWriter<Read, T> writer, Long readLimit) {
         this.writer = writer;
 
         for (int readerIndex = 0; readerIndex < istreams.size(); readerIndex++) {
@@ -56,7 +53,7 @@ public class SingleThreadReadConverter<T extends Spot> implements Converter {
         this.readLimit = readLimit;
     }
 
-    public SingleThreadReadConverter(
+    public MultiInputStreamConverter(
             List<InputStream> istreams,
             List<QualityNormalizer> normalizers,
             ReadWriter<Read, T> writer,
@@ -93,7 +90,7 @@ public class SingleThreadReadConverter<T extends Spot> implements Converter {
     public void run() {
         try {
             do {
-                for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning(); --yield) {
+                for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning(); yield--) {
                     writer.write(convert());
                 }
 
