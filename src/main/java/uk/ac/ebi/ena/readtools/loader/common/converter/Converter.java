@@ -10,16 +10,8 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
-import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
-
-import java.io.BufferedInputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-
 public interface Converter {
-    static final int YIELD_CYCLES_FOR_ERROR_CHECKING = 362; // 16384;
+    int YIELD_CYCLES_FOR_ERROR_CHECKING = 362; // 16384;
 
     /**
      * Get the total number of reads that were read.
