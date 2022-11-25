@@ -55,18 +55,17 @@ public class AutoNormalizerReadProducerTest {
                                 }
                             },
                             "", filePath.toString());
-            dp.run();
-            if (!dp.isOk()) {
-                if (dp.getStoredException() instanceof ConverterException) {
-                    dp.getStoredException().printStackTrace();
-                    throw new Exception("DataProducerException");
-                } else {
-                    dp.getStoredException().printStackTrace();
-                    throw new Exception("Not DataProducerException");
-                }
-            } else {
+            try {
+                dp.run();
                 if (dp.getReadCount() <= 0) {
                     throw new Exception("Empty");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (e instanceof ConverterException) {
+                    throw new Exception("DataProducerException");
+                } else {
+                    throw new Exception("Not DataProducerException");
                 }
             }
         }

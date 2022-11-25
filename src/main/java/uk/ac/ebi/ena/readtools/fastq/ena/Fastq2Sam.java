@@ -25,9 +25,12 @@ import htsjdk.samtools.util.FastqQualityFormat;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
+import uk.ac.ebi.ena.readtools.loader.common.converter.Converter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
 import uk.ac.ebi.ena.readtools.loader.common.converter.MultiInputStreamConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
@@ -67,6 +70,12 @@ public class Fastq2Sam {
             throw new IllegalArgumentException("Invalid number of input files");
         }
 
+        if (p.verbose) {
+            System.out.println("Files to process: ");
+            for (String f_name : p.files)
+                System.out.println(" " + f_name);
+        }
+
         FastqQualityFormat qualityFormat = Utils.detectFastqQualityFormat(
                 p.files.get(0),
                 p.files.size() == 2 ? p.files.get(1) : null);
@@ -75,17 +84,14 @@ public class Fastq2Sam {
                 normalizer, p.sample_name, p.data_file, p.tmp_root, p.convertUracil,
                 p.files.size() == 1 ? false : true);
 
+        Converter converter;
         ReadWriter<Read, PairedRead> readWriter;
         if (1 == p.files.size()) {
             readWriter = new SingleFastqConsumer();
             readWriter.setWriter(fastqToBamConsumer);
 
-            ReadConverter converter = new ReadConverter(
+            converter = new ReadConverter(
                     FileCompression.valueOf(p.compression).open(p.files.get(0), p.use_tar), readWriter, "1");
-            converter.run();
-
-            totalReadCount += converter.getReadCount();
-            totalBaseCount += converter.getBaseCount();
         } else {
             if (p.files.get(0).equals(p.files.get(1))) {
                 throw new IllegalArgumentException(
@@ -100,18 +106,19 @@ public class Fastq2Sam {
             for (String f: p.files) {
                 istreams.add(FileCompression.valueOf(p.compression).open(f, p.use_tar));
             }
-            MultiInputStreamConverter<PairedRead> converter = new MultiInputStreamConverter<>(istreams, readWriter);
-            converter.run();
-
-            totalReadCount += converter.getReadCount();
-            totalBaseCount += converter.getBaseCount();
+            converter = new MultiInputStreamConverter<>(istreams, readWriter);
         }
+        converter.run();
 
-        if (p.verbose) {
-            System.out.println("Files to process: ");
-            for (String f_name : p.files)
-                System.out.println(" " + f_name);
-        }
+//        if (!converter.isOk()) {
+//            if (converter.getStoredException() instanceof ReadWriterMemoryLimitException) {
+//                throw new ReadWriterMemoryLimitException(converter.getStoredException());
+//            }
+//            throw new ConverterException(converter.getStoredException());
+//        }
+
+        totalReadCount += converter.getReadCount();
+        totalBaseCount += converter.getBaseCount();
 
         readWriter.cascadeErrors();
         fastqToBamConsumer.unwind();

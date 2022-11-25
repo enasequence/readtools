@@ -94,7 +94,7 @@ FastqScanner {
     }
 
 
-    private ConverterException
+    private void
     read(RawReadsFile rf,
          Set<String> labels,
          BloomWrapper pairing,
@@ -151,27 +151,9 @@ FastqScanner {
             log.info("Processing file " + rf.getFilename());
             dp.run();
             logProcessedReadNumber(count.get());
-            logFlushMsg(String.format("Processing completed. Result: %s\n",
-                    null == dp.getStoredException() ? "OK" : String.valueOf(dp.getStoredException())));
-
-            if (!dp.isOk()
-                    && !(dp.getStoredException() instanceof ConverterException)
-                    && !(dp.getStoredException() instanceof InvocationTargetException)) {
-                throw dp.getStoredException();
+            if (dp.getReadCount() <= 0) {
+                throw new ConverterException( 0, "Empty file" );
             }
-
-            Throwable t = dp.isOk() ? dp.getReadCount() > 0 ? null : new ConverterException(0, "Empty file")
-                    : dp.getStoredException();
-            if (dp.isOk() && null == t) {
-                return null;
-            }
-
-            t = null == t ? new ConverterException(-1, "Unknown failure") : t;
-            t = t instanceof InvocationTargetException ? t.getCause() : t;
-            t = t instanceof ConverterException ? t : new ConverterException(t);
-
-            ConverterException result = (ConverterException) t;
-            return result;
         }
     }
 
@@ -183,16 +165,20 @@ FastqScanner {
                     BloomWrapper pairing,
                     BloomWrapper duplications) throws Throwable {
         AtomicLong count = new AtomicLong();
-        ConverterException converterException = read(rf, labelset, pairing, duplications, count);
+        try {
+            read(rf, labelset, pairing, duplications, count);
 
-        if (null != converterException) {
-            ValidationMessage dataProducerError = ValidationMessage.error(converterException.getMessage());
-            dataProducerError.appendOrigin(new ValidationOrigin("line number", converterException.getLineNo()));
-            fileResult.add(dataProducerError);
-        } else {
+            logFlushMsg("Processing completed. Result: OK\n");
+
             fileResult.add(ValidationMessage.info(String.format("Collected %d reads", count.get())));
             fileResult.add(ValidationMessage.info(String.format("Collected %d read labels: %s", labelset.size(), labelset)));
             fileResult.add(ValidationMessage.info(String.format("Has possible duplicate read name(s): " + duplications.hasPossibleDuplicates())));
+        } catch (ConverterException converterException) {
+            logFlushMsg(String.format("Processing completed. Result: %s\n", converterException));
+
+            ValidationMessage dataProducerError = ValidationMessage.error(converterException.getMessage());
+            dataProducerError.appendOrigin(new ValidationOrigin("line number", converterException.getLineNo()));
+            fileResult.add(dataProducerError);
         }
     }
 

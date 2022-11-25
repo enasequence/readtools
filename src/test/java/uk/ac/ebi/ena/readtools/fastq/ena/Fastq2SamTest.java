@@ -206,13 +206,13 @@ public class Fastq2SamTest {
     }
 
     @Test
-    public void testUracilFastq() throws IOException {
+    public void testUracilFastqSingle() throws IOException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases.fastq").getFile())
+                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases_1.fastq").getFile())
                         .getAbsolutePath());
 
         // with flag set to false.
@@ -240,6 +240,45 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(2, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(40, fastq2Sam.getTotalBaseCount());
+    }
+
+    @Test
+    public void testUracilFastqDouble() throws IOException {
+        Fastq2Sam.Params params = new Fastq2Sam.Params();
+        params.tmp_root = System.getProperty("java.io.tmpdir");
+        params.sample_name = "SM-001";
+        params.compression = FileCompression.NONE.name();
+        params.files = Arrays.asList(
+                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases_1.fastq").getFile())
+                        .getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases_2.fastq").getFile())
+                        .getAbsolutePath());
+
+        // with flag set to false.
+        params.convertUracil = false;
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+
+        InvalidBaseCharacterException e = null;
+        try {
+            new Fastq2Sam().create(params);
+        } catch (Exception ex) {
+            e = (InvalidBaseCharacterException) ExceptionUtils.getRootCause(ex);
+        }
+        Assert.assertTrue(Pattern.matches("[uU]{1,2}", e.getInvalidCharacters().stream()
+                .map(String::valueOf).collect(Collectors.joining())));
+
+        // with flag set to true.
+        params.convertUracil = true;
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+
+        //Since U or u is not an acceptable base character inside a BAM file, execution of following line without
+        //any error would mean that Uracil base conversion did take place and there is no need for its verification.
+        Fastq2Sam fastq2Sam = new Fastq2Sam();
+        fastq2Sam.create(params);
+
+        Assert.assertTrue(new File(params.data_file).length() > 0);
+        Assert.assertEquals(4, fastq2Sam.getTotalReadCount());
+        Assert.assertEquals(80, fastq2Sam.getTotalBaseCount());
     }
 
     private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {

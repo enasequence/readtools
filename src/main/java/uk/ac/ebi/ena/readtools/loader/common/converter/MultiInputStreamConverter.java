@@ -100,7 +100,7 @@ public class MultiInputStreamConverter<T extends Spot> implements Converter {
             } while (!isDone());
         } catch (ConverterEOFException ignored) {
         } catch (Exception e) {
-            if (e instanceof ReadWriterMemoryLimitException) {
+            if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
                 throw e;
             } else {
                 throw new RuntimeException(e);
@@ -119,7 +119,7 @@ public class MultiInputStreamConverter<T extends Spot> implements Converter {
             }
         } catch (ConverterEOFException ignored) {
         } catch (Exception e) {
-            if (e instanceof ReadWriterMemoryLimitException) {
+            if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
                 throw e;
             } else {
                 throw new RuntimeException(e);

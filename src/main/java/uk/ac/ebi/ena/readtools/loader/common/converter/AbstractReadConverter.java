@@ -16,17 +16,16 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
 public abstract class
 AbstractReadConverter<T extends Spot> implements Converter {
     protected final InputStream istream;
     protected final Long readLimit;
-    long readCount = 0, baseCount = 0;
     protected ReadWriter<T, ?> readWriter;
 
-    protected volatile boolean isOk = true;
-    protected volatile Throwable storedException;
+    long readCount = 0, baseCount = 0;
 
     protected boolean isEofReached = false;
 
@@ -62,14 +61,6 @@ AbstractReadConverter<T extends Spot> implements Converter {
         return baseCount;
     }
 
-    public boolean isOk() {
-        return isOk;
-    }
-
-    public Throwable getStoredException() {
-        return storedException;
-    }
-
     public final void run() {
         try {
             begin();
@@ -84,12 +75,13 @@ AbstractReadConverter<T extends Spot> implements Converter {
                 }
             } while (keepRunning());
         } catch (ConverterEOFException ignored) {
-        } catch (ConverterPanicException e) {
-            isOk = false;
-            this.storedException = e;
-        } catch (Throwable e) {
-            this.storedException = e;
-            isOk = false;
+            isEofReached = true;
+        } catch (Exception e) {
+            if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
+                throw e;
+            } else {
+                throw new RuntimeException(e);
+            }
         } finally {
             end();
         }
@@ -106,12 +98,12 @@ AbstractReadConverter<T extends Spot> implements Converter {
             }
         } catch (ConverterEOFException ignored) {
             isEofReached = true;
-        } catch (ConverterPanicException e) {
-            isOk = false;
-            this.storedException = e;
-        } catch (Throwable e) {
-            this.storedException = e;
-            isOk = false;
+        } catch (Exception e) {
+            if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
+                throw e;
+            } else {
+                throw new RuntimeException(e);
+            }
         }
     }
 
