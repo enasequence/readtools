@@ -212,7 +212,7 @@ SPACE HERE
                 if( !params.m_base_name.reset( line ).find() )
                     throw new ConverterException( params.line_no, String.format( "Line [%s] does not match %s regexp", line, ReadReader.ReadStyle.FASTQ ) );
 
-                read.name = params.m_base_name.group( 1 );
+                read.name = params.m_base_name.group( 1 ); // line ?
                 break;
 
             default:

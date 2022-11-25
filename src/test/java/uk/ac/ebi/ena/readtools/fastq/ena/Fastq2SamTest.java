@@ -212,7 +212,8 @@ public class Fastq2SamTest {
         params.sample_name = "SM-001";
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases.fastq").getFile()).getAbsolutePath());
+                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases.fastq").getFile())
+                        .getAbsolutePath());
 
         // with flag set to false.
         params.convertUracil = false;
@@ -224,7 +225,8 @@ public class Fastq2SamTest {
         } catch (Exception ex) {
             e = (InvalidBaseCharacterException) ExceptionUtils.getRootCause(ex);
         }
-        Assert.assertTrue(Pattern.matches("[uU]{1,2}", e.getInvalidCharacters().stream().map(String::valueOf).collect(Collectors.joining())));
+        Assert.assertTrue(Pattern.matches("[uU]{1,2}", e.getInvalidCharacters().stream()
+                .map(String::valueOf).collect(Collectors.joining())));
 
         // with flag set to true.
         params.convertUracil = true;

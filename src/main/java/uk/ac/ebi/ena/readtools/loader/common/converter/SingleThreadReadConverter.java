@@ -42,7 +42,7 @@ public class SingleThreadReadConverter<T extends Spot> implements Converter {
     int turn;
 
     public SingleThreadReadConverter(List<InputStream> istreams, ReadWriter<Read, T> writer) {
-        this(istreams, writer, 0L);
+        this(istreams, writer, null);
     }
 
     public SingleThreadReadConverter(List<InputStream> istreams, ReadWriter<Read, T> writer, Long readLimit) {
