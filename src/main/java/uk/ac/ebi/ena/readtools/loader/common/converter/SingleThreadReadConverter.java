@@ -30,25 +30,19 @@ import java.util.function.Supplier;
  */
 public class SingleThreadReadConverter<T extends Spot> implements Converter {
     List<ReadReader> readers = new ArrayList<>();
-    final List<InputStream> istreams = new ArrayList<>();
+    List<InputStream> istreams = new ArrayList<>();
     final ReadWriter<Read, T> writer;
     final Long readLimit;
 
     long readCount = 0, baseCount = 0;
 
-    List<Integer> turnsList = new ArrayList<>();
+    List<ReadReader> readersCompleted = new ArrayList<>();
+    List<InputStream> istreamsCompleted = new ArrayList<>();
+
     int turn;
 
     public SingleThreadReadConverter(List<InputStream> istreams, ReadWriter<Read, T> writer) {
-        this.writer = writer;
-
-        for (int readerIndex = 0; readerIndex < istreams.size(); readerIndex++) {
-            this.istreams.add(istreams.get(readerIndex));
-            readers.add(new ReadReader(String.valueOf(readerIndex + 1)));
-            turnsList.add(readerIndex);
-        }
-
-        readLimit = 0L;
+        this(istreams, writer, 0L);
     }
 
     public SingleThreadReadConverter(List<InputStream> istreams, ReadWriter<Read, T> writer, Long readLimit) {
@@ -57,7 +51,6 @@ public class SingleThreadReadConverter<T extends Spot> implements Converter {
         for (int readerIndex = 0; readerIndex < istreams.size(); readerIndex++) {
             this.istreams.add(istreams.get(readerIndex));
             readers.add(new ReadReader(String.valueOf(readerIndex + 1)));
-            turnsList.add(readerIndex);
         }
 
         this.readLimit = readLimit;
@@ -73,8 +66,9 @@ public class SingleThreadReadConverter<T extends Spot> implements Converter {
 
         for (int readerIndex = 0; readerIndex < istreams.size(); readerIndex++) {
             this.istreams.add(istreams.get(readerIndex));
-            readers.add(new ReadReader(normalizers.get(normalizers.size() == istreams.size() ? readerIndex : 0), String.valueOf(readerIndex + 1)));
-            turnsList.add(readerIndex);
+            readers.add(new ReadReader(
+                    normalizers.get(normalizers.size() == istreams.size() ? readerIndex : 0),
+                    String.valueOf(readerIndex + 1)));
         }
 
         this.readLimit = readLimit;
@@ -137,16 +131,16 @@ public class SingleThreadReadConverter<T extends Spot> implements Converter {
     }
 
     public boolean isDone() {
-        return (turnsList.isEmpty() || !keepRunning());
+        return (readers.isEmpty() || !keepRunning());
     }
 
     private Read convert() {
         try {
-            if (turn >= turnsList.size()) {
+            if (turn >= readers.size()) {
                 turn = 0;
             }
 
-            Read spot = readers.get(turnsList.get(turn)).read(istreams.get(turnsList.get(turn)));
+            Read spot = readers.get(turn).read(istreams.get(turn));
 
             turn++;
 
@@ -155,7 +149,12 @@ public class SingleThreadReadConverter<T extends Spot> implements Converter {
 
             return spot;
         } catch(EOFException e){
-            turnsList.remove(turn);
+            readersCompleted.add(readers.get(turn));
+            readers.remove(turn);
+
+            istreamsCompleted.add(istreams.get(turn));
+            istreams.remove(turn);
+
             throw new ConverterEOFException(readCount);
         } catch(ConverterException e){
             throw e;
