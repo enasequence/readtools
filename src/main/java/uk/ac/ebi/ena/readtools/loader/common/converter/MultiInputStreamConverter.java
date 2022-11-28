@@ -10,16 +10,16 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
+import java.io.EOFException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
-
-import java.io.EOFException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Similar to {@link AutoNormalizeQualityReadConverter}, but here, base quality normalizer is provided explicitly. If no normalizer
