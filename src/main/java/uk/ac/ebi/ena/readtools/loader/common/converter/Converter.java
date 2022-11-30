@@ -11,8 +11,6 @@
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 public interface Converter {
-    int YIELD_CYCLES_FOR_ERROR_CHECKING = 362; // 16384;
-
     /**
      * Get the total number of reads that were read.
      *
@@ -27,7 +25,11 @@ public interface Converter {
      */
     long getBaseCount();
 
+    /** Read and write all reads.
+     */
     void run();
+    /** Read and write the next read.
+     */
     void runOnce();
     boolean isDone();
 }

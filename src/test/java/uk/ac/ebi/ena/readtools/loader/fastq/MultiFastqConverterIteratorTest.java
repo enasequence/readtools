@@ -27,7 +27,7 @@ import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
 
 
 public class
-FastqIterativeWriterIteratorTest
+MultiFastqConverterIteratorTest
 {
     @Before
     public void

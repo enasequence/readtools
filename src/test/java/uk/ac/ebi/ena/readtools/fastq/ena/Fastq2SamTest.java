@@ -14,9 +14,13 @@ package uk.ac.ebi.ena.readtools.fastq.ena;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.fail;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +41,6 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
 
-import uk.ac.ebi.ena.readtools.cram.common.Utils;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
@@ -68,7 +71,7 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(4, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(404, fastq2Sam.getTotalBaseCount());
-        Assert.assertEquals("9017afbcef3ff94d0281dc847aebb067", Utils.calculateFileMd5(new File(params.data_file)));
+        Assert.assertEquals("9017afbcef3ff94d0281dc847aebb067", calculateFileMd5(new File(params.data_file)));
     }
 
     @Test
@@ -94,7 +97,7 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
-        Assert.assertEquals("01ce849441f1d3ac174ce6c2bb435849", Utils.calculateFileMd5(new File(params.data_file)));
+        Assert.assertEquals("01ce849441f1d3ac174ce6c2bb435849", calculateFileMd5(new File(params.data_file)));
     }
 
     @Ignore // only run manually if needed
@@ -147,7 +150,7 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
-        Assert.assertEquals("01ce849441f1d3ac174ce6c2bb435849", Utils.calculateFileMd5(new File(params.data_file)));
+        Assert.assertEquals("01ce849441f1d3ac174ce6c2bb435849", calculateFileMd5(new File(params.data_file)));
     }
 
     @Test
@@ -268,11 +271,11 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(2, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(40, fastq2Sam.getTotalBaseCount());
-        Assert.assertEquals("fdc0986ec2ef619fa382b1d06566ba73", Utils.calculateFileMd5(new File(params.data_file)));
+        Assert.assertEquals("fdc0986ec2ef619fa382b1d06566ba73", calculateFileMd5(new File(params.data_file)));
     }
 
     @Test
-    public void testUracilFastqDouble() throws IOException, NoSuchAlgorithmException {
+    public void testUracilFastqPaired() throws IOException, NoSuchAlgorithmException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
@@ -308,7 +311,7 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(4, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(80, fastq2Sam.getTotalBaseCount());
-        Assert.assertEquals("9991e990fad7c39578be55e0ef12d6ac", Utils.calculateFileMd5(new File(params.data_file)));
+        Assert.assertEquals("9991e990fad7c39578be55e0ef12d6ac", calculateFileMd5(new File(params.data_file)));
     }
 
     private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {
@@ -336,5 +339,19 @@ public class Fastq2SamTest {
         }
 
         return fastqRecordMap;
+    }
+
+    public static String calculateFileMd5(File file) throws IOException, NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("MD5");
+        byte[] buf = new byte[4096];
+        int read = 0;
+        try (BufferedInputStream is = new BufferedInputStream(new FileInputStream(file))) {
+            while ((read = is.read(buf)) > 0)
+                digest.update(buf, 0, read);
+
+            byte[] message_digest = digest.digest();
+            BigInteger value = new BigInteger(1, message_digest);
+            return String.format(String.format("%%0%dx", message_digest.length << 1), value);
+        }
     }
 }

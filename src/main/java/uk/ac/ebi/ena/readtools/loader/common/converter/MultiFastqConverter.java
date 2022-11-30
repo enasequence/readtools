@@ -17,6 +17,7 @@ import java.util.List;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
@@ -25,10 +26,10 @@ import uk.ac.ebi.ena.readtools.loader.fastq.Read;
  * Similar to {@link AutoNormalizeQualityReadConverter}, but here, base quality normalizer is provided explicitly. If no normalizer
  * is provided then normalization is not performed.
  */
-public class MultiInputStreamConverter<T extends Spot> implements Converter {
+public class MultiFastqConverter<T extends Spot> implements Converter {
     List<ReadReader> readers = new ArrayList<>();
     List<InputStream> istreams = new ArrayList<>();
-    final ReadWriter<Read, T> writer;
+    final ReadWriter<Read, T> readWriter;
     final Long readLimit;
 
     long readCount = 0, baseCount = 0;
@@ -36,14 +37,14 @@ public class MultiInputStreamConverter<T extends Spot> implements Converter {
     List<ReadReader> readersCompleted = new ArrayList<>();
     List<InputStream> istreamsCompleted = new ArrayList<>();
 
-    int turn;
+    int readerIndex;
 
-    public MultiInputStreamConverter(List<InputStream> istreams, ReadWriter<Read, T> writer) {
-        this(istreams, writer, null);
+    public MultiFastqConverter(List<InputStream> istreams, ReadWriter<Read, T> readWriter) {
+        this(istreams, readWriter, null);
     }
 
-    public MultiInputStreamConverter(List<InputStream> istreams, ReadWriter<Read, T> writer, Long readLimit) {
-        this.writer = writer;
+    public MultiFastqConverter(List<InputStream> istreams, ReadWriter<Read, T> readWriter, Long readLimit) {
+        this.readWriter = readWriter;
 
         for (int readerIndex = 0; readerIndex < istreams.size(); readerIndex++) {
             this.istreams.add(istreams.get(readerIndex));
@@ -53,13 +54,13 @@ public class MultiInputStreamConverter<T extends Spot> implements Converter {
         this.readLimit = readLimit;
     }
 
-    public MultiInputStreamConverter(
+    public MultiFastqConverter(
             List<InputStream> istreams,
             List<QualityNormalizer> normalizers,
-            ReadWriter<Read, T> writer,
+            ReadWriter<Read, T> readWriter,
             Long readLimit) {
 
-        this.writer = writer;
+        this.readWriter = readWriter;
 
         for (int readerIndex = 0; readerIndex < istreams.size(); readerIndex++) {
             this.istreams.add(istreams.get(readerIndex));
@@ -71,7 +72,7 @@ public class MultiInputStreamConverter<T extends Spot> implements Converter {
         this.readLimit = readLimit;
     }
 
-    private boolean keepRunning() {
+    private boolean isWithinReadLimit() {
         if (readLimit == null) {
             return true;
         } else {
@@ -90,14 +91,10 @@ public class MultiInputStreamConverter<T extends Spot> implements Converter {
     public void run() {
         try {
             do {
-                for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning(); yield--) {
-                    writer.write(convert());
-                }
-
-                if (!writer.isOk()) {
-                    throw new ConverterPanicException();
-                }
+                readWriter.write(convert());
             } while (!isDone());
+        } catch (ReadWriterException e) {
+            throw new ConverterPanicException(e);
         } catch (ConverterEOFException ignored) {
         } catch (Exception e) {
             if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
@@ -111,12 +108,10 @@ public class MultiInputStreamConverter<T extends Spot> implements Converter {
     public void runOnce() {
         try {
             if (!isDone()) {
-                writer.write(convert());
-
-                if (!writer.isOk()) {
-                    throw new ConverterPanicException();
-                }
+                readWriter.write(convert());
             }
+        } catch (ReadWriterException e) {
+            throw new ConverterPanicException(e);
         } catch (ConverterEOFException ignored) {
         } catch (Exception e) {
             if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
@@ -128,29 +123,29 @@ public class MultiInputStreamConverter<T extends Spot> implements Converter {
     }
 
     public boolean isDone() {
-        return (readers.isEmpty() || !keepRunning());
+        return (readers.isEmpty() || !isWithinReadLimit());
     }
 
     private Read convert() {
         try {
-            if (turn >= readers.size()) {
-                turn = 0;
+            if (readerIndex >= readers.size()) {
+                readerIndex = 0;
             }
 
-            Read spot = readers.get(turn).read(istreams.get(turn));
+            Read spot = readers.get(readerIndex).read(istreams.get(readerIndex));
 
-            turn++;
+            readerIndex++;
 
             readCount++;
             baseCount += spot.getBaseCount();
 
             return spot;
         } catch(EOFException e){
-            readersCompleted.add(readers.get(turn));
-            readers.remove(turn);
+            readersCompleted.add(readers.get(readerIndex));
+            readers.remove(readerIndex);
 
-            istreamsCompleted.add(istreams.get(turn));
-            istreams.remove(turn);
+            istreamsCompleted.add(istreams.get(readerIndex));
+            istreams.remove(readerIndex);
 
             throw new ConverterEOFException(readCount);
         } catch(ConverterException e){

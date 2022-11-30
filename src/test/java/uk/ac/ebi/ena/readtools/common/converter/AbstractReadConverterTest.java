@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.common.producer;
+package uk.ac.ebi.ena.readtools.common.converter;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -25,10 +25,10 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 public class AbstractReadConverterTest {
 
     @Test
-    public void testRunLimit() throws InterruptedException {
+    public void testRunLimit() {
         long readLimit = 10;
 
-        AbstractReadConverter adp = new AbstractReadConverter(
+        AbstractReadConverter converter = new AbstractReadConverter(
                 null,
                 new ReadWriter() {
                     @Override
@@ -44,11 +44,6 @@ public class AbstractReadConverterTest {
                     @Override
                     public void setWriter(ReadWriter readWriter) {
 
-                    }
-
-                    @Override
-                    public boolean isOk() {
-                        return true;
                     }
                 },
                 readLimit) {
@@ -78,8 +73,8 @@ public class AbstractReadConverterTest {
             }
         };
 
-        adp.run();
+        converter.run();
 
-        Assert.assertEquals(readLimit, adp.getReadCount());
+        Assert.assertEquals(readLimit, converter.getReadCount());
     }
 }

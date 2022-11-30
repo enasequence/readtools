@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.common.producer;
+package uk.ac.ebi.ena.readtools.common.converter;
 
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -24,7 +24,7 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
-public class AutoNormalizerReadProducerTest {
+public class AutoNormalizeQualityReadConverterTest {
     private static final long FASTQ_VALIDATION_MAX_DURATION_MS = 4_000;
 
     @Test(timeout = FASTQ_VALIDATION_MAX_DURATION_MS + 1_000)
@@ -32,7 +32,7 @@ public class AutoNormalizerReadProducerTest {
         Path filePath = Paths.get("src/test/resources/tst.fastq.bz2");
 
         try (InputStream is = Utils.openFastqInputStream(filePath)) {
-            AutoNormalizeQualityReadConverter dp =
+            AutoNormalizeQualityReadConverter converter =
                     new AutoNormalizeQualityReadConverter(is,
                             new ReadWriter<Read, Spot>() {
                                 @Override
@@ -48,16 +48,11 @@ public class AutoNormalizerReadProducerTest {
                                 public void setWriter(ReadWriter<Spot, ?> readWriter) {
                                     throw new RuntimeException("Not implemented");
                                 }
-
-                                @Override
-                                public boolean isOk() {
-                                    return true;
-                                }
                             },
                             "", filePath.toString());
             try {
-                dp.run();
-                if (dp.getReadCount() <= 0) {
+                converter.run();
+                if (converter.getReadCount() <= 0) {
                     throw new Exception("Empty");
                 }
             } catch (Exception e) {

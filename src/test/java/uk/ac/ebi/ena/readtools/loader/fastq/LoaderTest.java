@@ -47,9 +47,9 @@ LoaderTest
     boolean 
     read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, ConverterException
     {
-        ReadConverter df = new ReadConverter( is, new PrintReadWriter<>(), normalizer, "" );
+        ReadConverter converter = new ReadConverter( is, new PrintReadWriter<>(), normalizer, "" );
         try {
-            df.run();
+            converter.run();
             return true;
         } catch (Exception e) {
             e.printStackTrace();

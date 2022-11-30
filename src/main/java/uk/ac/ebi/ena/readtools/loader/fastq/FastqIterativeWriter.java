@@ -37,7 +37,7 @@ FastqIterativeWriter implements Iterable<PairedRead> {
     public Iterator<PairedRead>
     iterator() {
         try {
-            return new FastqIterativeWriterIterator(
+            return new MultiFastqConverterIterator(
                     tmp_folder,
                     spill_page_size,
                     spill_page_size_bytes,

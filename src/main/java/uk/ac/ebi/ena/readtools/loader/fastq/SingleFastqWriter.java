@@ -14,10 +14,9 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 
 public class
-SingleFastqConsumer implements ReadWriter<Read, PairedRead>
+SingleFastqWriter implements ReadWriter<Read, PairedRead>
 {
     ReadWriter<PairedRead, ?> readWriter;
-    boolean is_ok = true;
     
     @Override
     public void 
@@ -50,13 +49,5 @@ SingleFastqConsumer implements ReadWriter<Read, PairedRead>
     setWriter(ReadWriter<PairedRead, ?> readWriter)
     {
         this.readWriter = readWriter;
-    }
-
-
-    @Override
-    public boolean 
-    isOk()
-    {
-        return null == readWriter ? is_ok : is_ok && readWriter.isOk();
     }
 }

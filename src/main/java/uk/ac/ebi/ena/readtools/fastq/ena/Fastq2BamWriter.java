@@ -37,7 +37,7 @@ import uk.ac.ebi.ena.readtools.utils.Utils;
 /**
  * Accepts Fastq spot data and writes them out to a BAM file.
  */
-public class Fastq2BamConsumer implements ReadWriter<PairedRead, Spot> {
+public class Fastq2BamWriter implements ReadWriter<PairedRead, Spot> {
     private static final String DEFAULT_READ_GROUP_NAME = "A";
     private static final String VALID_DNA_CHARSET = ".acmgrsvtwyhkdbnACMGRSVTWYHKDBN";
 
@@ -49,10 +49,8 @@ public class Fastq2BamConsumer implements ReadWriter<PairedRead, Spot> {
     private final Pattern validDnaCharsetPattern;
     private final SAMFileWriter writer;
 
-    private volatile boolean isOk = true;
-
-    public Fastq2BamConsumer(QualityNormalizer qualityNormalizer, String sampleName, String outputFilePath,
-                             String tempDir, boolean convertUracil, boolean paired) {
+    public Fastq2BamWriter(QualityNormalizer qualityNormalizer, String sampleName, String outputFilePath,
+                           String tempDir, boolean convertUracil, boolean paired) {
         this.qualityNormalizer = qualityNormalizer;
         this.sampleName = sampleName;
         this.convertUracil = convertUracil;
@@ -94,7 +92,6 @@ public class Fastq2BamConsumer implements ReadWriter<PairedRead, Spot> {
                 writer.addAlignment(rec);
             }
         } catch (Exception ex) {
-            isOk = false;
             throw new ReadWriterException(ex);
         }
     }
@@ -105,11 +102,6 @@ public class Fastq2BamConsumer implements ReadWriter<PairedRead, Spot> {
 
     @Override
     public void setWriter(ReadWriter<Spot, ? extends Spot> readWriter) {
-    }
-
-    @Override
-    public boolean isOk() {
-        return isOk;
     }
 
     public void unwind() {

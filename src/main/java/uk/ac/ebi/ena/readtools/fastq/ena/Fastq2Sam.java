@@ -26,13 +26,12 @@ import htsjdk.samtools.util.FastqQualityFormat;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.converter.Converter;
-import uk.ac.ebi.ena.readtools.loader.common.converter.MultiInputStreamConverter;
-import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.MultiFastqConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
-import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqConsumer;
+import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqWriter;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
 public class Fastq2Sam {
@@ -78,18 +77,15 @@ public class Fastq2Sam {
                 p.files.get(0),
                 p.files.size() == 2 ? p.files.get(1) : null);
         QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);
-        Fastq2BamConsumer fastqToBamConsumer = new Fastq2BamConsumer(
+        Fastq2BamWriter fastqToBamWriter = new Fastq2BamWriter(
                 normalizer, p.sample_name, p.data_file, p.tmp_root, p.convertUracil,
                 p.files.size() == 1 ? false : true);
 
-        Converter converter;
+
         ReadWriter<Read, PairedRead> readWriter;
         if (1 == p.files.size()) {
-            readWriter = new SingleFastqConsumer();
-            readWriter.setWriter(fastqToBamConsumer);
-
-            converter = new ReadConverter(
-                    FileCompression.valueOf(p.compression).open(p.files.get(0), p.use_tar), readWriter, "1");
+            readWriter = new SingleFastqWriter();
+            readWriter.setWriter(fastqToBamWriter);
         } else {
             if (p.files.get(0).equals(p.files.get(1))) {
                 throw new IllegalArgumentException(
@@ -98,22 +94,22 @@ public class Fastq2Sam {
 
             readWriter = new PairedFastqWriter(
                     new File(p.tmp_root), p.spill_page_size, p.spill_page_size_bytes, p.spill_abandon_limit_bytes);
-            readWriter.setWriter(fastqToBamConsumer);
-
-            List<InputStream> istreams = new ArrayList<>();
-            for (String f: p.files) {
-                istreams.add(FileCompression.valueOf(p.compression).open(f, p.use_tar));
-            }
-            converter = new MultiInputStreamConverter<>(istreams, readWriter);
+            readWriter.setWriter(fastqToBamWriter);
         }
+
+        List<InputStream> istreams = new ArrayList<>();
+        for (String f: p.files) {
+            istreams.add(FileCompression.valueOf(p.compression).open(f, p.use_tar));
+        }
+        Converter converter = new MultiFastqConverter<>(istreams, readWriter);
         converter.run();
 
         totalReadCount += converter.getReadCount();
         totalBaseCount += converter.getBaseCount();
 
         readWriter.cascadeErrors();
-        fastqToBamConsumer.unwind();
-        System.out.println(String.format("READS: %d; BASES: %d", totalReadCount, totalBaseCount));
+        fastqToBamWriter.unwind();
+        System.out.printf("READS: %d; BASES: %d%n", totalReadCount, totalBaseCount);
     }
 
     /**

@@ -78,20 +78,6 @@ public class Utils {
 			throw new RuntimeException(e);
 		}
 	}
-
-	public static String calculateFileMd5(File file) throws IOException, NoSuchAlgorithmException {
-		MessageDigest digest = MessageDigest.getInstance("MD5");
-		byte[] buf = new byte[4096];
-		int read = 0;
-		try (BufferedInputStream is = new BufferedInputStream(new FileInputStream(file))) {
-			while ((read = is.read(buf)) > 0)
-				digest.update(buf, 0, read);
-
-			byte[] message_digest = digest.digest();
-			BigInteger value = new BigInteger(1, message_digest);
-			return String.format(String.format("%%0%dx", message_digest.length << 1), value);
-		}
-	}
 	
 	public static int readInto(ByteBuffer buf, InputStream inputStream) throws IOException {
 		int read = 0;

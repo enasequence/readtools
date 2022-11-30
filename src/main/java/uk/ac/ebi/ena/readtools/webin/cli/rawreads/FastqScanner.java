@@ -102,7 +102,7 @@ FastqScanner {
         try (InputStream is = Utils.openFastqInputStream(Paths.get(rf.getFilename()))) {
             String stream_name = rf.getFilename();
 
-            AutoNormalizeQualityReadConverter dp = new AutoNormalizeQualityReadConverter(
+            AutoNormalizeQualityReadConverter converter = new AutoNormalizeQualityReadConverter(
                     is,
                     new ReadWriter<Read, Spot>() {
                         @Override
@@ -139,18 +139,13 @@ FastqScanner {
                         public void setWriter(ReadWriter<Spot, ?> readWriter) {
                             throw new RuntimeException("Not implemented");
                         }
-
-                        @Override
-                        public boolean isOk() {
-                            return true;
-                        }
                     },
                     readLimit, "", rf.getFilename());
 
             log.info("Processing file " + rf.getFilename());
-            dp.run();
+            converter.run();
             logProcessedReadNumber(count.get());
-            if (dp.getReadCount() <= 0) {
+            if (converter.getReadCount() <= 0) {
                 throw new ConverterException( 0, "Empty file" );
             }
         }

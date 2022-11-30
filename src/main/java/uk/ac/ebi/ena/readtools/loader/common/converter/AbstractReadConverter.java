@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
@@ -23,7 +24,7 @@ public abstract class
 AbstractReadConverter<T extends Spot> implements Converter {
     protected final InputStream istream;
     protected final Long readLimit;
-    protected ReadWriter<T, ?> readWriter;
+    protected final ReadWriter<T, ?> readWriter;
 
     long readCount = 0, baseCount = 0;
 
@@ -66,14 +67,10 @@ AbstractReadConverter<T extends Spot> implements Converter {
             begin();
 
             do {
-                for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning(); yield--) {
-                    readWriter.write(convert());
-                }
-
-                if (!readWriter.isOk()) {
-                    throw new ConverterPanicException();
-                }
-            } while (keepRunning());
+                readWriter.write(convert());
+            } while (!isDone());
+        } catch (ReadWriterException e) {
+            throw new ConverterPanicException(e);
         } catch (ConverterEOFException ignored) {
             isEofReached = true;
         } catch (Exception e) {
@@ -91,11 +88,9 @@ AbstractReadConverter<T extends Spot> implements Converter {
         try {
             if (!isDone()) {
                 readWriter.write(convert());
-
-                if (!readWriter.isOk()) {
-                    throw new ConverterPanicException();
-                }
             }
+        } catch (ReadWriterException e) {
+            throw new ConverterPanicException(e);
         } catch (ConverterEOFException ignored) {
             isEofReached = true;
         } catch (Exception e) {
@@ -108,7 +103,7 @@ AbstractReadConverter<T extends Spot> implements Converter {
     }
 
     public boolean isDone() {
-        return !keepRunning() || isEofReached;
+        return !isWithinReadLimit() || isEofReached;
     }
 
     protected void begin() {
@@ -117,7 +112,7 @@ AbstractReadConverter<T extends Spot> implements Converter {
     protected void end() {
     }
 
-    private boolean keepRunning() {
+    private boolean isWithinReadLimit() {
         if (readLimit == null) {
             return true;
         } else {

@@ -33,10 +33,4 @@ PrintReadWriter<T1 extends Spot, T2 extends Spot> implements ReadWriter<T1, T2>
     {
         throw new UnsupportedOperationException();
     }
-
-    @Override public boolean 
-    isOk()
-    {
-        return true;
-    }
 }
