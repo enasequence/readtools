@@ -162,13 +162,4 @@ SamplingReadWriter<T1 extends Read, T2 extends Spot> implements ReadWriter<T1, T
     {
         return hbound;
     }
-
-
-    @Override
-    public boolean 
-    isOk()
-    {
-        return true;
-    }
-
 }

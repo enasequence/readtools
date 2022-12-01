@@ -14,9 +14,14 @@ package uk.ac.ebi.ena.readtools.fastq.ena;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.fail;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -27,6 +32,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import htsjdk.samtools.SAMRecord;
@@ -46,14 +52,18 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitExcepti
  */
 public class Fastq2SamTest {
     @Test
-    public void singleFastqReadAndBaseCount() throws IOException, ConverterException, ReadWriterException {
+    public void singleFastqReadAndBaseCount()
+            throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
         params.data_file = Files.createTempFile(null, ".bam").toString();
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile()).getAbsolutePath());
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile())
+                        .getAbsolutePath());
 
         Fastq2Sam fastq2Sam = new Fastq2Sam();
         fastq2Sam.create(params);
@@ -61,18 +71,25 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(4, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(404, fastq2Sam.getTotalBaseCount());
+        Assert.assertEquals("9017afbcef3ff94d0281dc847aebb067", calculateFileMd5(new File(params.data_file)));
     }
 
     @Test
-    public void pairedFastqReadAndBaseCount() throws IOException, ConverterException, ReadWriterException {
+    public void pairedFastqReadAndBaseCount()
+            throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
         params.data_file = Files.createTempFile(null, ".bam").toString();
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile()).getAbsolutePath(),
-                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile()).getAbsolutePath());
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile())
+                        .getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile())
+                        .getAbsolutePath());
 
         Fastq2Sam fastq2Sam = new Fastq2Sam();
         fastq2Sam.create(params);
@@ -80,9 +97,11 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
+        Assert.assertEquals("01ce849441f1d3ac174ce6c2bb435849", calculateFileMd5(new File(params.data_file)));
     }
 
-    // @Test only run manually if needed
+    @Ignore // only run manually if needed
+    @Test
     public void twoLargeFilesManualTest() throws IOException, ConverterException, ReadWriterException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
@@ -91,9 +110,9 @@ public class Fastq2SamTest {
         params.compression = FileCompression.GZ.name();
         params.files = Arrays.asList(
                 new File(Fastq2SamTest.class.getClassLoader()
-                        .getResource("1_W205W_FKDL210230843-1a_1.fq.gz").getFile()).getAbsolutePath(),
+                        .getResource("F1.fq.gz").getFile()).getAbsolutePath(),
                 new File(Fastq2SamTest.class.getClassLoader()
-                        .getResource("1_W205W_FKDL210230843-1a_2.fq.gz").getFile()).getAbsolutePath());
+                        .getResource("F2.fq.gz").getFile()).getAbsolutePath());
 
         params.spill_page_size_bytes = 1024L * 1024L;
         params.spill_abandon_limit_bytes = 2L * 1024L * 1024L;
@@ -101,21 +120,26 @@ public class Fastq2SamTest {
         Fastq2Sam fastq2Sam = new Fastq2Sam();
         fastq2Sam.create(params);
 
+        System.out.println("stats: " + fastq2Sam.getTotalReadCount() + " " + fastq2Sam.getTotalBaseCount());
         Assert.assertTrue(new File(params.data_file).length() > 0);
-        Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
-        Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
     }
 
     @Test
-    public void testMemoryPaging() throws IOException, ConverterException, ReadWriterException {
+    public void testMemoryPaging()
+            throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
         params.data_file = Files.createTempFile(null, ".bam").toString();
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile()).getAbsolutePath(),
-                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile()).getAbsolutePath());
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile())
+                        .getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile())
+                        .getAbsolutePath());
 
         params.spill_page_size_bytes = 400L;
         params.spill_abandon_limit_bytes = 10L * 1024L;
@@ -126,6 +150,7 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
+        Assert.assertEquals("01ce849441f1d3ac174ce6c2bb435849", calculateFileMd5(new File(params.data_file)));
     }
 
     @Test
@@ -136,11 +161,15 @@ public class Fastq2SamTest {
         params.data_file = Files.createTempFile(null, ".bam").toString();
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile()).getAbsolutePath(),
-                new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile()).getAbsolutePath());
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_correct_paired_with_unpaired_1a.txt").getFile())
+                        .getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_correct_paired_with_unpaired_2a.txt").getFile())
+                        .getAbsolutePath());
 
-        params.spill_page_size_bytes = 400L;
-        params.spill_abandon_limit_bytes = 10L;
+        params.spill_page_size_bytes = 200L;
+        params.spill_abandon_limit_bytes = 201L;
 
         Fastq2Sam fastq2Sam = new Fastq2Sam();
 
@@ -154,8 +183,10 @@ public class Fastq2SamTest {
 
     @Test
     public void testCorrectPairedWithUnpaired() throws IOException, ConverterException, ReadWriterException {
-        File inpFile1 = new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile());
-        File inpFile2 = new File(Fastq2SamTest.class.getClassLoader().getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile());
+        File inpFile1 = new File(Fastq2SamTest.class.getClassLoader()
+                .getResource("fastq_spots_correct_paired_with_unpaired_1.txt").getFile());
+        File inpFile2 = new File(Fastq2SamTest.class.getClassLoader()
+                .getResource("fastq_spots_correct_paired_with_unpaired_2.txt").getFile());
 
         File outFile = Files.createTempFile(null, ".bam").toFile();
 
@@ -206,13 +237,14 @@ public class Fastq2SamTest {
     }
 
     @Test
-    public void testUracilFastq() throws IOException {
+    public void testUracilFastqSingle() throws IOException, NoSuchAlgorithmException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
         params.tmp_root = System.getProperty("java.io.tmpdir");
         params.sample_name = "SM-001";
         params.compression = FileCompression.NONE.name();
         params.files = Arrays.asList(
-                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases.fastq").getFile()).getAbsolutePath());
+                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases_1.fastq").getFile())
+                        .getAbsolutePath());
 
         // with flag set to false.
         params.convertUracil = false;
@@ -224,7 +256,8 @@ public class Fastq2SamTest {
         } catch (Exception ex) {
             e = (InvalidBaseCharacterException) ExceptionUtils.getRootCause(ex);
         }
-        Assert.assertTrue(Pattern.matches("[uU]{1,2}", e.getInvalidCharacters().stream().map(String::valueOf).collect(Collectors.joining())));
+        Assert.assertTrue(Pattern.matches("[uU]{1,2}", e.getInvalidCharacters().stream()
+                .map(String::valueOf).collect(Collectors.joining())));
 
         // with flag set to true.
         params.convertUracil = true;
@@ -238,6 +271,47 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(2, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(40, fastq2Sam.getTotalBaseCount());
+        Assert.assertEquals("fdc0986ec2ef619fa382b1d06566ba73", calculateFileMd5(new File(params.data_file)));
+    }
+
+    @Test
+    public void testUracilFastqPaired() throws IOException, NoSuchAlgorithmException {
+        Fastq2Sam.Params params = new Fastq2Sam.Params();
+        params.tmp_root = System.getProperty("java.io.tmpdir");
+        params.sample_name = "SM-001";
+        params.compression = FileCompression.NONE.name();
+        params.files = Arrays.asList(
+                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases_1.fastq").getFile())
+                        .getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader().getResource("uracil-bases_2.fastq").getFile())
+                        .getAbsolutePath());
+
+        // with flag set to false.
+        params.convertUracil = false;
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+
+        InvalidBaseCharacterException e = null;
+        try {
+            new Fastq2Sam().create(params);
+        } catch (Exception ex) {
+            e = (InvalidBaseCharacterException) ExceptionUtils.getRootCause(ex);
+        }
+        Assert.assertTrue(Pattern.matches("[uU]{1,2}", e.getInvalidCharacters().stream()
+                .map(String::valueOf).collect(Collectors.joining())));
+
+        // with flag set to true.
+        params.convertUracil = true;
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+
+        //Since U or u is not an acceptable base character inside a BAM file, execution of following line without
+        //any error would mean that Uracil base conversion did take place and there is no need for its verification.
+        Fastq2Sam fastq2Sam = new Fastq2Sam();
+        fastq2Sam.create(params);
+
+        Assert.assertTrue(new File(params.data_file).length() > 0);
+        Assert.assertEquals(4, fastq2Sam.getTotalReadCount());
+        Assert.assertEquals(80, fastq2Sam.getTotalBaseCount());
+        Assert.assertEquals("9991e990fad7c39578be55e0ef12d6ac", calculateFileMd5(new File(params.data_file)));
     }
 
     private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {
@@ -265,5 +339,19 @@ public class Fastq2SamTest {
         }
 
         return fastqRecordMap;
+    }
+
+    public static String calculateFileMd5(File file) throws IOException, NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("MD5");
+        byte[] buf = new byte[4096];
+        int read = 0;
+        try (BufferedInputStream is = new BufferedInputStream(new FileInputStream(file))) {
+            while ((read = is.read(buf)) > 0)
+                digest.update(buf, 0, read);
+
+            byte[] message_digest = digest.digest();
+            BigInteger value = new BigInteger(1, message_digest);
+            return String.format(String.format("%%0%dx", message_digest.length << 1), value);
+        }
     }
 }

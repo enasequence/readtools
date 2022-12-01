@@ -45,14 +45,16 @@ LoaderTest
     
 
     boolean 
-    read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, ConverterException, InterruptedException
+    read( InputStream is, String name, final QualityNormalizer normalizer ) throws SecurityException, ConverterException
     {
-        ReadConverter df = new ReadConverter( is, normalizer, "" );
-        df.setName( name );
-        df.setWriter( new PrintReadWriter<>() );
-        df.start();
-        df.join();
-        return df.isOk();
+        ReadConverter converter = new ReadConverter( is, new PrintReadWriter<>(), normalizer, "" );
+        try {
+            converter.run();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
     
     

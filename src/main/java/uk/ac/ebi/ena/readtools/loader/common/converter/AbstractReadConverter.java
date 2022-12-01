@@ -12,37 +12,35 @@ package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.function.Supplier;
 
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
 public abstract class
-AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
-    private static final int YIELD_CYCLES_FOR_ERROR_CHECKING = 362;//16384;
-
-    protected final InputStream  istream;
-
+AbstractReadConverter<T extends Spot> implements Converter {
+    protected final InputStream istream;
     protected final Long readLimit;
+    protected final ReadWriter<T, ?> readWriter;
 
-    private volatile long readCount = 0, baseCount = 0;
+    long readCount = 0, baseCount = 0;
 
-    protected volatile ReadWriter<T, ?> readWriter;
-    protected volatile boolean      is_ok = true;
-    protected volatile Throwable    stored_exception;
-    
-    protected AbstractReadConverter(InputStream istream) {
-        this(istream, null);
+    protected boolean isEofReached = false;
+
+    protected AbstractReadConverter(InputStream istream, ReadWriter<T, ?> writer) {
+        this(istream, writer, null);
     }
 
     /**
-     *
      * @param istream
      * @param readLimit Only read limited amount of reads.
      */
-    protected AbstractReadConverter(InputStream istream, Long readLimit) {
-        this.istream = new BufferedInputStream( istream, 1024 * 1024 );
+    protected AbstractReadConverter(InputStream istream, ReadWriter<T, ?> writer, Long readLimit) {
+        this.istream = new BufferedInputStream(istream, 1024 * 1024);
+        this.readWriter = writer;
         this.readLimit = readLimit;
     }
 
@@ -63,85 +61,83 @@ AbstractReadConverter<T extends Spot> extends Thread implements Converter<T> {
     public long getBaseCount() {
         return baseCount;
     }
-    
-    public void setWriter(ReadWriter<T, ?> writer) {
-        this.readWriter = writer;
-    }
-    
-    public boolean isOk() {
-        return is_ok;
-    }
-    
-    public Throwable getStoredException() {
-        return stored_exception;
-    }
 
-    //TODO: scheduler should be fair and based on different principle
     public final void run() {
         try {
-            Supplier<Boolean> keepRunning = createKeepRunning();
-
             begin();
 
             do {
-                synchronized (readWriter) {
-                    for (int yield = YIELD_CYCLES_FOR_ERROR_CHECKING; yield > 0 && keepRunning.get(); --yield)
-                        readWriter.write(convert());
-                }
-
-                if (!readWriter.isOk()) {
-                    throw new ConverterPanicException();
-                }
-
-                // sleep 1 returned from git history
-                // it prevents multi-FASTQ to BAM conversion
-                // "Temp memory limit <spill_abandon_limit_bytes> bytes reached" error
-                // if removed FASTQ file threads will pile up large numbers of unpaired reads
-                // before pairing them, causing the error
-                // TODO: implement a proper threads synchronization
-                Thread.sleep(1);
-            } while (keepRunning.get());
+                readWriter.write(convert());
+            } while (!isDone());
+        } catch (ReadWriterException e) {
+            throw new ConverterPanicException(e);
         } catch (ConverterEOFException ignored) {
-        } catch (ConverterPanicException e) {
-            is_ok = false;
-            this.stored_exception = e;
-        } catch (Throwable e) {
-            this.stored_exception = e;
-            is_ok = false;
+            isEofReached = true;
+        } catch (Exception e) {
+            if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
+                throw e;
+            } else {
+                throw new RuntimeException(e);
+            }
         } finally {
             end();
         }
     }
 
-    protected void begin() {}
+    public void runOnce() {
+        try {
+            if (!isDone()) {
+                readWriter.write(convert());
+            }
+        } catch (ReadWriterException e) {
+            throw new ConverterPanicException(e);
+        } catch (ConverterEOFException ignored) {
+            isEofReached = true;
+        } catch (Exception e) {
+            if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
+                throw e;
+            } else {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
-    protected void end() {}
+    public boolean isDone() {
+        return !isWithinReadLimit() || isEofReached;
+    }
 
-    private Supplier<Boolean> createKeepRunning() {
+    protected void begin() {
+    }
+
+    protected void end() {
+    }
+
+    private boolean isWithinReadLimit() {
         if (readLimit == null) {
-            return () -> true;
+            return true;
         } else {
-            return () -> readCount < readLimit;
+            return readCount < readLimit;
         }
     }
 
     //Re-implement if you need special type of feeding
     private T convert() {
-        T spot = null;
+        T spot;
 
         try {
             spot = convert(istream);
             ++readCount;
             baseCount += spot.getBaseCount();
 
-
             return spot;
-        } catch( EOFException e ){
+        } catch (EOFException e) {
             throw new ConverterEOFException(readCount);
-        } catch( ConverterException e ){
+        } catch (ConverterException e) {
             throw e;
-        } catch( Throwable cause ) {
+        } catch (Throwable cause) {
             throw new ConverterException(cause);
         }
     }
+
+    abstract public T convert(InputStream inputStream) throws IOException;
 }

@@ -16,6 +16,7 @@ import java.io.InputStream;
 import htsjdk.samtools.util.FastqQualityFormat;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
@@ -31,8 +32,9 @@ public class AutoNormalizeQualityReadConverter extends AbstractReadConverter<Rea
 
     private volatile ReadReader readReader;
 
-    public AutoNormalizeQualityReadConverter(InputStream istream, String defaultReadIndex, String filePath) {
-        super(istream);
+    public AutoNormalizeQualityReadConverter(
+            InputStream istream, ReadWriter<Read, ?> writer, String defaultReadIndex, String filePath) {
+        super(istream, writer);
 
         this.defaultReadIndex = defaultReadIndex;
         this.filePath = filePath;
@@ -45,8 +47,9 @@ public class AutoNormalizeQualityReadConverter extends AbstractReadConverter<Rea
      * @param defaultReadIndex
      * @param filePath
      */
-    public AutoNormalizeQualityReadConverter(InputStream istream, Long readLimit, String defaultReadIndex, String filePath) {
-        super(istream, readLimit);
+    public AutoNormalizeQualityReadConverter(
+            InputStream istream, ReadWriter<Read, ?> writer, Long readLimit, String defaultReadIndex, String filePath) {
+        super(istream, writer, readLimit);
 
         this.defaultReadIndex = defaultReadIndex;
         this.filePath = filePath;

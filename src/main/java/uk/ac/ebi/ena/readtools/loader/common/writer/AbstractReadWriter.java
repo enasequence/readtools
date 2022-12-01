@@ -29,13 +29,6 @@ AbstractReadWriter<T1 extends Spot, T2 extends Spot> implements ReadWriter<T1, T
     private long ate = 0;
     protected long spotsSizeBytes = 0;
     protected boolean verbose = false;
-    private volatile boolean is_ok = true;
-
-    @Override
-    public boolean
-    isOk() {
-        return null == readWriter ? is_ok : is_ok && readWriter.isOk();
-    }
 
     public AbstractReadWriter<T1, T2>
     setVerbose(boolean verbose) {

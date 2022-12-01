@@ -34,7 +34,7 @@ public class UtilsTest {
         File output = File.createTempFile("FASTQ", "FASTQ");
         output.delete();
 
-        URL url = UtilsTest.class.getClassLoader().getResource("uracil-bases.fastq");
+        URL url = UtilsTest.class.getClassLoader().getResource("uracil-bases_1.fastq");
 
         Utils.replaceUracilBasesInFastq(url.getFile(), output.getAbsolutePath());
 

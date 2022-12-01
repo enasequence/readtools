@@ -10,9 +10,7 @@
 */
 package uk.ac.ebi.ena.readtools.cram.common;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -80,7 +78,6 @@ public class Utils {
 			throw new RuntimeException(e);
 		}
 	}
-
 	
 	public static int readInto(ByteBuffer buf, InputStream inputStream) throws IOException {
 		int read = 0;

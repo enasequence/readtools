@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.common.producer;
+package uk.ac.ebi.ena.readtools.common.converter;
 
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -24,50 +24,43 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
-public class AutoNormalizerReadProducerTest {
+public class AutoNormalizeQualityReadConverterTest {
     private static final long FASTQ_VALIDATION_MAX_DURATION_MS = 4_000;
 
-    @Test (timeout = FASTQ_VALIDATION_MAX_DURATION_MS + 1_000)
+    @Test(timeout = FASTQ_VALIDATION_MAX_DURATION_MS + 1_000)
     public void test() throws Exception {
         Path filePath = Paths.get("src/test/resources/tst.fastq.bz2");
 
         try (InputStream is = Utils.openFastqInputStream(filePath)) {
-            AutoNormalizeQualityReadConverter dp =
-                    new AutoNormalizeQualityReadConverter(is, "", filePath.toString());
-            dp.setName(filePath.toFile().getName());
-            dp.setWriter(new ReadWriter<Read, Spot>() {
-                @Override
-                public void cascadeErrors() throws ReadWriterException {
-                }
+            AutoNormalizeQualityReadConverter converter =
+                    new AutoNormalizeQualityReadConverter(is,
+                            new ReadWriter<Read, Spot>() {
+                                @Override
+                                public void cascadeErrors() throws ReadWriterException {
+                                }
 
-                @Override
-                public void
-                write(Read spot) {
-                }
+                                @Override
+                                public void
+                                write(Read spot) {
+                                }
 
-                @Override
-                public void setWriter(ReadWriter<Spot, ?> readWriter) {
-                    throw new RuntimeException("Not implemented");
+                                @Override
+                                public void setWriter(ReadWriter<Spot, ?> readWriter) {
+                                    throw new RuntimeException("Not implemented");
+                                }
+                            },
+                            "", filePath.toString());
+            try {
+                converter.run();
+                if (converter.getReadCount() <= 0) {
+                    throw new Exception("Empty");
                 }
-
-                @Override
-                public boolean isOk() {
-                    return true;
-                }
-            });
-            dp.start();
-            dp.join();
-            if (!dp.isOk()) {
-                if (dp.getStoredException() instanceof ConverterException) {
-                    dp.getStoredException().printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (e instanceof ConverterException) {
                     throw new Exception("DataProducerException");
                 } else {
-                    dp.getStoredException().printStackTrace();
                     throw new Exception("Not DataProducerException");
-                }
-            } else {
-                if (dp.getReadCount() <= 0) {
-                    throw new Exception("Empty");
                 }
             }
         }

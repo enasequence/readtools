@@ -12,6 +12,7 @@ package uk.ac.ebi.ena.readtools.fastq.ena;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,14 +25,13 @@ import htsjdk.samtools.util.FastqQualityFormat;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
-import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.Converter;
+import uk.ac.ebi.ena.readtools.loader.common.converter.MultiFastqConverter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
-import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqConsumer;
+import uk.ac.ebi.ena.readtools.loader.fastq.SingleFastqWriter;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 
 public class Fastq2Sam {
@@ -63,25 +63,8 @@ public class Fastq2Sam {
     }
 
     public void create(Params p) throws IOException {
-        ReadWriter<Read, PairedRead> readWriter = null;
-        boolean paired = false;
-
         if (null == p.files || p.files.size() < 1 || p.files.size() > 2) {
-            throw new IllegalArgumentException("Invalid number of input files : " + p.files.size());
-        } else if (1 == p.files.size()) {
-            //single
-            readWriter = new SingleFastqConsumer();
-            paired = false;
-        } else if (2 == p.files.size()) {
-            //same file names;
-            if (p.files.get(0).equals(p.files.get(1))) {
-                throw new IllegalArgumentException(
-                        "Paired files cannot be same. File1 : " + p.files.get(0) + ", File2 : " + p.files.get(1));
-            }
-
-            readWriter = new PairedFastqWriter(
-                    new File(p.tmp_root), p.spill_page_size, p.spill_page_size_bytes, p.spill_abandon_limit_bytes);
-            paired = true;
+            throw new IllegalArgumentException("Invalid number of input files");
         }
 
         if (p.verbose) {
@@ -93,61 +76,40 @@ public class Fastq2Sam {
         FastqQualityFormat qualityFormat = Utils.detectFastqQualityFormat(
                 p.files.get(0),
                 p.files.size() == 2 ? p.files.get(1) : null);
-
         QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);
+        Fastq2BamWriter fastqToBamWriter = new Fastq2BamWriter(
+                normalizer, p.sample_name, p.data_file, p.tmp_root, p.convertUracil,
+                p.files.size() == 1 ? false : true);
 
-        Fastq2BamConsumer fastqToBamConsumer = new Fastq2BamConsumer(
-                normalizer, p.sample_name, p.data_file, p.tmp_root, p.convertUracil, paired);
 
-        readWriter.setWriter(fastqToBamConsumer);
-
-        ArrayList<ReadConverter> producers = new ArrayList<>();
-
-        int attr = 1;
-        for (String f_name : p.files) {
-            final String default_attr = Integer.toString(attr++);
-
-            ReadConverter converter = new ReadConverter(
-                FileCompression.valueOf(p.compression).open(f_name, p.use_tar), default_attr);
-            converter.setWriter(readWriter);
-            converter.setName(f_name);
-            producers.add(converter);
-            converter.start();
-        }
-
-        boolean again = false;
-        do {
-            for (ReadConverter producer : producers) {
-                if (producer.isAlive() && producer.isOk()) {
-                    try {
-                        producer.join();
-                    } catch (InterruptedException ie) {
-                        again = true;
-                    }
-                } else if (!producer.isOk()) {
-                    if (producer.getStoredException() instanceof ReadWriterMemoryLimitException) {
-                        throw new ReadWriterMemoryLimitException(producer.getStoredException());
-                    }
-                    throw new ConverterException(producer.getStoredException());
-                }
-            }
-        } while (again);
-
-        for (ReadConverter producer : producers) {
-            if (!producer.isOk()) {
-                if (producer.getStoredException() instanceof ReadWriterMemoryLimitException) {
-                    throw new ReadWriterMemoryLimitException(producer.getStoredException());
-                }
-                throw new RuntimeException(producer.getStoredException());
+        ReadWriter<Read, PairedRead> readWriter;
+        if (1 == p.files.size()) {
+            readWriter = new SingleFastqWriter();
+            readWriter.setWriter(fastqToBamWriter);
+        } else {
+            if (p.files.get(0).equals(p.files.get(1))) {
+                throw new IllegalArgumentException(
+                        "Paired files cannot be same. File1 : " + p.files.get(0) + ", File2 : " + p.files.get(1));
             }
 
-            totalReadCount += producer.getReadCount();
-            totalBaseCount += producer.getBaseCount();
+            readWriter = new PairedFastqWriter(
+                    new File(p.tmp_root), p.spill_page_size, p.spill_page_size_bytes, p.spill_abandon_limit_bytes);
+            readWriter.setWriter(fastqToBamWriter);
         }
+
+        List<InputStream> istreams = new ArrayList<>();
+        for (String f: p.files) {
+            istreams.add(FileCompression.valueOf(p.compression).open(f, p.use_tar));
+        }
+        Converter converter = new MultiFastqConverter<>(istreams, readWriter);
+        converter.run();
+
+        totalReadCount += converter.getReadCount();
+        totalBaseCount += converter.getBaseCount();
 
         readWriter.cascadeErrors();
-        fastqToBamConsumer.unwind();
-        System.out.println(String.format("READS: %d; BASES: %d", totalReadCount, totalBaseCount));
+        fastqToBamWriter.unwind();
+        System.out.printf("READS: %d; BASES: %d%n", totalReadCount, totalBaseCount);
     }
 
     /**

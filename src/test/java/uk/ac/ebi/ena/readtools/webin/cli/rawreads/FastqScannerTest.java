@@ -101,13 +101,13 @@ FastqScannerTest
         URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.dup.gz" );
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf = new RawReadsFile();
-        
+
         rf.setFilename( new File( url1.getFile() ).getCanonicalPath() );
 
         ValidationResult vr = new ValidationResult();
 
         fs.checkFiles( vr, rf );
-        
+
         Assert.assertEquals( 2, vr.count(Severity.ERROR) );
     }
 

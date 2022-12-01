@@ -12,7 +12,6 @@ package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
 import java.io.File;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -48,34 +47,32 @@ import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
-public abstract class 
-FastqScanner
-{
+public abstract class
+FastqScanner {
     private static final int MAX_LABEL_SET_SIZE = 10;
 
     private static final int PAIRING_THRESHOLD = 20;
-    
+
     //TODO remove duplication
-    private static final int    DEFAULT_PRINT_FREQ = 1_000;
+    private static final int DEFAULT_PRINT_FREQ = 1_000;
     private static final String PRINT_FREQ_PROPERTY_NAME = "webincli.scanner.print.freq";
-    private static final int    print_freq = Integer.valueOf( System.getProperty( PRINT_FREQ_PROPERTY_NAME, String.valueOf( DEFAULT_PRINT_FREQ ) ) );
+    private static final int print_freq = Integer.valueOf(System.getProperty(PRINT_FREQ_PROPERTY_NAME, String.valueOf(DEFAULT_PRINT_FREQ)));
 
     private static final Pattern READ_PAIR_NUMBER_SPLIT_PATTERN = Pattern.compile("^(.*)(?:[\\.|:|/|_])([1-9][0-9]*)$");
 
-    private static final Logger log = LoggerFactory.getLogger( FastqScanner.class );
-    
+    private static final Logger log = LoggerFactory.getLogger(FastqScanner.class);
+
     private final int expected_size;
     private final Set<String> labelset = new HashSet<>();
     private final AtomicBoolean paired = new AtomicBoolean();
 
     private final Long readLimit;
-    
-    abstract protected void logProcessedReadNumber( long count );
-    abstract protected void logFlushMsg( String message );
-    
-    public
-    FastqScanner( int expected_size )
-    {
+
+    abstract protected void logProcessedReadNumber(long count);
+
+    abstract protected void logFlushMsg(String message);
+
+    public FastqScanner(int expected_size) {
         this(null, expected_size);
     }
 
@@ -87,133 +84,107 @@ FastqScanner
     }
 
     /**
-     * @param readLimit Only process limited number of reads per file. Prevents from processing all reads in a given file.
+     * @param readLimit     Only process limited number of reads per file. Prevents from processing all reads in a given file.
      * @param expected_size
      */
-    public FastqScanner(Long readLimit, int expected_size )
-    {
+    public FastqScanner(Long readLimit, int expected_size) {
         this.readLimit = readLimit;
         this.expected_size = expected_size;
     }
-    
-    
-    private ConverterException
-    read( RawReadsFile rf,
-          Set<String>  labels,
-          BloomWrapper pairing,
-          BloomWrapper duplications,
-          AtomicLong count ) throws Throwable
-    {
-        try( InputStream is = Utils.openFastqInputStream( Paths.get( rf.getFilename() ) ) )
-        {
+
+
+    private void
+    read(RawReadsFile rf,
+         Set<String> labels,
+         BloomWrapper pairing,
+         BloomWrapper duplications,
+         AtomicLong count) throws Throwable {
+        try (InputStream is = Utils.openFastqInputStream(Paths.get(rf.getFilename()))) {
             String stream_name = rf.getFilename();
 
-            AutoNormalizeQualityReadConverter dp = new AutoNormalizeQualityReadConverter(
-                    is, readLimit, "", rf.getFilename());
-            dp.setName( stream_name );
-            dp.setWriter(new ReadWriter<Read, Spot>()
-            {
-                @Override
-                public void cascadeErrors() throws ReadWriterException { }
+            AutoNormalizeQualityReadConverter converter = new AutoNormalizeQualityReadConverter(
+                    is,
+                    new ReadWriter<Read, Spot>() {
+                        @Override
+                        public void cascadeErrors() throws ReadWriterException {
+                        }
 
-                @Override public void
-                write(Read spot )
-                {
-                	String readNameWithoutPairNumber;
-                	String pairNumber;
+                        @Override
+                        public void
+                        write(Read spot) {
+                            String readNameWithoutPairNumber;
+                            String pairNumber;
 
-                	try
-                	{
-                		readNameWithoutPairNumber = getReadKey(spot.name);
-                		pairNumber = getPairNumber(spot.name);
-                	} catch ( IllegalArgumentException dee )
-                	{
-                    	readNameWithoutPairNumber = spot.name;
-                    	pairNumber = stream_name;
-                	}
-                	
-                    if( labels.size() < MAX_LABEL_SET_SIZE ) {
-                        labels.add(pairNumber);
-                    }
-                    
-                    count.incrementAndGet();
-                    pairing.add( readNameWithoutPairNumber );
-                    duplications.add( spot.name);
-                    
-                    if( 0 == count.get() % print_freq )
-                        logProcessedReadNumber( count.get() );
-                }
+                            try {
+                                readNameWithoutPairNumber = getReadKey(spot.name);
+                                pairNumber = getPairNumber(spot.name);
+                            } catch (IllegalArgumentException dee) {
+                                readNameWithoutPairNumber = spot.name;
+                                pairNumber = stream_name;
+                            }
 
-                @Override
-                public void setWriter(ReadWriter<Spot, ?> readWriter) {
-                    throw new RuntimeException( "Not implemented" );
-                }
+                            if (labels.size() < MAX_LABEL_SET_SIZE) {
+                                labels.add(pairNumber);
+                            }
 
-                @Override
-                public boolean isOk() {
-                    return true;
-                }
-            } );
+                            count.incrementAndGet();
+                            pairing.add(readNameWithoutPairNumber);
+                            duplications.add(spot.name);
 
+                            if (0 == count.get() % print_freq)
+                                logProcessedReadNumber(count.get());
+                        }
 
-            log.info( "Processing file " + rf.getFilename() );
-            dp.start();
-            dp.join();
-            logProcessedReadNumber( count.get() );
-            logFlushMsg( String.format( "Processing completed. Result: %s\n",
-                null == dp.getStoredException() ? "OK" : String.valueOf( dp.getStoredException() ) ) );
+                        @Override
+                        public void setWriter(ReadWriter<Spot, ?> readWriter) {
+                            throw new RuntimeException("Not implemented");
+                        }
+                    },
+                    readLimit, "", rf.getFilename());
 
-            if( !dp.isOk() && !( dp.getStoredException() instanceof ConverterException) && !( dp.getStoredException() instanceof InvocationTargetException ) )
-                throw dp.getStoredException();
-            
-            Throwable t = dp.isOk() ? dp.getReadCount() > 0 ? null : new ConverterException( 0, "Empty file" )
-                                    : dp.getStoredException();
-            if( dp.isOk() && null == t )
-                return null;
-            
-            t = null == t ? new ConverterException( -1, "Unknown failure" ) : t;
-            t = t instanceof InvocationTargetException ? t.getCause() : t;
-            t = t instanceof ConverterException ? t : new ConverterException( t );
-            
-            ConverterException result = (ConverterException) t;
-            return result;
+            log.info("Processing file " + rf.getFilename());
+            converter.run();
+            logProcessedReadNumber(count.get());
+            if (converter.getReadCount() <= 0) {
+                throw new ConverterException( 0, "Empty file" );
+            }
         }
     }
 
-    
+
     private void
-    checkSingleFile( ValidationResult fileResult,
-                     RawReadsFile rf,
-                     Set<String> labelset,
-                     BloomWrapper pairing,
-                     BloomWrapper duplications ) throws Throwable
-    {
+    checkSingleFile(ValidationResult fileResult,
+                    RawReadsFile rf,
+                    Set<String> labelset,
+                    BloomWrapper pairing,
+                    BloomWrapper duplications) throws Throwable {
         AtomicLong count = new AtomicLong();
-        ConverterException converterException = read( rf, labelset, pairing, duplications, count );
-                        
-        if( null != converterException)
-        {
-            ValidationMessage dataProducerError = ValidationMessage.error( converterException.getMessage() );
+        try {
+            read(rf, labelset, pairing, duplications, count);
+
+            logFlushMsg("Processing completed. Result: OK\n");
+
+            fileResult.add(ValidationMessage.info(String.format("Collected %d reads", count.get())));
+            fileResult.add(ValidationMessage.info(String.format("Collected %d read labels: %s", labelset.size(), labelset)));
+            fileResult.add(ValidationMessage.info(String.format("Has possible duplicate read name(s): " + duplications.hasPossibleDuplicates())));
+        } catch (ConverterException converterException) {
+            logFlushMsg(String.format("Processing completed. Result: %s\n", converterException));
+
+            ValidationMessage dataProducerError = ValidationMessage.error(converterException.getMessage());
             dataProducerError.appendOrigin(new ValidationOrigin("line number", converterException.getLineNo()));
             fileResult.add(dataProducerError);
-        } else
-        {
-            fileResult.add(ValidationMessage.info( String.format( "Collected %d reads", count.get())));
-            fileResult.add(ValidationMessage.info( String.format( "Collected %d read labels: %s", labelset.size(), labelset )));
-            fileResult.add(ValidationMessage.info( String.format( "Has possible duplicate read name(s): " + duplications.hasPossibleDuplicates())));
         }
     }
-    
-    public boolean 
-    getPaired()
-    {
+
+    public boolean
+    getPaired() {
         return this.paired.get();
     }
-    
-    public void checkFiles( ValidationResult result, RawReadsFile... rfs ) throws Throwable {
-        if( null == rfs || rfs.length == 0) {
+
+    public void checkFiles(ValidationResult result, RawReadsFile... rfs) throws Throwable {
+        if (null == rfs || rfs.length == 0) {
             //terminal error
-            result.add( ValidationMessage.error( "No file provided." ));
+            result.add(ValidationMessage.error("No file provided."));
             return;
         }
 
@@ -226,7 +197,7 @@ FastqScanner
 
         /** Should ideally have high number of duplicates as it will point to higher pairing percentage.
          * To keep memory consumption lower, because we can tolerate false positive here, use lower expected read size. */
-        BloomWrapper mainFileOnlyPairing = new BloomWrapper( expected_size / 10 );
+        BloomWrapper mainFileOnlyPairing = new BloomWrapper(expected_size / 10);
 
         long mainFileReadCount = checkForDuplicatesAndAddPairingInformation(result, mainFile, mainFileOnlyPairing);
 
@@ -247,7 +218,7 @@ FastqScanner
             //Check for duplicates in the current file and add its pairing information to main file's pairing information
             //to determine how well these two are paired.
             long currentFileReadCount = checkForDuplicatesAndAddPairingInformation(
-                result, currentFile, currentAndMainFilePairing);
+                    result, currentFile, currentAndMainFilePairing);
 
             if (!result.isValid()) {
                 break;
@@ -259,42 +230,43 @@ FastqScanner
 
             long pairedCount = currentAndMainFilePairing.getPossibleDuplicateCount();
 
-            double pairingPercentage = 100 * ((double)pairedCount / (double)readCount);
+            double pairingPercentage = 100 * ((double) pairedCount / (double) readCount);
 
             pairedFiles.add(new PairedFiles(
-                mainFile.getFilename(), currentFile.getFilename(), pairingPercentage));
+                    mainFile.getFilename(), currentFile.getFilename(), pairingPercentage));
         }
-        
+
         if (!result.isValid())
             return;
 
         //Label set size and low pairing percentage validation.
 
-        if( labelset.size() <= rfs.length ) {
-            paired.set( true );
+        if (labelset.size() <= rfs.length) {
+            paired.set(true);
 
             PairedFiles lowestPairingPercentagePair = pairedFiles.stream()
-                .sorted(Comparator.comparingDouble(pair -> pair.pairingPercentage))
-                .findFirst().get();
+                    .sorted(Comparator.comparingDouble(pair -> pair.pairingPercentage))
+                    .findFirst().get();
 
             //TODO: estimate bloom false positives impact
-            if( lowestPairingPercentagePair.pairingPercentage < (double)PAIRING_THRESHOLD ) {
+            if (lowestPairingPercentagePair.pairingPercentage < (double) PAIRING_THRESHOLD) {
                 //terminal error
                 result.add(ValidationMessage.error(
-                    String.format( "Detected paired fastq submission with less than %d%% of paired reads between %s and %s",
-                        PAIRING_THRESHOLD, lowestPairingPercentagePair.fileName1, lowestPairingPercentagePair.fileName2 )));
+                        String.format("Detected paired fastq submission with less than %d%% of paired reads between %s and %s",
+                                PAIRING_THRESHOLD, lowestPairingPercentagePair.fileName1, lowestPairingPercentagePair.fileName2)));
             }
-        } else if( labelset.size() > rfs.length ) {
+        } else if (labelset.size() > rfs.length) {
             result.add(ValidationMessage.error(String.format(
-                "When submitting paired reads using two Fastq files the reads must follow Illumina paired read naming conventions. "
-                    + "This was not the case for the submitted Fastq files: %s. Unable to determine pairing from set: %s",
-                rfs,
-                labelset.stream().limit( 10 ).collect( Collectors.joining( ",", "", 10 < labelset.size() ? "..." : "" ) ) )));
+                    "When submitting paired reads using two Fastq files the reads must follow Illumina paired read naming conventions. "
+                            + "This was not the case for the submitted Fastq files: %s. Unable to determine pairing from set: %s",
+                    rfs,
+                    labelset.stream().limit(10).collect(Collectors.joining(",", "", 10 < labelset.size() ? "..." : "")))));
         }
     }
 
     /**
      * Check the file for duplicate read names and updates the given bloom wrapper with pairing information.
+     *
      * @param result
      * @param rf
      * @param pairing
@@ -302,77 +274,77 @@ FastqScanner
      * @throws Throwable
      */
     private long checkForDuplicatesAndAddPairingInformation(
-        ValidationResult result, RawReadsFile rf, BloomWrapper pairing) throws Throwable {
+            ValidationResult result, RawReadsFile rf, BloomWrapper pairing) throws Throwable {
 
         ValidationResult fileResult = rf.getReportFile() == null
-            ? result.create(new ValidationOrigin("file", rf.getFilename()))
-            : result.create( rf.getReportFile().toFile(), new ValidationOrigin("file", rf.getFilename() ) );
+                ? result.create(new ValidationOrigin("file", rf.getFilename()))
+                : result.create(rf.getReportFile().toFile(), new ValidationOrigin("file", rf.getFilename()));
 
         /** Should ideally have a low to 0 number of duplicates. */
-        BloomWrapper duplications = new BloomWrapper( expected_size );
+        BloomWrapper duplications = new BloomWrapper(expected_size);
 
         Set<String> flabelset = new HashSet<>();
-        checkSingleFile( fileResult, rf, flabelset, pairing, duplications );
-        labelset.addAll( flabelset );
+        checkSingleFile(fileResult, rf, flabelset, pairing, duplications);
+        labelset.addAll(flabelset);
 
         //extra check for suspected reads
-        if(fileResult.isValid() && duplications.hasPossibleDuplicates() ) {
+        if (fileResult.isValid() && duplications.hasPossibleDuplicates()) {
             // read name, list
-            Map<String, Set<String>> duplicates = findAllduplications( duplications, 100, rf );
+            Map<String, Set<String>> duplicates = findAllduplications(duplications, 100, rf);
 
             ValidationResult duplicationResult = result.create();
-            duplicates.entrySet().stream().forEach( e -> duplicationResult.add(ValidationMessage.error(
-                String.format( "Multiple (%d) occurrences of read name \"%s\" at: %s\n",
-                    e.getValue().size(),
-                    e.getKey(),
-                    e.getValue().toString()))));
+            duplicates.entrySet().stream().forEach(e -> duplicationResult.add(ValidationMessage.error(
+                    String.format("Multiple (%d) occurrences of read name \"%s\" at: %s\n",
+                            e.getValue().size(),
+                            e.getKey(),
+                            e.getValue().toString()))));
 
-            if( duplicationResult.isValid() ) {
-                result.add(ValidationMessage.info( "No actual duplicate read names found." ));
+            if (duplicationResult.isValid()) {
+                result.add(ValidationMessage.info("No actual duplicate read names found."));
             }
         }
 
         return duplications.getAddCount();
     }
-    
+
     private Map<String, Set<String>> findAllduplications(BloomWrapper duplications, int limit, RawReadsFile rf) {
-        Map<String, Integer> counts = new HashMap<>( limit );
-        Map<String, Set<String>> results = new LinkedHashMap<>( limit );
+        Map<String, Integer> counts = new HashMap<>(limit);
+        Map<String, Set<String>> results = new LinkedHashMap<>(limit);
 
         String msg = "Verifying possible duplicates for file " + rf.getFilename();
-        log.info( msg );
+        log.info(msg);
 
         FastqIterativeWriter wrapper = new FastqIterativeWriter();
-        wrapper.setFiles( new File[] { new File( rf.getFilename() ) } );
-        wrapper.setReadType( READ_TYPE.SINGLE );
+        wrapper.setFiles(new File[]{new File(rf.getFilename())});
+        wrapper.setReadType(READ_TYPE.SINGLE);
         wrapper.setReadLimit(readLimit);
 
-        Iterator<String> read_name_iterator = new DelegateIterator<PairedRead, String>( wrapper.iterator() ) {
+        Iterator<String> read_name_iterator = new DelegateIterator<PairedRead, String>(wrapper.iterator()) {
             @Override
-            public String convert( PairedRead obj ) {
+            public String convert(PairedRead obj) {
                 return obj.forward.name;
             }
         };
 
         long index = 1;
 
-        while( read_name_iterator.hasNext() ) {
+        while (read_name_iterator.hasNext()) {
             String read_name = read_name_iterator.next();
-            if( duplications.getPossibleDuplicates().contains( read_name ) ) {
-                counts.put( read_name, counts.getOrDefault( read_name, 0 ) + 1 );
-                Set<String> dlist = results.getOrDefault( read_name, new LinkedHashSet<>() );
-                dlist.add( rf.getFilename() + ", read " + index);
-                results.put( read_name, dlist );
+            if (duplications.getPossibleDuplicates().contains(read_name)) {
+                counts.put(read_name, counts.getOrDefault(read_name, 0) + 1);
+                Set<String> dlist = results.getOrDefault(read_name, new LinkedHashSet<>());
+                dlist.add(rf.getFilename() + ", read " + index);
+                results.put(read_name, dlist);
             }
             ++index;
         }
 
         return results.entrySet()
-                      .stream()
-                      //only read names occurring more than once are considered duplicates
-                      .filter( e-> counts.get(e.getKey()) > 1 )
-                      .limit( limit )
-                      .collect( Collectors.toMap( e -> e.getKey(), e -> e.getValue(), ( v1, v2 ) -> v1, LinkedHashMap::new ) );
+                .stream()
+                //only read names occurring more than once are considered duplicates
+                .filter(e -> counts.get(e.getKey()) > 1)
+                .limit(limit)
+                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (v1, v2) -> v1, LinkedHashMap::new));
     }
 
     private String getReadKey(String readName) {

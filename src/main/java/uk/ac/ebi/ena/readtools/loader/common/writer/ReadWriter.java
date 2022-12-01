@@ -14,5 +14,4 @@ public interface ReadWriter<T1 extends Spot, T2 extends Spot> {
     void cascadeErrors() throws ReadWriterException;
     void write(T1 spot ) throws ReadWriterException;
     void setWriter(ReadWriter<T2, ? extends Spot> readWriter);
-    boolean isOk();
 }

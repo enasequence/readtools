@@ -10,16 +10,26 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
-import java.io.IOException;
-import java.io.InputStream;
+public interface Converter {
+    /**
+     * Get the total number of reads that were read.
+     *
+     * @return
+     */
+    long getReadCount();
 
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
-import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
+    /**
+     * Get the total number of bases that were read.
+     *
+     * @return
+     */
+    long getBaseCount();
 
-
-public interface Converter<T extends Spot> {
-    T convert(InputStream inputStream) throws IOException;
-    void setWriter(ReadWriter<T, ?> writer );
-    boolean isOk();
-    Throwable getStoredException();
+    /** Read and write all reads.
+     */
+    void run();
+    /** Read and write the next read.
+     */
+    void runOnce();
+    boolean isDone();
 }
