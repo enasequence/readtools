@@ -8,9 +8,12 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.loader.common.writer;
+package uk.ac.ebi.ena.readtools.loader.fastq;
 
 
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
+import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
 public class
 PrintReadWriter<T1 extends Spot, T2 extends Spot> implements ReadWriter<T1, T2>

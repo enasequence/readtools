@@ -22,9 +22,11 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 public class
 PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
     // Provided readname structure is @{readkey}{separator:1(.|/|:|_)}{index:1(0:1:2)}
-    static final Pattern split_regexp = Pattern.compile("^(.*)(?:[\\.|:|/|_])([12])$");
+    static final Pattern split_regexp = Pattern.compile("^(.*)(?:[\\.|:|/|_])([0-9]+)$");
     static public final int KEY = 1;
     static public final int INDEX = 2;
+
+    Integer index1 = null, index2 = null;
 
     public PairedFastqWriter(File tmp_root, int spill_page_size, long spill_page_size_bytes, long spill_abandon_limit_bytes) {
         super(tmp_root, spill_page_size, spill_page_size_bytes, spill_abandon_limit_bytes);
@@ -75,10 +77,28 @@ PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
         } catch (ReadWriterException de) {
             readIndexStr = spot.defaultReadIndex;
         }
-
         int readIndex = Integer.parseInt(readIndexStr) - 1;
-        if (null == list.get(readIndex)) {
-            list.set(readIndex, spot);
+
+        /**
+         * Here read pair number found in the file
+         * will be mapped to 1st and 2nd items in the list
+         */
+        if (null == index1) {
+            index1 = readIndex;
+        } else {
+            if (null == index2) {
+                index2 = readIndex;
+            }
+        }
+        if (readIndex != index1 && readIndex != index2) {
+            throw new ReadWriterException(
+                    "Unexpected read pair number: " + readIndex
+                            + "; pair numbers " + index1 + " and " + index2 + " were found previously in the file.");
+        }
+        int mappedIndex = (readIndex == index1) ? 0 : 1;
+
+        if (null == list.get(mappedIndex)) {
+            list.set(mappedIndex, spot);
         } else {
             throw new RuntimeException("Got same spot twice: " + spot);
         }

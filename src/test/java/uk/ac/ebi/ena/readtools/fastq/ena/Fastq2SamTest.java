@@ -144,7 +144,7 @@ public class Fastq2SamTest {
         Assert.assertTrue(new File(params.data_file).length() > 0);
         Assert.assertEquals(6, fastq2Sam.getTotalReadCount());
         Assert.assertEquals(906, fastq2Sam.getTotalBaseCount());
-        Assert.assertEquals("01ce849441f1d3ac174ce6c2bb435849", calculateFileMd5(new File(params.data_file)));
+        Assert.assertEquals("b92a2541f62f6d000cf17c17827e6b4f", calculateFileMd5(new File(params.data_file)));
     }
 
     @Test

@@ -24,7 +24,6 @@ import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.IlluminaQualityNo
 import uk.ac.ebi.ena.readtools.common.reads.normalizers.htsjdk.StandardQualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ReadConverter;
-import uk.ac.ebi.ena.readtools.loader.common.writer.PrintReadWriter;
 
 public class 
 LoaderTest
