@@ -116,7 +116,6 @@ MultiFastqConverterIteratorTest
         System.out.printf( "passed\n" );
     }
 
-    @Ignore // ignore for now. fix with pair number handling update
     @Test
     public void
     iteratorPairedTest3()

@@ -103,7 +103,7 @@ SPACE HERE
             "^@(.+)( +|\\t+)([0-9]+):[YN]:[0-9]*[02468]($|:.*$)" );
 
     // regexs
-    final static Pattern p_base_name = Pattern.compile( "^@(\\S*)( .*$|\\t.*$|$)" ); // for name of the record
+    final static Pattern p_base_name = Pattern.compile( "^@(.*)" ); // for name of the record
     final static private Pattern p_bases     = Pattern.compile( "^([ACGTNUactgnu.]*?)\\+$" ); // bases, trailing '+' is obligatory
     final static private Pattern p_qual_name = Pattern.compile( "^(\\S*)(?: .*$|$)" );  // name of quality record
     //  Pattern p_quals     = Pattern.compile( "^([\\!\\\"\\#\\$\\%\\&\\'\\(\\)\\*\\+,\\-\\.\\/0-9:;<=>\\?\\@A-I]+)$" ); //qualities

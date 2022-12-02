@@ -100,7 +100,7 @@ public class Fastq2SamTest {
         Assert.assertEquals("01ce849441f1d3ac174ce6c2bb435849", calculateFileMd5(new File(params.data_file)));
     }
 
-    @Ignore // only run manually if needed
+    @Ignore("Only run manually if needed.")
     @Test
     public void twoLargeFilesManualTest() throws IOException, ConverterException, ReadWriterException {
         Fastq2Sam.Params params = new Fastq2Sam.Params();
@@ -110,12 +110,12 @@ public class Fastq2SamTest {
         params.compression = FileCompression.GZ.name();
         params.files = Arrays.asList(
                 new File(Fastq2SamTest.class.getClassLoader()
-                        .getResource("F1.fq.gz").getFile()).getAbsolutePath(),
+                        .getResource("HG3JFDRXY_1_IDT-DUI-NXT-193_1.fastq.gz").getFile()).getAbsolutePath(),
                 new File(Fastq2SamTest.class.getClassLoader()
-                        .getResource("F2.fq.gz").getFile()).getAbsolutePath());
+                        .getResource("HG3JFDRXY_1_IDT-DUI-NXT-193_2.fastq.gz").getFile()).getAbsolutePath());
 
-        params.spill_page_size_bytes = 1024L * 1024L;
-        params.spill_abandon_limit_bytes = 2L * 1024L * 1024L;
+        params.spill_page_size_bytes = 1024L * 1024L * 1024L;
+        params.spill_abandon_limit_bytes = 1024L * 1024L * 1024L;
 
         Fastq2Sam fastq2Sam = new Fastq2Sam();
         fastq2Sam.create(params);
