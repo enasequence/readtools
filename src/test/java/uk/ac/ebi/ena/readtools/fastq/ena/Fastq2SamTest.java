@@ -110,18 +110,41 @@ public class Fastq2SamTest {
         params.compression = FileCompression.GZ.name();
         params.files = Arrays.asList(
                 new File(Fastq2SamTest.class.getClassLoader()
-                        .getResource("HG3JFDRXY_1_IDT-DUI-NXT-193_1.fastq.gz").getFile()).getAbsolutePath(),
+                        .getResource("F1.fastq.gz").getFile()).getAbsolutePath(),
                 new File(Fastq2SamTest.class.getClassLoader()
-                        .getResource("HG3JFDRXY_1_IDT-DUI-NXT-193_2.fastq.gz").getFile()).getAbsolutePath());
+                        .getResource("F2.fastq.gz").getFile()).getAbsolutePath());
 
-        params.spill_page_size_bytes = 1024L * 1024L * 1024L;
-        params.spill_abandon_limit_bytes = 1024L * 1024L * 1024L;
+        params.spill_page_size_bytes = 2L * 1024L * 1024L * 1024L;
+        params.spill_abandon_limit_bytes = 10L * 1024L * 1024L * 1024L;
 
         Fastq2Sam fastq2Sam = new Fastq2Sam();
         fastq2Sam.create(params);
 
-        System.out.println("stats: " + fastq2Sam.getTotalReadCount() + " " + fastq2Sam.getTotalBaseCount());
         Assert.assertTrue(new File(params.data_file).length() > 0);
+    }
+
+    @Test
+    public void pairedFastqPairNumber3()
+            throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+
+        Fastq2Sam.Params params = new Fastq2Sam.Params();
+        params.tmp_root = System.getProperty("java.io.tmpdir");
+        params.sample_name = "SM-001";
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+        params.compression = FileCompression.NONE.name();
+        params.files = Arrays.asList(
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_read_num_eq3_1.fastq").getFile()).getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_read_num_eq3_2.fastq").getFile()).getAbsolutePath());
+
+        Fastq2Sam fastq2Sam = new Fastq2Sam();
+        fastq2Sam.create(params);
+
+        Assert.assertTrue(new File(params.data_file).length() > 0);
+        Assert.assertEquals(6, fastq2Sam.getTotalReadCount());
+        Assert.assertEquals(906, fastq2Sam.getTotalBaseCount());
+        Assert.assertEquals("01ce849441f1d3ac174ce6c2bb435849", calculateFileMd5(new File(params.data_file)));
     }
 
     @Test
