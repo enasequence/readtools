@@ -71,6 +71,11 @@ ReadReaderTest {
 
 		Assert.assertTrue( ReadReader.p_casava_1_8_name
 				.matcher( "@JAXVAFT.MTP3.D21.48_239647 M00990:616:000000000-JKYVV:1:1101:20204:2129 1:N:0:TTACTGTGCG+GATTCCTA" ).matches() );
+
+		Assert.assertFalse( ReadReader.p_casava_1_8_name
+				.matcher( "@A00953:544:HMTFHDSX3:2:1101:23981:1814" ).matches() );
+		Assert.assertTrue( ReadReader.p_base_name
+				.matcher( "@A00953:544:HMTFHDSX3:2:1101:23981:1814" ).matches() );
 	}
 
 	@Test

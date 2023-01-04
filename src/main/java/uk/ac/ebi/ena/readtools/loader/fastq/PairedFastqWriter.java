@@ -22,7 +22,7 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 public class
 PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
     // Provided readname structure is @{readkey}{separator:1(.|/|:|_)}{index:1(0:1:2)}
-    static final Pattern split_regexp = Pattern.compile("^(.*)(?:[\\.|:|/|_])([0-9]+)$");
+    static final Pattern split_regexp = Pattern.compile("^(.*)(?:[\\.|:|/|_])([0-9])$");
     static public final int KEY = 1;
     static public final int INDEX = 2;
 
@@ -38,7 +38,7 @@ PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
     }
 
     public static String
-    getReadIndex(String readname) throws ReadWriterException {
+    getPairNumber(String readname) throws ReadWriterException {
         return getReadPart(readname, INDEX);
     }
 
@@ -73,7 +73,7 @@ PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
     append(List<Read> list, Read spot) throws ReadWriterException {
         String readIndexStr;
         try {
-            readIndexStr = getReadIndex(spot.name);
+            readIndexStr = getPairNumber(spot.name);
         } catch (ReadWriterException de) {
             readIndexStr = spot.defaultReadIndex;
         }

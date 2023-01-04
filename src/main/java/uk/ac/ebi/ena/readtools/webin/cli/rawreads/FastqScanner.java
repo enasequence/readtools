@@ -25,8 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -39,6 +37,7 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter.READ_TYPE;
+import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 import uk.ac.ebi.ena.readtools.utils.Utils;
@@ -57,8 +56,6 @@ FastqScanner {
     private static final int DEFAULT_PRINT_FREQ = 1_000;
     private static final String PRINT_FREQ_PROPERTY_NAME = "webincli.scanner.print.freq";
     private static final int print_freq = Integer.valueOf(System.getProperty(PRINT_FREQ_PROPERTY_NAME, String.valueOf(DEFAULT_PRINT_FREQ)));
-
-    private static final Pattern READ_PAIR_NUMBER_SPLIT_PATTERN = Pattern.compile("^(.*)(?:[\\.|:|/|_])([1-9][0-9]*)$");
 
     private static final Logger log = LoggerFactory.getLogger(FastqScanner.class);
 
@@ -116,9 +113,9 @@ FastqScanner {
                             String pairNumber;
 
                             try {
-                                readNameWithoutPairNumber = getReadKey(spot.name);
-                                pairNumber = getPairNumber(spot.name);
-                            } catch (IllegalArgumentException dee) {
+                                readNameWithoutPairNumber = PairedFastqWriter.getReadKey(spot.name);
+                                pairNumber = PairedFastqWriter.getPairNumber(spot.name);
+                            } catch (ReadWriterException ignored) {
                                 readNameWithoutPairNumber = spot.name;
                                 pairNumber = stream_name;
                             }
@@ -345,23 +342,6 @@ FastqScanner {
                 .filter(e -> counts.get(e.getKey()) > 1)
                 .limit(limit)
                 .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (v1, v2) -> v1, LinkedHashMap::new));
-    }
-
-    private String getReadKey(String readName) {
-        return getReadPart(readName, 1);
-    }
-
-    private String getPairNumber(String readName) {
-        return getReadPart(readName, 2);
-    }
-
-    private String getReadPart(String readName, int group) {
-        Matcher m = READ_PAIR_NUMBER_SPLIT_PATTERN.matcher(readName);
-        if (m.find()) {
-            return m.group(group);
-        }
-
-        throw new IllegalArgumentException(String.format("Readname [%s] does not match regexp.", readName));
     }
 
     private static class PairedFiles {
