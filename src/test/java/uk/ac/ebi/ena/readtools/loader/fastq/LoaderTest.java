@@ -60,8 +60,8 @@ LoaderTest
     boolean 
     read( String resource, final QualityNormalizer normalizer ) throws Exception
     {
-        InputStream is = getClass().getResourceAsStream( "/resources/" + resource );
-        is = is == null ? new FileInputStream( new File( "resources/" + resource ) ) : is;
+        InputStream is = getClass().getResourceAsStream( "src/test/resources/" + resource );
+        is = is == null ? new FileInputStream( new File( "src/test/resources/" + resource ) ) : is;
         try
         {
             return read( is, resource, normalizer );
@@ -92,13 +92,13 @@ LoaderTest
     {
         IlluminaQualityNormalizer normalizer = new IlluminaQualityNormalizer();
         
-        if( !read( "mp3_schw3.fq", normalizer) )
+        if( !read("mp3_schw3.fq", normalizer) )
             throw new Exception( "fail!" );
         
-        if( !read( "fastq_spots_correct.txt", normalizer ) )
+        if( !read("fastq_spots_correct.txt", normalizer ) )
             throw new Exception( "fail!" );
         
-        if( !read( "fastq_casava1_8_correct.txt", normalizer ) )
+        if( !read("fastq_casava1_8_correct.txt", normalizer ) )
             throw new Exception( "fail!" );
 
     }
@@ -110,25 +110,25 @@ LoaderTest
         StandardQualityNormalizer stdNormalizer = new StandardQualityNormalizer();
         IlluminaQualityNormalizer illNormalizer = new IlluminaQualityNormalizer();
 
-        if( read( "fastq_spot_incorrect.txt", illNormalizer ) )
+        if( read("fastq_spot_incorrect.txt", illNormalizer ) )
             throw new Exception( "fail!" );
 
-        if( read( "fastq_spot_incorrect2.txt", illNormalizer ) )
+        if( read("fastq_spot_incorrect2.txt", illNormalizer ) )
             throw new Exception( "fail!" );
 
-        if( read( "fastq_spot_incorrect3.txt", illNormalizer ) )
+        if( read("fastq_spot_incorrect3.txt", illNormalizer ) )
             throw new Exception( "fail!" );
         
-        if( read( "fastq_spot_incorrect4.txt", illNormalizer ) )
+        if( read("fastq_spot_incorrect4.txt", illNormalizer ) )
             throw new Exception( "fail!" );
 
-        if( read( "fastq_spot_incorrect5.txt", illNormalizer ) )
+        if( read("fastq_spot_incorrect5.txt", illNormalizer ) )
             throw new Exception( "fail!" );
 
-        if( read( "fastq_spot_incorrect6.txt", stdNormalizer ) )
+        if( read("fastq_spot_incorrect6.txt", stdNormalizer ) )
             throw new Exception( "fail!" );
 
-        if( read( "fastq_casava1_8_incorrect.txt", stdNormalizer ) )
+        if( read("fastq_casava1_8_incorrect.txt", stdNormalizer ) )
             throw new Exception( "fail!" );
 
     }

@@ -64,7 +64,7 @@ FastqScannerTest
     @Test public void
     testSingle() throws Throwable
     {
-        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.gz" );
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource("rawreads/EP0_GTTCCTT_S1.txt.gz");
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf = new RawReadsFile();
         
@@ -81,7 +81,7 @@ FastqScannerTest
     @Test public void
     testSingle2() throws Throwable
     {
-        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/SPOP-87C_plKO2-min.fastq.gz" );
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource("rawreads/SPOP-87C_plKO2-min.fastq.gz");
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf = new RawReadsFile();
 
@@ -98,7 +98,7 @@ FastqScannerTest
     @Test public void
     testSingleDuplications() throws Throwable
     {
-        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.dup.gz" );
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource("rawreads/EP0_GTTCCTT_S1.txt.dup.gz");
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf = new RawReadsFile();
 
@@ -115,7 +115,7 @@ FastqScannerTest
     @Test public void
     testPaired() throws Throwable
     {
-        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_0.txt.gz" );
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource("rawreads/EP0_GTTCCTT_0.txt.gz");
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf = new RawReadsFile();
         
@@ -132,8 +132,8 @@ FastqScannerTest
     @Test public void
     testPair() throws Throwable
     {
-        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.gz" );
-        URL  url2 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S2.txt.gz" );
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource("rawreads/EP0_GTTCCTT_S1.txt.gz");
+        URL  url2 = FastqScannerTest.class.getClassLoader().getResource("rawreads/EP0_GTTCCTT_S2.txt.gz");
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( new File( url1.getFile() ).getCanonicalPath() );
@@ -151,8 +151,8 @@ FastqScannerTest
     @Test public void
     testPaired2() throws Throwable
     {
-        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/CI26.26-min.fastq.gz" );
-        URL  url2 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/RRCI26.26-min.fastq.gz" );
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource("rawreads/CI26.26-min.fastq.gz");
+        URL  url2 = FastqScannerTest.class.getClassLoader().getResource("rawreads/RRCI26.26-min.fastq.gz");
         FastqScanner fs = new MyScanner( expected_reads );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( new File( url1.getFile() ).getCanonicalPath() );
@@ -789,8 +789,8 @@ FastqScannerTest
     @Test public void 
     testPairWithDuplication() throws Throwable
     {
-        URL  url2 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.dup.gz" );
-        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S2.txt.gz" );
+        URL  url2 = FastqScannerTest.class.getClassLoader().getResource("rawreads/EP0_GTTCCTT_S1.txt.dup.gz");
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource("rawreads/EP0_GTTCCTT_S2.txt.gz");
 
         FastqScanner fs = new MyScanner( expected_reads );
         
@@ -811,7 +811,7 @@ FastqScannerTest
     @Test public void 
     testPairWithDuplication2() throws Throwable
     {
-        URL  url2 = FastqScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S1.txt.dup.gz" );
+        URL  url2 = FastqScannerTest.class.getClassLoader().getResource("rawreads/EP0_GTTCCTT_S1.txt.dup.gz");
         //URL  url1 = GenomeAssemblyWebinCliTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/EP0_GTTCCTT_S2.txt.gz" );
         FastqScanner fs = new MyScanner( expected_reads );
         //RawReadsFile rf1 = new RawReadsFile();
@@ -882,7 +882,7 @@ FastqScannerTest
 
     @Test
     public void testInvalid() throws Throwable {
-        URL  url1 = FastqScannerTest.class.getClassLoader().getResource( "invalid.fastq.gz" );
+        URL  url1 = FastqScannerTest.class.getClassLoader().getResource("invalid.fastq.gz");
 
         RawReadsFile rf = new RawReadsFile();
 
@@ -928,10 +928,10 @@ FastqScannerTest
 
     @Test
     public void test4PairedFastqs() throws Throwable {
-        URL url1 = FastqScannerTest.class.getClassLoader().getResource( "10x/4fastq/I1.fastq" );
-        URL url2 = FastqScannerTest.class.getClassLoader().getResource( "10x/4fastq/R1.fastq" );
-        URL url3 = FastqScannerTest.class.getClassLoader().getResource( "10x/4fastq/R2.fastq" );
-        URL url4 = FastqScannerTest.class.getClassLoader().getResource( "10x/4fastq/R3.fastq" );
+        URL url1 = FastqScannerTest.class.getClassLoader().getResource("10x/4fastq/I1.fastq");
+        URL url2 = FastqScannerTest.class.getClassLoader().getResource("10x/4fastq/R1.fastq");
+        URL url3 = FastqScannerTest.class.getClassLoader().getResource("10x/4fastq/R2.fastq");
+        URL url4 = FastqScannerTest.class.getClassLoader().getResource("10x/4fastq/R3.fastq");
 
         FastqScanner fs = new MyScanner( expected_reads );
 

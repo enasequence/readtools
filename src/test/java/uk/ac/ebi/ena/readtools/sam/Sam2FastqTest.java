@@ -61,7 +61,7 @@ Sam2FastqTest
 
 	@Test
 	public void convertCram2Fastq2Files() throws Exception {
-		String baseDir = "cram2fastq/2fastq/";
+		String baseDir = "2fastq/";
 		String fileNamePrefix = "28239_1822";
 		String fileExt = ".cram";
 

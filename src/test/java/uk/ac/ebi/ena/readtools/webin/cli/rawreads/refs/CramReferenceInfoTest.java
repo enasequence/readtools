@@ -28,7 +28,7 @@ CramReferenceInfoTest
     @Ignore("Tests fails with an invalid sequence name error. The cram file that is being tested must be replaced with another one that has valid sequence names.")
     @Test public void
     testUnalignedCram() throws IOException, NoSuchFieldException, IllegalAccessException {
-        URL url = BamScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/nc-RNAs_DKC1_WT_1_1st_read.cram" );
+        URL url = BamScannerTest.class.getClassLoader().getResource("rawreads/nc-RNAs_DKC1_WT_1_1st_read.cram");
         File file = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
         CramReferenceInfo cri = new CramReferenceInfo();
         Map<?,?> result = cri.confirmFileReferences( file );
@@ -39,7 +39,7 @@ CramReferenceInfoTest
     @Test public void
     testCorrectCramHeader() throws IOException
     {
-        URL url = BamScannerTest.class.getClassLoader().getResource( "uk/ac/ebi/ena/webin/cli/rawreads/15194_1#135.cram" );
+        URL url = BamScannerTest.class.getClassLoader().getResource("rawreads/15194_1#135.cram");
         File file = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
         CramReferenceInfo cri = new CramReferenceInfo();
         Map<?,?> result = cri.confirmFileReferences( file );

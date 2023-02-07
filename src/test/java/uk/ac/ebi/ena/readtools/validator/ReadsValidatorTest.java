@@ -32,11 +32,11 @@ public class ReadsValidatorTest {
         Path reportFile = Files.createTempFile(workDir, "", ".report");
 
         File filePath1 = new File(ReadsValidatorTest.class.getClassLoader().getResource(
-            "10x/3fastq/I1.fastq").getFile());
+                "10x/3fastq/I1.fastq").getFile());
         File filePath2 = new File(ReadsValidatorTest.class.getClassLoader().getResource(
-            "10x/3fastq/R1.fastq").getFile());
+                "10x/3fastq/R1.fastq").getFile());
         File filePath3 = new File(ReadsValidatorTest.class.getClassLoader().getResource(
-            "10x/3fastq/R2.fastq").getFile());
+                "10x/3fastq/R2.fastq").getFile());
 
         SubmissionFiles<ReadsManifest.FileType> submissionFiles = new SubmissionFiles<>();
         submissionFiles.add(new SubmissionFile<>(ReadsManifest.FileType.FASTQ, filePath1, reportFile.toFile()));

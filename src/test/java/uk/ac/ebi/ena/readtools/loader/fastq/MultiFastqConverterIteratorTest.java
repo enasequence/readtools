@@ -50,8 +50,8 @@ MultiFastqConverterIteratorTest
     {
         FastqIterativeWriter wrapper = new FastqIterativeWriter();
         
-        wrapper.setFiles( new File[] { new File( "resources/T966_R1.fastq.gz" ),  
-                                       new File( "resources/T966_R2.fastq.gz" ) } );
+        wrapper.setFiles( new File[] { new File( "src/test/resources/T966_R1.fastq.gz" ),
+                                       new File( "src/test/resources/T966_R2.fastq.gz" ) } );
         
         wrapper.setNormalizers( new QualityNormalizer[] { new StandardQualityNormalizer() } );
         wrapper.setReadType( READ_TYPE.PAIRED );
@@ -93,8 +93,8 @@ MultiFastqConverterIteratorTest
     {
         FastqIterativeWriter wrapper = new FastqIterativeWriter();
         
-        wrapper.setFiles( new File[] { new File( "resources/fastq_spots_correct2_1a.txt" ),
-                                       new File( "resources/fastq_spots_correct2_2a.txt" ) } );
+        wrapper.setFiles( new File[] { new File( "src/test/resources/fastq_spots_correct2_1a.txt" ),
+                                       new File( "src/test/resources/fastq_spots_correct2_2a.txt" ) } );
         
         wrapper.setNormalizers( new QualityNormalizer[] { new StandardQualityNormalizer() } );
         wrapper.setReadType( READ_TYPE.PAIRED );
@@ -121,8 +121,8 @@ MultiFastqConverterIteratorTest
     {
         FastqIterativeWriter wrapper = new FastqIterativeWriter();
 
-        wrapper.setFiles( new File[] { new File( "resources/fastq_spots_correct2_1.txt" ),
-                                       new File( "resources/fastq_spots_correct2_2.txt" ) } );
+        wrapper.setFiles( new File[] { new File( "src/test/resources/fastq_spots_correct2_1.txt" ),
+                                       new File( "src/test/resources/fastq_spots_correct2_2.txt" ) } );
 
         wrapper.setNormalizers( new QualityNormalizer[] { new StandardQualityNormalizer() } );
         wrapper.setReadType( READ_TYPE.PAIRED );
