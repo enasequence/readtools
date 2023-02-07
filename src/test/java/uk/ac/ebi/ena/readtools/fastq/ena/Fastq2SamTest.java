@@ -242,8 +242,8 @@ public class Fastq2SamTest {
                         .getResource("fastq_spots_correct_paired_with_unpaired_2a.txt").getFile())
                         .getAbsolutePath());
 
-        params.spill_page_size_bytes = 200L;
-        params.spill_abandon_limit_bytes = 201L;
+        params.spill_page_size_bytes = 16L;
+        params.spill_abandon_limit_bytes = 16L;
 
         Fastq2Sam fastq2Sam = new Fastq2Sam();
 

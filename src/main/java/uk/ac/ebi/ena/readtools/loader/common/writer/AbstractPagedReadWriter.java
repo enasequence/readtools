@@ -63,7 +63,7 @@ AbstractPagedReadWriter<T1 extends Spot, T2 extends Spot> extends AbstractReadWr
 
     private File
     getTempFile() throws IOException {
-        String prefix = String.format("TREAD_%d_TIME_%d_FILE_", Thread.currentThread().getId(), System.currentTimeMillis());
+        String prefix = String.format("THREAD_%d_TIME_%d_FILE_", Thread.currentThread().getId(), System.currentTimeMillis());
         String suffix = String.format("_PAGE_%d", files.size());
         File tmp_file = File.createTempFile(prefix, suffix, tmp_root);
 
@@ -72,7 +72,7 @@ AbstractPagedReadWriter<T1 extends Spot, T2 extends Spot> extends AbstractReadWr
         return tmp_file;
     }
 
-    public synchronized File
+    public File
     spillMap(Map<String, List<T1>> map) {
         long started = System.currentTimeMillis();
         try {
@@ -128,7 +128,7 @@ AbstractPagedReadWriter<T1 extends Spot, T2 extends Spot> extends AbstractReadWr
     }
 
 
-    public synchronized Map<String, List<T1>>
+    public Map<String, List<T1>>
     fillMap(File file) {
         Map<String, List<T1>> result = new HashMap<>(spill_page_size);
         ObjectInputStream ois = null;
@@ -175,16 +175,26 @@ AbstractPagedReadWriter<T1 extends Spot, T2 extends Spot> extends AbstractReadWr
     public List<T1>
     newListBucket() {
         if (use_spill) {
-            if (spill_page_size <= super.spots.size()
-                    || spill_page_size_bytes <= super.spotsSizeBytes) {
+            if (spill_page_size <= super.spots.size() || spill_page_size_bytes <= super.spotsSizeBytes) {
+
+                if (spill_page_size <= super.spots.size()) {
+                    System.out.println("read count limit, reads: " + spots.size() + " bytes: " + super.spotsSizeBytes);
+                }
+
+                if (spill_page_size_bytes <= super.spotsSizeBytes) {
+                    System.out.println("bytes limit, reads: " + spots.size() + " bytes: " + super.spotsSizeBytes);
+                }
 
                 if (spill_abandon_limit_bytes > 0 && spill_total_bytes >= spill_abandon_limit_bytes) {
                     throw new ReadWriterMemoryLimitException(
                             "Temp memory limit " + spill_abandon_limit_bytes + " bytes reached");
                 } else {
                     spill_total_bytes += super.spotsSizeBytes;
+
                     spillMap(super.spots);
+
                     super.spots.clear();
+                    super.spotsSizeBytes = 0;
                 }
             }
         }
@@ -193,7 +203,7 @@ AbstractPagedReadWriter<T1 extends Spot, T2 extends Spot> extends AbstractReadWr
     }
 
 
-    public synchronized void
+    public void
     cascadeErrors() throws ReadWriterException {
         if (use_spill && files.size() > 0) {
             try {

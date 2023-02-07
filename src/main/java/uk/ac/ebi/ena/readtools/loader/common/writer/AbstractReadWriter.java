@@ -11,7 +11,6 @@
 package uk.ac.ebi.ena.readtools.loader.common.writer;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,13 +63,13 @@ AbstractReadWriter<T1 extends Spot, T2 extends Spot> implements ReadWriter<T1, T
 
     public List<T1>
     newListBucket() {
-        return Collections.synchronizedList(new ArrayList<T1>());
+        return new ArrayList<T1>();
     }
 
     public abstract boolean
     isCollected(List<T1> list);
 
-    public synchronized void
+    public void
     cascadeErrors() throws ReadWriterException {
         for (Entry<String, List<T1>> entry : spots.entrySet()) {
             if (null != readWriter)
@@ -91,31 +90,28 @@ AbstractReadWriter<T1 extends Spot, T2 extends Spot> implements ReadWriter<T1, T
         String key = getKey(spot);
         List<T1> bucket;
 
-        synchronized (spots) {
-            if (!spots.containsKey(key)) {
-                bucket = newListBucket();
-                spots.put(key, bucket);
+        if (!spots.containsKey(key)) {
+            bucket = newListBucket();
+            spots.put(key, bucket);
+        } else {
+            bucket = spots.get(key);
+        }
+
+        ate++;
+        append(bucket, spot);
+        spotsSizeBytes += spot.getSizeBytes();
+
+        if (isCollected(bucket)) {
+            T2 assembly = assemble(key, bucket);
+            assembled++;
+
+            List<T1> removed = spots.remove(key);
+            spotsSizeBytes -= bucketSize(removed);
+
+            if (null != readWriter) {
+                readWriter.write(assembly);
             } else {
-                bucket = spots.get(key);
-            }
-
-            ate++;
-            append(bucket, spot);
-            spotsSizeBytes += spot.getSizeBytes();
-
-            if (isCollected(bucket)) {
-                T2 assembly = assemble(key, bucket);
-                assembled++;
-                {
-                    List<T1> removed = spots.remove(key);
-                    spotsSizeBytes -= bucketSize(removed);
-                }
-
-                if (null != readWriter) {
-                    readWriter.write(assembly);
-                } else {
-                    System.out.println(assembly);
-                }
+                System.out.println(assembly);
             }
         }
 
