@@ -125,6 +125,33 @@ public class Fastq2SamTest {
         Assert.assertEquals(906, fastq2Sam.getTotalBaseCount());
         Assert.assertEquals("5309b2a5e8f0a76a836ce2ad7a5ae89d", calculateFileMd5(new File(params.data_file)));
     }
+
+    @Test
+    public void pairedFastqCasavaLikeNoPairNumFlowcellDash()
+            throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+
+        Fastq2Sam.Params params = new Fastq2Sam.Params();
+        params.tmp_root = System.getProperty("java.io.tmpdir");
+        params.sample_name = "SM-001";
+        params.data_file = Files.createTempFile(null, ".bam").toString();
+        params.compression = FileCompression.NONE.name();
+        params.files = Arrays.asList(
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_correct2_1d.txt").getFile())
+                        .getAbsolutePath(),
+                new File(Fastq2SamTest.class.getClassLoader()
+                        .getResource("fastq_spots_correct2_2d.txt").getFile())
+                        .getAbsolutePath());
+
+        Fastq2Sam fastq2Sam = new Fastq2Sam();
+        fastq2Sam.create(params);
+
+        Assert.assertTrue(new File(params.data_file).length() > 0);
+        Assert.assertEquals(6, fastq2Sam.getTotalReadCount());
+        Assert.assertEquals(906, fastq2Sam.getTotalBaseCount());
+        Assert.assertEquals("123c28d7c0123afa83e273bd766804c5", calculateFileMd5(new File(params.data_file)));
+    }
+
     @Test
     public void pairedFastqCasavaLikeSingleDigitYNoPairNum()
             throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {

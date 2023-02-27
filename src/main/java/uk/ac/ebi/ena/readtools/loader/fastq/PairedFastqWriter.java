@@ -44,7 +44,7 @@ PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
     //    A00953:544:HMTFHDSX3:2:1101:6768:1
     //             1        :  2   :    3       :   4  :  5   :   6   :  7
     //    "^([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)$"
-    static final Pattern CASAVA_LIKE_EXCLUDE_REGEXP = Pattern.compile("^([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)$");
+    static final Pattern CASAVA_LIKE_EXCLUDE_REGEXP = Pattern.compile("^([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9_-]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)$");
 
     static public final int KEY = 1;
     static public final int INDEX = 2;
