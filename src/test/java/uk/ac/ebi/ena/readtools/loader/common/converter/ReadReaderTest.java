@@ -124,4 +124,46 @@ ReadReaderTest {
 		Assert.assertEquals(basesInput, ex.getBases());
 		Assert.assertArrayEquals(new Character[]{'X', 'x'}, ex.getInvalidCharacters().toArray());
 	}
+
+	@Test
+	public void testReadNameLengthExceeds256() throws Exception {
+		String basesInput = "AGCTUagctuAGCTUagctu";
+		String fullInput = String.format("%s\n%s\n%s\n%s",
+				"@0000000000000000000000000000000000000000000000000000000000000000" +
+						"0000000000000000000000000000000000000000000000000000000000000000" +
+						"0000000000000000000000000000000000000000000000000000000000000000" +
+						"0000000000000000000000000000000000000000000000000000000000000000" +
+						"1",
+				basesInput,
+				"+",
+				"FFFFFFFFFFFFFFFFFFFF");
+
+		//DataSpot keeps reading until it sees '+' symbol on a new line which is in compliance with Fastq standard.
+		try(InputStream is = new ByteArrayInputStream((fullInput).getBytes(StandardCharsets.UTF_8))) {
+			ReadReader ds = new ReadReader(new StandardQualityNormalizer());
+			ds.read(is);
+			Assert.fail();
+		} catch (ConverterException e) {
+			Assert.assertTrue(e.getMessage().contains("Line's length exceeds 256 characters"));
+		}
+	}
+
+	@Test
+	public void testReadNameLength256() throws Exception {
+		String basesInput = "AGCTUagctuAGCTUagctu";
+		String fullInput = String.format("%s\n%s\n%s\n%s",
+				"@0000000000000000000000000000000000000000000000000000000000000000" +
+						"0000000000000000000000000000000000000000000000000000000000000000" +
+						"0000000000000000000000000000000000000000000000000000000000000000" +
+						"0000000000000000000000000000000000000000000000000000000000000000",
+				basesInput,
+				"+",
+				"FFFFFFFFFFFFFFFFFFFF");
+
+		//DataSpot keeps reading until it sees '+' symbol on a new line which is in compliance with Fastq standard.
+		try(InputStream is = new ByteArrayInputStream((fullInput).getBytes(StandardCharsets.UTF_8))) {
+			ReadReader ds = new ReadReader(new StandardQualityNormalizer());
+			ds.read(is);
+		}
+	}
 }

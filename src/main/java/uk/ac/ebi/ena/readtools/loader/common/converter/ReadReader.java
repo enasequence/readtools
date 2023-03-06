@@ -190,6 +190,11 @@ SPACE HERE
         while( line.trim().length() == 0 )
             line = readLine( is );
 
+        if (line.trim().length() > 257) // uint8 + @ character
+            throw new ConverterException(
+                    params.line_no,
+                    String.format("Line's length exceeds 256 characters: [%s]", line));
+
         //Try to determine read style
         if( null == params.read_style )
         {
