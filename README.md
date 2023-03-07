@@ -1,9 +1,10 @@
-# readtools
-## ENA read tools
+# Readtools
 
-#### Typical cramtools usage in processing:
+Readtools is a Java library for reading and validating read data file formats including Fastq, BAM and CRAM. It is used by Webin-CLI and ENA's internal processing pipelines.
 
-* cram dump:
-java -XX:+UseSerialGC -Xmx10G -Dsamjdk.use_cram_ref_download=true -Djava.io.tmpdir="/var/tmp" -cp readtools.jar uk.ac.ebi.ena.readtools.cram.CramTools fastq --reverse --gzip $@
-* cram stats:
-java -XX:+UseSerialGC -Xmx4G -cp readtools.jar uk.ac.ebi.ena.readtools.cram.CramTools bam -c -F 2304 -I $@
+# License
+
+Copyright 2015-2023 EMBL - European Bioinformatics Institute Licensed under the Apache License, Version 2.0 (the "License"); 
+you may not use this file except in compliance with the License. 
+You may obtain a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0 
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
