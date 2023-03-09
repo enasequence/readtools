@@ -567,24 +567,29 @@ ENAReferenceSource implements CRAMReferenceSource
             {
                 log.debug( String.format( "Adding to REF_CACHE: md5=%s, length=%d", md5, data.length ) );
                 cachedFile.getParentFile().mkdirs();
-                File tmpFile;
-                try
+                File tempDir = cachedFile.getParentFile();
+                File tmpFile = null;
+                try {
+                    tmpFile = File.createTempFile( md5, ".tmp", tempDir );
+                } catch (IOException e) {
+                    throw new RuntimeException( "Error creating temp file in directory : " + tempDir, e );
+                }
+
+                try( OutputStream fos = new BufferedOutputStream( new FileOutputStream( tmpFile ) ) )
                 {
-                    tmpFile = File.createTempFile( md5, ".tmp", cachedFile.getParentFile() );
-                    try( OutputStream fos = new BufferedOutputStream( new FileOutputStream( tmpFile ) ) )
-                    {
-                        fos.write( data );
-                        fos.flush();
-                    }
-                    
-                    if( !cachedFile.exists() )
-                        tmpFile.renameTo( cachedFile );
-                    else
-                        tmpFile.delete();
-    
+                    fos.write( data );
+                    fos.flush();
                 } catch( IOException e )
                 {
-                    throw new RuntimeException( e );
+                    throw new RuntimeException( "Error creating cached file : " + cachedFile.getAbsolutePath(), e );
+                }
+
+                if( !cachedFile.exists() ) {
+                    if (!tmpFile.renameTo(cachedFile)) {
+                        throw new RuntimeException("'" + tmpFile.getAbsolutePath() + "' rename to '" + cachedFile.getAbsolutePath() + "' failed.");
+                    }
+                } else {
+                    tmpFile.delete();
                 }
             }
         }
@@ -602,20 +607,26 @@ ENAReferenceSource implements CRAMReferenceSource
             {
                 log.debug( String.format( "Adding to REF_CACHE sequence md5=%s", md5 ) );
                 cachedFile.getParentFile().mkdirs();
-                File tmpFile;
-                try
-                {
-                    tmpFile = File.createTempFile( md5, ".tmp", cachedFile.getParentFile() );
-                    FileOutputStream fos = new FileOutputStream( tmpFile );
-                    IOUtil.copyStream( stream, fos );
-                    fos.close();
-                    if( !cachedFile.exists() )
-                        tmpFile.renameTo( cachedFile );
-                    else
-                        tmpFile.delete();
-                } catch( IOException e )
-                {
-                    throw new RuntimeException( e );
+                File tempDir = cachedFile.getParentFile();
+                File tmpFile = null;
+                try {
+                    tmpFile = File.createTempFile( md5, ".tmp", tempDir );
+                } catch (IOException e) {
+                    throw new RuntimeException( "Error creating temp file in directory : " + tempDir, e );
+                }
+
+                try (FileOutputStream fos = new FileOutputStream( tmpFile )) {
+                    IOUtil.copyStream(stream, fos);
+                } catch( IOException e ) {
+                    throw new RuntimeException( "Error creating cached file : " + cachedFile.getAbsolutePath(), e );
+                }
+
+                if( !cachedFile.exists() ) {
+                    if (!tmpFile.renameTo(cachedFile)) {
+                        throw new RuntimeException("'" + tmpFile.getAbsolutePath() + "' rename to '" + cachedFile.getAbsolutePath() + "' failed.");
+                    }
+                } else {
+                    tmpFile.delete();
                 }
             }
             return localPath;
