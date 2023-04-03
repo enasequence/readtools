@@ -24,6 +24,7 @@ import java.lang.ref.SoftReference;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +35,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+
+import org.springframework.retry.backoff.ExponentialBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.io.InputStreamUtils;
@@ -237,18 +242,17 @@ ENAReferenceSource implements CRAMReferenceSource
 	    {
 	        File file = new File( pathPattern.format( md5 ) );
 	        if( file.exists() )
-	        {
-	        	
-	            byte[] data = loadFromPath( file.getPath(), md5 );
-	            log.debug( String.format( ".% 5d Reference found on disk cache at the location %s sz:%d, total: %d, spent: %d, total spent: %d, attempt %d",
-                           disk_counter.incrementAndGet(),
-                           file.getPath(),
-                           data.length,
-                           disk_sz.addAndGet( data.length ),
-                           System.currentTimeMillis() - start,
-                           disk_spent.addAndGet( System.currentTimeMillis() - start ),
-                           disk_map.merge( md5, (Integer) 1, ( v1, v2 ) -> v1 + v2 ) ) );
-	            return data;
+            {
+                byte[] data = loadFromPathWithFileCleanupRetry(file, md5);
+                log.debug(String.format(".% 5d Reference found on disk cache at the location %s sz:%d, total: %d, spent: %d, total spent: %d, attempt %d",
+                        disk_counter.incrementAndGet(),
+                        file.getPath(),
+                        data.length,
+                        disk_sz.addAndGet(data.length),
+                        System.currentTimeMillis() - start,
+                        disk_spent.addAndGet(System.currentTimeMillis() - start),
+                        disk_map.merge(md5, (Integer) 1, (v1, v2) -> v1 + v2)));
+                return data;
 	        }
 	    }
 	    
@@ -456,6 +460,39 @@ ENAReferenceSource implements CRAMReferenceSource
         }
     }
 
+    private byte[]
+    loadFromPathWithFileCleanupRetry(File file, String md5) throws IOException {
+        RetryTemplate rt = getRetryTemplate(Duration.ofSeconds(1), Duration.ofSeconds(8), 2.0, 3);
+        return rt.execute(context -> loadFromPathWithCacheCleanupOnError(file, md5));
+    }
+
+    public static RetryTemplate getRetryTemplate(
+            Duration minBackoff, Duration maxBackoff, Double multiplier, int attempts) {
+
+        RetryTemplate retryTemplate = new RetryTemplate();
+        ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
+        backOffPolicy.setInitialInterval(minBackoff.toMillis());
+        backOffPolicy.setMaxInterval(maxBackoff.toMillis());
+        backOffPolicy.setMultiplier(multiplier);
+        retryTemplate.setBackOffPolicy(backOffPolicy);
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+        retryPolicy.setMaxAttempts(attempts);
+        retryTemplate.setRetryPolicy(retryPolicy);
+        return retryTemplate;
+    }
+
+    private byte[]
+    loadFromPathWithCacheCleanupOnError(File file, String md5) throws IOException {
+        try {
+            return loadFromPath(file.getPath(), md5);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("MD5 mismatch for cached file")) {
+                log.warn("Deleting corrupt CRAM reference cache file " + file.getAbsolutePath());
+                file.delete();
+            }
+            throw e;
+        }
+    }
     
     private byte[] 
     loadFromPath( String path, String md5 ) throws IOException
@@ -521,6 +558,7 @@ ENAReferenceSource implements CRAMReferenceSource
 
                 byte[] data = readBytesFromFile( file, 0, (int) file.length() );
 
+
                 if( confirmMD5( md5, data ) )
                     return data;
                 else
@@ -529,7 +567,6 @@ ENAReferenceSource implements CRAMReferenceSource
         }
         return null;
     }
-
     
     private byte[] 
     findBasesRemotelyByMD5( String md5 ) throws MalformedURLException, IOException
