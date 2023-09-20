@@ -112,7 +112,7 @@ PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
         if (null == index1) {
             index1 = readIndex;
         } else {
-            if (null == index2) {
+            if (null == index2 && readIndex != index1) {
                 index2 = readIndex;
             }
         }
