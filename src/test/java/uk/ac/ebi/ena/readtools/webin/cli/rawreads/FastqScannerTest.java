@@ -417,8 +417,177 @@ FastqScannerTest
         Assert.assertFalse( fs.getPaired() );
         Assert.assertEquals( 0, vr.count(Severity.ERROR) );
     }
-    
-    
+
+
+    @Test public void
+    testZeroReadsSingleFile() throws Throwable {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "",
+                output_dir.toPath(), true, "fastq-zero-reads-single", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1 );
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
+    }
+
+    @Test public void
+    testZeroNucleotidesSingleFile() throws Throwable {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@CL100031435L2C001R001_63456 :TGGTCCTTCC\n"
+                        + "\n"
+                        + "+\n"
+                        + "FDFFFFFFFG3FFFFFF7?D8FFFFF=>DFG(FBEFFFFDF;FF?FF<8FGGFFFCBB8F0F@FBC?FAGFEE>.FFEFCF:?E(E@;3*(,FD/BFE-\n",
+                output_dir.toPath(), true, "fastq-10", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1 );
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
+    }
+
+    @Test public void
+    testZeroQualitiesSingleFile() throws Throwable {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@CL100031435L2C001R001_63456 :TGGTCCTTCC\n"
+                        + "ATCCTTATAGTGGGCCAAGCTCTCACATGCAAACACGTTGCCTGCTGGATTTTGTTTCAGAGAGGAAATGTTTATGTGAGACAGAAAAAGCCGGGGGCC\n"
+                        + "+\n",
+                output_dir.toPath(), true, "fastq-10", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1 );
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
+    }
+
+    @Test public void
+    testEmptyReadSingleFile() throws Throwable {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@CL100031435L2C001R001_63456 :TGGTCCTTCC\n"
+                        + "ATCCTTATAGTGGGCCAAGCTCTCACATGCAAACACGTTGCCTGCTGGATTTTGTTTCAGAGAGGAAATGTTTATGTGAGACAGAAAAAGCCGGGGGCC\n"
+                        + "+\n"
+                        + "FDFFFFFFFG3FFFFFF7?D8FFFFF=>DFG(FBEFFFFDF;FF?FF<8FGGFFFCBB8F0F@FBC?FAGFEE>.FFEFCF:?E(E@;3*(,FD/BFE-\n"
+                        + "@CL100031435L2C001R001_63472 :TGGTCCTTCA\n"
+                        + "\n"
+                        + "+\n"
+                        + "\n"
+                        + "@CL100031435L2C001R001_63487 :TGGTCCTTCC\n"
+                        + "CCGCTCTGCCCACCACAATCCGGCCCCTGTGTACGGCAACACAGGGCCCAGGCAAGCAGATCCTTCCTGCTGGGAGCTCCAGCTTGTAGAATTTCACCC\n"
+                        + "+\n"
+                        + "FFFFFFFFFEFFFFFFD5FEFFEEEFFEBCE?EEFFFECD:DAFFCDFFBFFDB@>FCFBEEFF>F-CBFFF&E9F=BBF:4@B?B45E2F+A-EFFCA\n",
+                output_dir.toPath(), true, "fastq-10", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1 );
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
+    }
+
+    @Test public void
+    testEmptyReadDoubleFile() throws Throwable
+    {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@E00528:414:HVNJLCCXY:1:1101:7598:1854 1:N:0\n" +
+                        "CTTTCAGGTTGTTGAGAATGTCGTTAGCTTCTTGTAAGGTATTGCGTCCCTTTTTAGCAGCTTCTTCAGCAAGAGCTTTGGCAGCGTCGGCTCGAGCTAGGAGTTGGTCAGCGGTCTGCTGTTCGGCTTTCCCCTTCTCTAGAAGGTTCT\n" +
+                        "+\n" +
+                        "```e``Vi`ei`eiLiVLV[V[L[Liiiiiiiii`eVeieeeieeiieiieiei`iiiiiiiiieiieiieiieii[eieiiiiiiiiiiiiiiiiie[LeeeL`iiiie[iLeeiiiiiieeLeiii[ieLeieiiiLee[iVeii[L[\n" +
+                        "@E00528:414:HVNJLCCXY:1:1101:12773:1854 1:N:0\n" +
+                        "CAAGGAACCTCTGTGGCGTTCACAAAAAACCCCGCACCAGTGCCGAAGTCCCAGCTGTCATCTTCTCCCTTATTATAGCAGCCACGGGGGCTGGTATCAGGAGCAATGACCATAAGGCCATGTTCTGAGGCAGCTTGTTGACAGCCAGAC\n" +
+                        "+\n" +
+                        "``L``eLiiiiVeeeiiee[[eVeVLeVeieiiiL`ViiieiiiiieieeVeL[[`[ViieiiiiiiiL[eeL[[eLV`ieieL`ii[ieL`iiiee`iiL`VL`e``[V[LLV`Lie`[e`i[`e`ieiiL[[iiii`ie``L[`Le`e\n" +
+                        "@E00528:414:HVNJLCCXY:1:1101:17421:1889 1:N:0\n" +
+                        "TTCATGGCTAGGACATTTTCTAAACAGTAAAACGACTTCAGGATATATCTCTTCGACATTAAATGTAGCAAAATGGAAAAAAAGATTTACAAGTAGATAAAGTAATAACAGAATATTACAAAGCAGAGAACACACACACAAAAGAATCAA\n" +
+                        "+\n" +
+                        "``LeeiL`Ve``ieeii[`Leeei[iiiiiiiiiiiLeieiiiiiiie`iiiiiiiiiiiiiiiiiiiiiii`Li``eiiiiiii`e[eeeiiiiii`LeViL`iiiieiiiiiiiiiiiiiiiiiee[eieeieiiiVeiiieee`iee",
+                output_dir.toPath(), true, "fastq-10-1-1", "gz" );
+        Path f2 = saveRandomized(
+                "@E00528:414:HVNJLCCXY:1:1101:7598:1854 2:N:0\n" +
+                        "ATAAAATCAAGAAAGAAGCTGCAGATCTGGACCGTCTGATTGAACAGAAGCTAAAAGATTAGGAGGACCTTAGGGAAGACATGCGAGGAAAGGAACATGAAGTAAAGAACGTTCTAGAGAAGGGGAAAGCCGAATAGCAGATCGCTGACC\n" +
+                        "+\n" +
+                        "``eeei[iieeiieieiiV[[eiii`L[eeieiieiVeiLeiiLLee[eiVeeiiiiiiiLL[eiiiiVVV`[V``iiiVeV`LVeiiiiiiiVeiiii`eeVV[`ie[[LVVVVe`[`eiiiV`V`[[L``[iLV[`[e`LV`V`V`[e\n" +
+                        "@E00528:414:HVNJLCCXY:1:1101:12773:1854 2:N:0\n" +
+                        "\n" +
+                        "+\n" +
+                        "\n" +
+                        "@E00528:414:HVNJLCCXY:1:1101:17421:1889 2:N:0\n" +
+                        "CAGAATGCTTAAAGGCCGTCTGTAGGAGGCTCCAGTACATGGAAAGAAAAGGATTCAACACAGTGTGGTCATATGATAAATAAGTGATTTATAAACAAACAAGAGTGATATTTTGCTAGTTAACAAAGTTAACAGATCTTCTAGCCTCAT\n" +
+                        "+\n" +
+                        "```eeiLeieiiiii`eiiL[eeiiiL[LVe`Veie`iiLeieLVeeiiiiii`ieiiieeL[[e`iiV`VL`Veeiiieeeiiiiiie`iiiLLiiieeLeeii`eee`Veieee[L``iiiVeL``e`ie`VVeLLV`[V``[eLHL[",
+                output_dir.toPath(), true, "fastq-10-1-2", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+        RawReadsFile rf2 = new RawReadsFile();
+        rf2.setFilename( f2.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
+    }
+
+    @Test public void
+    testEmptyFileDoubleFile() throws Throwable
+    {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@E00528:414:HVNJLCCXY:1:1101:7598:1854 1:N:0\n" +
+                        "CTTTCAGGTTGTTGAGAATGTCGTTAGCTTCTTGTAAGGTATTGCGTCCCTTTTTAGCAGCTTCTTCAGCAAGAGCTTTGGCAGCGTCGGCTCGAGCTAGGAGTTGGTCAGCGGTCTGCTGTTCGGCTTTCCCCTTCTCTAGAAGGTTCT\n" +
+                        "+\n" +
+                        "```e``Vi`ei`eiLiVLV[V[L[Liiiiiiiii`eVeieeeieeiieiieiei`iiiiiiiiieiieiieiieii[eieiiiiiiiiiiiiiiiiie[LeeeL`iiiie[iLeeiiiiiieeLeiii[ieLeieiiiLee[iVeii[L[\n" +
+                        "@E00528:414:HVNJLCCXY:1:1101:12773:1854 1:N:0\n" +
+                        "CAAGGAACCTCTGTGGCGTTCACAAAAAACCCCGCACCAGTGCCGAAGTCCCAGCTGTCATCTTCTCCCTTATTATAGCAGCCACGGGGGCTGGTATCAGGAGCAATGACCATAAGGCCATGTTCTGAGGCAGCTTGTTGACAGCCAGAC\n" +
+                        "+\n" +
+                        "``L``eLiiiiVeeeiiee[[eVeVLeVeieiiiL`ViiieiiiiieieeVeL[[`[ViieiiiiiiiL[eeL[[eLV`ieieL`ii[ieL`iiiee`iiL`VL`e``[V[LLV`Lie`[e`i[`e`ieiiL[[iiii`ie``L[`Le`e\n" +
+                        "@E00528:414:HVNJLCCXY:1:1101:17421:1889 1:N:0\n" +
+                        "TTCATGGCTAGGACATTTTCTAAACAGTAAAACGACTTCAGGATATATCTCTTCGACATTAAATGTAGCAAAATGGAAAAAAAGATTTACAAGTAGATAAAGTAATAACAGAATATTACAAAGCAGAGAACACACACACAAAAGAATCAA\n" +
+                        "+\n" +
+                        "``LeeiL`Ve``ieeii[`Leeei[iiiiiiiiiiiLeieiiiiiiie`iiiiiiiiiiiiiiiiiiiiiii`Li``eiiiiiii`e[eeeiiiiii`LeViL`iiiieiiiiiiiiiiiiiiiiiee[eieeieiiiVeiiieee`iee",
+                output_dir.toPath(), true, "fastq-10-1-1", "gz" );
+        Path f2 = saveRandomized(
+                "",
+                output_dir.toPath(), true, "fastq-10-1-2", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+        RawReadsFile rf2 = new RawReadsFile();
+        rf2.setFilename( f2.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
+    }
+
     /*  PacBio RS II Wrong pair set in one file */
     @Test public void 
     testCase10() throws Throwable
