@@ -8,8 +8,21 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.fastq;
+package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
-public interface IRead extends Comparable<IRead> {
+import java.io.File;
+import java.io.IOException;
 
+import org.junit.Test;
+
+public class SamScannerTest {
+    @Test public void
+    test() throws IOException {
+        File file = new File("/Users/eugene/temp/samtest/mixed_reads.cram");
+        File refFile = new File("/Users/eugene/temp/samtest/dummy_ref.fa");
+
+        SamScanner samScanner = new SamScanner();
+//        samScanner.checkSamFile(file, refFile);
+        samScanner.checkSamFile2(file, refFile);
+    }
 }

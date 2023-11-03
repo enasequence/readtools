@@ -22,8 +22,6 @@ public class FastqRead implements IRead {
 	byte[] data;
 	int nameLen;
 	int nameBaseLen;
-	FastqRead next;
-	long age = 0;
 
 	public FastqRead(int readLength, byte[] name, boolean appendSegmentIndex, int templateIndex, byte[] bases,
 			byte[] scores) {
@@ -90,16 +88,6 @@ public class FastqRead implements IRead {
 		}
 
 		return 0;
-	}
-
-	@Override
-	public long getAge() {
-		return age;
-	}
-
-	@Override
-	public void setAge(long age) {
-		this.age = age;
 	}
 
 	public SAMRecord toSAMRecord(SAMFileHeader header) {
