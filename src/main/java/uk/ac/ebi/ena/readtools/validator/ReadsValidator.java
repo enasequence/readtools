@@ -31,6 +31,7 @@ import uk.ac.ebi.ena.readtools.webin.cli.rawreads.refs.CramReferenceInfo;
 import uk.ac.ebi.ena.webin.cli.validator.api.ValidationResponse.status;
 import uk.ac.ebi.ena.webin.cli.validator.api.Validator;
 import uk.ac.ebi.ena.webin.cli.validator.file.SubmissionFile;
+import uk.ac.ebi.ena.webin.cli.validator.file.SubmissionFiles;
 import uk.ac.ebi.ena.webin.cli.validator.manifest.ReadsManifest;
 import uk.ac.ebi.ena.webin.cli.validator.manifest.ReadsManifest.FileType;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
@@ -38,92 +39,88 @@ import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 import uk.ac.ebi.ena.webin.cli.validator.response.ReadsValidationResponse;
 
-public class ReadsValidator 
-implements Validator<ReadsManifest, ReadsValidationResponse> 
-{
+public class ReadsValidator
+        implements Validator<ReadsManifest, ReadsValidationResponse> {
     private static final Duration DEFAULT_QUICK_RUN_DURATION = Duration.ofMinutes(5);
 
     private static final long QUICK_READ_LIMIT = 100_000;
     private static final long EXTENDED_READ_LIMIT = 100_000_000;
 
-    private ReadsManifest manifest;
 
-    @Override public ReadsValidationResponse 
-    validate( ReadsManifest manifest )
-    {
-        this.manifest = manifest;
-        if( manifest == null )
-        {
-            throw new RuntimeException( "Manifest is missing." );
+    @Override
+    public ReadsValidationResponse
+    validate(ReadsManifest manifest) {
+        if (manifest == null) {
+            throw new RuntimeException("Manifest is missing.");
         }
-        if( manifest.getReportFile() == null )
-        {
-            throw new RuntimeException( "Report file is missing." );
+        if (manifest.getReportFile() == null) {
+            throw new RuntimeException("Report file is missing.");
         }
-        if( manifest.getProcessDir() == null )
-        {
-            throw new RuntimeException( "Process directory is missing." );
+        if (manifest.getProcessDir() == null) {
+            throw new RuntimeException("Process directory is missing.");
         }
-        return validateSubmissionForContext();
+
+        return validate(
+                manifest.getReportFile(),
+                manifest.getQualityScore(),
+                manifest.files(),
+                manifest.isQuick());
     }
 
-    private ReadsValidationResponse 
-    validateSubmissionForContext()
-    {
-        ValidationResult result = new ValidationResult(manifest.getReportFile());
+    public ReadsValidationResponse
+    validate(File reportFile,
+             ReadsManifest.QualityScore qualityScore,
+             SubmissionFiles<FileType> submissionFiles,
+             boolean isQuick) {
+        ValidationResult result = new ValidationResult(reportFile);
+        List<RawReadsFile> files = submissionFilesToRawReadsFiles(qualityScore, submissionFiles);
 
+        return validate(result, files, isQuick);
+    }
+
+    public ReadsValidationResponse
+    validate(ValidationResult result, List<RawReadsFile> files, boolean isQuick) {
         AtomicBoolean paired = new AtomicBoolean();
 
-        List<RawReadsFile> files = createReadFiles();
         if (files != null && files.size() > 0) {
             Filetype fileType = files.get(0).getFiletype();
 
-            if( Filetype.fastq.equals( fileType ) )
-            {
-                readFastqFile( result, files, paired );
-            } else if( Filetype.bam.equals( fileType ) )
-            {
-                readBamFile( result, files, paired );
-            } else if( Filetype.cram.equals( fileType ) )
-            {
-                readCramFile( result, files, paired );
-            } else
-            {
-                throw new RuntimeException( "Unsupported file type: " + fileType.name() );
+            if (Filetype.fastq.equals(fileType)) {
+                readFastqFile(result, files, paired, isQuick);
+            } else if (Filetype.bam.equals(fileType)) {
+                readBamFile(result, files, paired, isQuick);
+            } else if (Filetype.cram.equals(fileType)) {
+                readCramFile(result, files, paired, isQuick);
+            } else {
+                throw new RuntimeException("Unsupported file type: " + fileType.name());
             }
         }
 
         ReadsValidationResponse resp = new ReadsValidationResponse();
-        resp.setStatus( result.isValid() ? status.VALIDATION_SUCCESS : status.VALIDATION_ERROR );
-        resp.setPaired( paired.get() );
+        resp.setStatus(result.isValid() ? status.VALIDATION_SUCCESS : status.VALIDATION_ERROR);
+        resp.setPaired(paired.get());
         return resp;
     }
 
-    
     private void
-    readCramFile( ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
-    {
+    readCramFile(ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired, boolean isQuick) {
         CramReferenceInfo cri = new CramReferenceInfo();
-        for( RawReadsFile rf : files )
-        {
+        for (RawReadsFile rf : files) {
             ValidationResult fileResult = result.create(new ValidationOrigin("file", rf.getFilename()));
 
-            try
-            {
-                Map<String, Boolean> ref_set = cri.confirmFileReferences( new File( rf.getFilename() ) );
-                if( !ref_set.isEmpty() && ref_set.containsValue( Boolean.FALSE ) )
-                {
+            try {
+                Map<String, Boolean> ref_set = cri.confirmFileReferences(new File(rf.getFilename()));
+                if (!ref_set.isEmpty() && ref_set.containsValue(Boolean.FALSE)) {
                     fileResult.add(ValidationMessage.error(
-                                    "Unable to find reference sequence(s) from the CRAM reference registry: " +
+                            "Unable to find reference sequence(s) from the CRAM reference registry: " +
                                     ref_set.entrySet()
                                             .stream()
-                                            .filter( e -> !e.getValue() )
-                                            .map( e -> e.getKey() )
-                                            .collect( Collectors.toList() ) ));
+                                            .filter(e -> !e.getValue())
+                                            .map(Map.Entry::getKey)
+                                            .collect(Collectors.toList())));
                 }
 
-            } catch( IOException ex )
-            {
+            } catch (IOException ex) {
                 fileResult.add(ValidationMessage.error(ex));
             }
         }
@@ -132,120 +129,104 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
             return;
         }
 
-        readBamOrCramFile(result, files, paired);
+        readBamOrCramFile(result, files, paired, isQuick);
     }
-    
+
     private void
-    readFastqFile( ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
-    {
-        try
-        {
-            FastqScanner fs = new FastqScanner(manifest.isQuick() ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT) {
+    readFastqFile(ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired, boolean isQuick) {
+        try {
+            FastqScanner fs = new FastqScanner(isQuick ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT) {
                 @Override
-                protected void logProcessedReadNumber( long count ) { }
+                protected void logProcessedReadNumber(long count) {
+                }
 
                 @Override
-                protected void logFlushMsg( String msg ) {}
+                protected void logFlushMsg(String msg) {
+                }
             };
 
-            fs.checkFiles( result, files.toArray( new RawReadsFile[files.size()] ));
-            paired.set( fs.getPaired() );
-        } catch( Exception ex )
-        {
-            throw new RuntimeException( ex );
-        } catch( Throwable throwable )
-        {
-            throw new RuntimeException( throwable );
+            fs.checkFiles(result, files.toArray(new RawReadsFile[files.size()]));
+            paired.set(fs.getPaired());
+        } catch (Throwable ex) {
+            throw new RuntimeException(ex);
         }
     }
-    
+
     private void
-    readBamFile(ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
-    {
-        readBamOrCramFile(result, files, paired);
+    readBamFile(ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired, boolean isQuick) {
+        readBamOrCramFile(result, files, paired, isQuick);
     }
 
     private void
-    readBamOrCramFile( ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
-    {
-        BamScanner scanner = new BamScanner(manifest.isQuick() ? DEFAULT_QUICK_RUN_DURATION : null) {
+    readBamOrCramFile(ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired, boolean isQuick) {
+        BamScanner scanner = new BamScanner(isQuick ? DEFAULT_QUICK_RUN_DURATION : null) {
             @Override
-            protected void logProcessedReadNumber( long count ) {}
+            protected void logProcessedReadNumber(long count) {
+            }
         };
 
-        for( RawReadsFile rf : files )
-        {
+        for (RawReadsFile rf : files) {
             ValidationResult fileResult;
-            if( rf.getReportFile() == null ) {
+            if (rf.getReportFile() == null) {
                 fileResult = result.create(new ValidationOrigin("file", rf.getFilename()));
-            } else
-            {
+            } else {
                 fileResult = result.create(rf.getReportFile().toFile(), new ValidationOrigin("file", rf.getFilename()));
             }
 
-            try
-            {
+            try {
                 fileResult.add(ValidationMessage.info("Processing file"));
                 if (rf.getFiletype().equals(Filetype.cram)) {
                     // Cram references have already been confirmed at this point so set the relevant flag to false.
-                    scanner.readCramFile( fileResult, rf, paired, false );
+                    scanner.readCramFile(fileResult, rf, paired, false);
                 } else {
-                    scanner.readBamFile( fileResult, rf, paired );
+                    scanner.readBamFile(fileResult, rf, paired);
                 }
 
-            } catch( SAMFormatException | CRAMException ex )
-            {
+            } catch (SAMFormatException | CRAMException ex) {
                 fileResult.add(ValidationMessage.error(ex));
 
-            } catch( IOException ex )
-            {
-                throw new RuntimeException( ex );
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
             }
         }
     }
 
-    private List<RawReadsFile> 
-    createReadFiles()
-    {
+    private List<RawReadsFile>
+    submissionFilesToRawReadsFiles(
+            ReadsManifest.QualityScore qualityScore, SubmissionFiles<FileType> submissionFiles) {
+        List<RawReadsFile> files = submissionFiles.get()
+                .stream()
+                .map(ReadsValidator::submissionFilesToRawReadsFile)
+                .collect(Collectors.toList());
+
         RawReadsFile.AsciiOffset asciiOffset = null;
         RawReadsFile.QualityScoringSystem qualityScoringSystem = null;
 
-        if( manifest.getQualityScore() != null )
-        {
-            switch( manifest.getQualityScore() )
-            {
-            case PHRED_33:
-                asciiOffset = RawReadsFile.AsciiOffset.FROM33;
-                qualityScoringSystem = RawReadsFile.QualityScoringSystem.phred;
-                break;
-            case PHRED_64:
-                asciiOffset = RawReadsFile.AsciiOffset.FROM64;
-                qualityScoringSystem = RawReadsFile.QualityScoringSystem.phred;
-                break;
-            case LOGODDS:
-                asciiOffset = null;
-                qualityScoringSystem = RawReadsFile.QualityScoringSystem.log_odds;
-                break;
+        if (qualityScore != null) {
+            switch (qualityScore) {
+                case PHRED_33:
+                    asciiOffset = RawReadsFile.AsciiOffset.FROM33;
+                    qualityScoringSystem = RawReadsFile.QualityScoringSystem.phred;
+                    break;
+                case PHRED_64:
+                    asciiOffset = RawReadsFile.AsciiOffset.FROM64;
+                    qualityScoringSystem = RawReadsFile.QualityScoringSystem.phred;
+                    break;
+                case LOGODDS:
+//                    asciiOffset = null;
+                    qualityScoringSystem = RawReadsFile.QualityScoringSystem.log_odds;
+                    break;
             }
         }
-        List<RawReadsFile> files = this.manifest.files().get()
-                .stream()
-                .map( file -> createRawReadsFile( file ) )
-                .collect( Collectors.toList() );
 
         // Set FASTQ quality scoring system and ascii offset.
-
-        for( RawReadsFile f : files )
-        {
-            if( f.getFiletype().equals( Filetype.fastq ) )
-            {
-                if( qualityScoringSystem != null )
-                {
-                    f.setQualityScoringSystem( qualityScoringSystem );
+        for (RawReadsFile f : files) {
+            if (f.getFiletype().equals(Filetype.fastq)) {
+                if (qualityScoringSystem != null) {
+                    f.setQualityScoringSystem(qualityScoringSystem);
                 }
-                if( asciiOffset != null )
-                {
-                    f.setAsciiOffset( asciiOffset );
+                if (asciiOffset != null) {
+                    f.setAsciiOffset(asciiOffset);
                 }
             }
         }
@@ -253,25 +234,23 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
         return files;
     }
 
-    
-    public static RawReadsFile 
-    createRawReadsFile( SubmissionFile<FileType> file )
-    {
+
+    public static RawReadsFile
+    submissionFilesToRawReadsFile(SubmissionFile<FileType> file) {
         Path inputDir = file.getFile().toPath().getParent();
 
         RawReadsFile f = new RawReadsFile();
-        f.setInputDir( inputDir );
-        f.setReportFile( file.getReportFile().toPath() );
-        f.setFiletype( Filetype.valueOf( file.getFileType().name().toLowerCase() ) );
+        f.setInputDir(inputDir);
+        f.setReportFile(file.getReportFile().toPath());
+        f.setFiletype(Filetype.valueOf(file.getFileType().name().toLowerCase()));
 
         String fileName = file.getFile().getPath();
 
-        if( !Paths.get( fileName ).isAbsolute() )
-        {
-            f.setFilename( inputDir.resolve( Paths.get( fileName ) ).toString() );
-        } else
-        {
-            f.setFilename( fileName );
+        Path path = Paths.get(fileName);
+        if (!path.isAbsolute()) {
+            f.setFilename(inputDir.resolve(path).toString());
+        } else {
+            f.setFilename(fileName);
         }
 
         return f;
