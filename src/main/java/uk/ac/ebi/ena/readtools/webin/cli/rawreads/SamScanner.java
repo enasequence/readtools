@@ -10,119 +10,243 @@
 */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
-import static uk.ac.ebi.ena.readtools.sam.Sam2Fastq.INCLUDE_NON_PF_READS;
-import static uk.ac.ebi.ena.readtools.sam.Sam2Fastq.INCLUDE_NON_PRIMARY_ALIGNMENTS;
-
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-import htsjdk.samtools.*;
-import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.SequenceUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class SamScanner {
-    public void checkSamFile2(File samFile, File referenceFile) throws IOException {
-        SamReaderFactory.setDefaultValidationStringency(ValidationStringency.LENIENT);
+import htsjdk.samtools.DefaultSAMRecordFactory;
+import htsjdk.samtools.SAMFormatException;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamFiles;
+import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.Log.LogLevel;
 
-        ReferenceSource referenceSource = new ReferenceSource(referenceFile);
-        final SamReader samReader = SamReaderFactory.makeDefault()
-                .referenceSource(referenceSource)
-                .open(samFile);
-        SAMFileHeader samHeader = samReader.getFileHeader();
+import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.converter.SamConverter;
+import uk.ac.ebi.ena.readtools.utils.Utils;
+import uk.ac.ebi.ena.readtools.webin.cli.rawreads.refs.CramReferenceInfo;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
-        int totalReadCount = 0;
-        for (final SAMRecord currentRecord : samReader) {
 
-            if (currentRecord.isSecondaryOrSupplementary() && !INCLUDE_NON_PRIMARY_ALIGNMENTS) {
-                continue;
-            }
-
-            // Skip non-PF reads as necessary
-            if (currentRecord.getReadFailsVendorQualityCheckFlag() && !INCLUDE_NON_PF_READS) {
-                continue;
-            }
-
-            ++totalReadCount;
-
-            String readName = currentRecord.getReadName();
-
-            byte[] readBases = Arrays.copyOf(currentRecord.getReadBases(), currentRecord.getReadBases().length);
-            byte[] baseQualities = currentRecord.getBaseQualityString().getBytes(StandardCharsets.UTF_8);
-
-            int totalBaseCount = readBases.length;
-            if (totalBaseCount == 0) {
-                throw new IOException("The file contains an empty read.");
-            }
-
-            if (currentRecord.getReadNegativeStrandFlag()) {
-                SequenceUtil.reverseComplement(readBases);
-                SequenceUtil.reverseQualities(baseQualities);
-            }
-        }
-
-        CloserUtil.close(samReader);
+public abstract class
+SamScanner
+{
+    static 
+    {
+        System.setProperty( "samjdk.use_cram_ref_download", Boolean.TRUE.toString() );
     }
-    public void checkSamFile(File inputFile, File referenceFile) throws IOException {
-        SamReaderFactory readerFactory = SamReaderFactory.makeDefault();
 
-        if (inputFile.getName().endsWith(".cram")) {
-            if (referenceFile == null || !referenceFile.exists() || !referenceFile.isFile()) {
-                throw new IOException("CRAM file provided but reference file is invalid or not provided.");
+    //TODO remove duplication
+    private static final int    DEFAULT_PRINT_FREQ = 1_000;
+    private static final String PRINT_FREQ_PROPERTY_NAME = "webincli.scanner.print.freq";
+    private static final int    print_freq = Integer.valueOf( System.getProperty( PRINT_FREQ_PROPERTY_NAME, String.valueOf( DEFAULT_PRINT_FREQ ) ) );    
+
+    private static final Logger log = LoggerFactory.getLogger( SamScanner.class );
+
+
+    private final Duration runDuration;
+    private final Long readLimit;
+
+    abstract protected void logProcessedReadNumber( long cnt );
+
+    public SamScanner(Long readLimit) {
+        this(readLimit, null);
+    }
+
+    public SamScanner(Long readLimit, Duration runDuration) {
+        this.readLimit = readLimit;
+        this.runDuration = runDuration;
+    }
+
+
+    /**
+     *
+     * @param fileResult
+     * @param rf
+     * @param paired
+     * @param confirmCramReferences - Confirm CRAM file reference if set to true.
+     * @throws IOException
+     */
+    public void
+    readCramFile( ValidationResult fileResult, RawReadsFile rf, AtomicBoolean paired, boolean confirmCramReferences ) throws IOException
+    {
+        if (confirmCramReferences) {
+            CramReferenceInfo cri = new CramReferenceInfo();
+            {
+                Map<String, Boolean> ref_set;
+                try
+                {
+                    ref_set = cri.confirmFileReferences( new File( rf.getFilename() ) );
+                    if( !ref_set.isEmpty() && ref_set.containsValue( Boolean.FALSE ) )
+                    {
+                        fileResult.add( ValidationMessage.error( "Unable to find reference sequence(s) from the CRAM reference registry: "
+                                + ref_set.entrySet()
+                                .stream()
+                                .filter( e -> !e.getValue() )
+                                .map( e -> e.getKey() )
+                                .collect(Collectors.toList() ) ) );
+                    }
+                } catch( IOException ex )
+                {
+                    fileResult.add( ValidationMessage.error( ex ) );
+                }
             }
-
-            // Create a ReferenceSource object from the reference file
-            ReferenceSource referenceSource = new ReferenceSource(referenceFile);
-            readerFactory = readerFactory.referenceSource(referenceSource);
         }
 
-        try (SamReader reader = readerFactory.open(inputFile)) {
-            SAMRecordIterator iterator = reader.iterator();
+        readSamFile( fileResult, rf, paired, true );
+    }
+    
+    
+    public void readBamFile( ValidationResult result, RawReadsFile rf, AtomicBoolean paired ) throws IOException {
+        readSamFile(result, rf, paired, false);
+    }
 
-            if (!iterator.hasNext()) {
-                throw new IOException("The file must contain a minimum of 1 sequence read.");
-            }
+    private void readSamFile( ValidationResult result, RawReadsFile rf, AtomicBoolean paired, boolean useCramRefSource )
+            throws IOException {
+        long read_no = 0;
+        long reads_cnt = 0;
 
-            int validReadsCount = 0;
-            int highQualityReadsCount = 0;
-            int totalReadsCount = 0;
-            while (iterator.hasNext()) {
-                SAMRecord record = iterator.next();
-                totalReadsCount++;
+        try
+        {
+            result.add(ValidationMessage.info("Processing file"));
 
-                String readString = record.getReadString();
-                if (readString.equals("*")) {
-                    throw new IOException("The file contains an empty read.");
-                }
+            File file = new File( rf.getFilename() );
 
-                long invalidBases = readString.chars()
-                        .filter(c -> !"AUTCGautcg".contains(String.valueOf((char) c)))
-                        .count();
-                if (invalidBases > readString.length() / 2) {
-                    throw new IOException("Read contains more than 50% invalid IUPAC codes.");
-                }
-                validReadsCount++;
+            Log.setGlobalLogLevel( LogLevel.ERROR );
 
-                byte[] baseQualities = record.getBaseQualities();
-                if (baseQualities.length > 0) {
-                    double averageQuality = 0;
-                    for (byte quality : baseQualities) {
-                        averageQuality += quality;
+            SamReaderFactory.setDefaultValidationStringency( ValidationStringency.SILENT );
+            SamReaderFactory factory = SamReaderFactory.make();
+            factory.enable( SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX );
+            factory.validationStringency( ValidationStringency.SILENT );
+            factory.samRecordFactory( DefaultSAMRecordFactory.getInstance() );
+
+            if (useCramRefSource) {
+                ENAReferenceSource reference_source = new ENAReferenceSource();
+                reference_source.setLoggerWrapper( new ENAReferenceSource.LoggerWrapper()
+                {
+                    @Override public void
+                    error( Object... messageParts )
+                    {
+                        result.add( ValidationMessage.error( null == messageParts ? "null" : String.valueOf( Arrays.asList( messageParts ) ) ) );
                     }
-                    averageQuality /= baseQualities.length;
-                    if (averageQuality >= 30) {
-                        highQualityReadsCount++;
+
+                    @Override public void
+                    warn( Object... messageParts )
+                    {
+                        result.add( ValidationMessage.info( null == messageParts ? "null" : String.valueOf( Arrays.asList( messageParts ) ) ) );
                     }
+
+                    @Override public void
+                    info( Object... messageParts )
+                    {
+                        result.add( ValidationMessage.info( null == messageParts ? "null" : String.valueOf( Arrays.asList( messageParts ) ) ) );
+                    }
+                } );
+
+                result.add( ValidationMessage.info( "REF_PATH  " + reference_source.getRefPathList() ) );
+                result.add( ValidationMessage.info( "REF_CACHE " + reference_source.getRefCacheList() ) );
+
+                factory.referenceSource( reference_source );
+            }
+
+//                SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
+//                codec.setValidationStringency( ValidationStringency.SILENT );
+
+            SamInputResource ir = SamInputResource.of( file );
+            File indexMaybe = SamFiles.findIndex( file );
+            result.add( ValidationMessage.info( "proposed index: " + indexMaybe ) );
+
+            if( null != indexMaybe )
+                ir.index( indexMaybe );
+
+            try (InputStream inputStream = Utils.openFastqInputStream(file.toPath())) {
+                SamReadScanner samReadScanner = new SamReadScanner(print_freq);
+                SamConverter samConverter = readLimit <= 0L ?
+                        new SamConverter(useCramRefSource, inputStream, samReadScanner) :
+                        new SamConverter(useCramRefSource, inputStream, samReadScanner, readLimit);
+
+                log.info("Processing file " + file);
+                samConverter.run();
+
+                reads_cnt = samConverter.getReadCount();
+                logProcessedReadNumber(reads_cnt);
+                if (reads_cnt <= 0) {
+                    throw new ConverterException( 0, "Empty file" );
                 }
             }
 
-            if (validReadsCount > 0 && (double) highQualityReadsCount / validReadsCount < 0.5) {
-                throw new IOException("Less than 50% of reads have average quality >= 30.");
+            try( SamReader reader = factory.open(ir) )
+            {
+                Supplier<Boolean> keepReading = createKeepReading();
+
+                for( SAMRecord record : reader )
+                {
+                    read_no++;
+                    //do not load supplementary reads
+                    if( record.isSecondaryOrSupplementary() )
+                        continue;
+
+                    if( record.getDuplicateReadFlag() )
+                        continue;
+
+                    if( record.getReadString().equals( BAM_STAR ) && record.getBaseQualityString().equals( BAM_STAR ) )
+                        continue;
+
+                    if( record.getReadBases().length != record.getBaseQualities().length )
+                    {
+                        ValidationResult readResult = result.create( new ValidationOrigin( "read number", read_no ) );
+                        readResult.add( ValidationMessage.error( "Mismatch between length of read bases and qualities" ) );
+                    }
+
+                    paired.compareAndSet( false, record.getReadPairedFlag() );
+                    reads_cnt++;
+                    if( 0 == reads_cnt % print_freq )
+                        logProcessedReadNumber( reads_cnt );
+
+                    if (!keepReading.get()) {
+                        break;
+                    }
+                }
+
+                logProcessedReadNumber( reads_cnt );
+
             }
 
-            System.out.println("File passed all checks.");
+            result.add( ValidationMessage.info( "LibraryLayout: " + ( paired.get() ? "PAIRED" : "SINGLE" ) ) );
+
+            if( 0 == reads_cnt )
+                result.add( ValidationMessage.error( "File contains no valid reads" ) );
+
+        } catch( SAMFormatException | CRAMException e )
+        {
+            result.add( ValidationMessage.error( e ) );
+        }
+    }
+
+    private Supplier<Boolean> createKeepReading() {
+        if (runDuration == null) {
+            return () -> true;
+        } else {
+            LocalDateTime startTime = LocalDateTime.now();
+            return () -> startTime.plus(runDuration).isAfter(LocalDateTime.now());
         }
     }
 }

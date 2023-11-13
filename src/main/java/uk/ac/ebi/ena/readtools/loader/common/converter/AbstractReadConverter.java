@@ -67,7 +67,7 @@ AbstractReadConverter<T extends Spot> implements Converter {
             begin();
 
             do {
-                readWriter.write(convert());
+                readWriter.write(getNextSpot());
             } while (!isDone());
         } catch (ReadWriterException e) {
             throw new ConverterPanicException(e);
@@ -87,7 +87,7 @@ AbstractReadConverter<T extends Spot> implements Converter {
     public void runOnce() {
         try {
             if (!isDone()) {
-                readWriter.write(convert());
+                readWriter.write(getNextSpot());
             }
         } catch (ReadWriterException e) {
             throw new ConverterPanicException(e);
@@ -121,11 +121,11 @@ AbstractReadConverter<T extends Spot> implements Converter {
     }
 
     //Re-implement if you need special type of feeding
-    private T convert() {
+    private T getNextSpot() {
         T spot;
 
         try {
-            spot = convert(istream);
+            spot = getNextSpotFromInputStream(istream);
             ++readCount;
             baseCount += spot.getBaseCount();
 
@@ -139,5 +139,5 @@ AbstractReadConverter<T extends Spot> implements Converter {
         }
     }
 
-    abstract public T convert(InputStream inputStream) throws IOException;
+    abstract public T getNextSpotFromInputStream(InputStream inputStream) throws IOException;
 }

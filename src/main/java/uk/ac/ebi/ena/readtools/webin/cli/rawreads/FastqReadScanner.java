@@ -11,53 +11,45 @@
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
-import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
-import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
-public class FastqReadScanner implements ReadWriter<Read, Spot> {
+public class FastqReadScanner extends InsdcStandardCheckingScanner {
     private final String streamName;
     private final Set<String> labels;
-    private final AtomicLong count;
     private final BloomWrapper pairingBloomWrapper;
     private final BloomWrapper duplicationsBloomWrapper;
     private final FastqScanner fastqScanner;
     private final int maxLabelSetSize;
-    private final int printFreq;
 
     public FastqReadScanner(
-            String streamName, Set<String> labels, AtomicLong count,
+            String streamName, Set<String> labels,
             BloomWrapper pairingBloomWrapper, BloomWrapper duplicationsBloomWrapper,
             FastqScanner fastqScanner, int maxLabelSetSize, int printFreq)
     {
+        super(printFreq);
+
         this.streamName = streamName;
         this.labels = labels;
-        this.count = count;
         this.pairingBloomWrapper = pairingBloomWrapper;
         this.duplicationsBloomWrapper = duplicationsBloomWrapper;
         this.fastqScanner = fastqScanner;
         this.maxLabelSetSize = maxLabelSetSize;
-        this.printFreq = printFreq;
     }
 
-    @Override
-    public void cascadeErrors() throws ReadWriterException {
-    }
+    public void write(Read read) throws ReadWriterException {
+        super.write(read);
 
-    @Override
-    public void write(Read spot) throws ReadWriterException {
         String readNameWithoutPairNumber;
         String pairNumber;
 
         try {
-            readNameWithoutPairNumber = PairedFastqWriter.getReadKey(spot.name);
-            pairNumber = PairedFastqWriter.getPairNumber(spot.name);
+            readNameWithoutPairNumber = PairedFastqWriter.getReadKey(read.name);
+            pairNumber = PairedFastqWriter.getPairNumber(read.name);
         } catch (ReadWriterException ignored) {
-            readNameWithoutPairNumber = spot.name;
+            readNameWithoutPairNumber = read.name;
             pairNumber = streamName;
         }
 
@@ -65,16 +57,8 @@ public class FastqReadScanner implements ReadWriter<Read, Spot> {
             labels.add(pairNumber);
         }
 
-        count.incrementAndGet();
         pairingBloomWrapper.add(readNameWithoutPairNumber);
-        duplicationsBloomWrapper.add(spot.name);
+        duplicationsBloomWrapper.add(read.name);
 
-        if (0 == count.get() % printFreq)
-            fastqScanner.logProcessedReadNumber(count.get());
-    }
-
-    @Override
-    public void setWriter(ReadWriter readWriter) {
-        throw new RuntimeException("Not implemented");
     }
 }

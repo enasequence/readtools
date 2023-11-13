@@ -73,6 +73,11 @@ public class Fastq2Sam {
                 System.out.println(" " + f_name);
         }
 
+        List<InputStream> istreams = new ArrayList<>();
+        for (String f: p.files) {
+            istreams.add(FileCompression.valueOf(p.compression).open(f, p.use_tar));
+        }
+
         FastqQualityFormat qualityFormat = Utils.detectFastqQualityFormat(
                 p.files.get(0),
                 p.files.size() == 2 ? p.files.get(1) : null);
@@ -97,10 +102,6 @@ public class Fastq2Sam {
             readWriter.setWriter(fastqToBamWriter);
         }
 
-        List<InputStream> istreams = new ArrayList<>();
-        for (String f: p.files) {
-            istreams.add(FileCompression.valueOf(p.compression).open(f, p.use_tar));
-        }
         Converter converter = new MultiFastqConverter<>(istreams, readWriter);
         converter.run();
 

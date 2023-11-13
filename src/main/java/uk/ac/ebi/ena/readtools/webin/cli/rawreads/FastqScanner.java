@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -59,6 +58,7 @@ FastqScanner {
     private final AtomicBoolean paired = new AtomicBoolean();
 
     private final Long readLimit;
+    private Long count = 0L;
 
     abstract protected void logProcessedReadNumber(long count);
 
@@ -82,59 +82,6 @@ FastqScanner {
     public FastqScanner(Long readLimit, int expected_size) {
         this.readLimit = readLimit;
         this.expected_size = expected_size;
-    }
-
-
-    private void
-    read(RawReadsFile readsFile,
-         Set<String> labels,
-         BloomWrapper pairingBloomWrapper,
-         BloomWrapper duplicationsBloomWrapper,
-         AtomicLong count) throws Throwable {
-        try (InputStream inputStream = Utils.openFastqInputStream(Paths.get(readsFile.getFilename()))) {
-            String streamName = readsFile.getFilename();
-
-            FastqReadScanner fastqReadScanner = new FastqReadScanner(
-                    streamName, labels, count,
-                    pairingBloomWrapper, duplicationsBloomWrapper,
-                    this, MAX_LABEL_SET_SIZE, PRINT_FREQ);
-
-            AutoNormalizeQualityReadConverter readScanningConverter = new AutoNormalizeQualityReadConverter(
-                    inputStream,
-                    fastqReadScanner,
-                    readLimit, "", readsFile.getFilename());
-
-            log.info("Processing file " + readsFile.getFilename());
-            readScanningConverter.run();
-            logProcessedReadNumber(count.get());
-            if (readScanningConverter.getReadCount() <= 0) {
-                throw new ConverterException( 0, "Empty file" );
-            }
-        }
-    }
-
-    private void
-    checkSingleFile(ValidationResult fileResult,
-                    RawReadsFile rawReadsFile,
-                    Set<String> labelSet,
-                    BloomWrapper pairingBloomWrapper,
-                    BloomWrapper duplicationsBloomWrapper) throws Throwable {
-        AtomicLong count = new AtomicLong();
-        try {
-            read(rawReadsFile, labelSet, pairingBloomWrapper, duplicationsBloomWrapper, count);
-
-            logFlushMsg("Processing completed. Result: OK\n");
-
-            fileResult.add(ValidationMessage.info(String.format("Collected %d reads", count.get())));
-            fileResult.add(ValidationMessage.info(String.format("Collected %d read labels: %s", labelSet.size(), labelSet)));
-            fileResult.add(ValidationMessage.info(String.format("Has possible duplicate read name(s): " + duplicationsBloomWrapper.hasPossibleDuplicates())));
-        } catch (ConverterException converterException) {
-            logFlushMsg(String.format("Processing completed. Result: %s\n", converterException));
-
-            ValidationMessage dataProducerError = ValidationMessage.error(converterException.getMessage());
-            dataProducerError.appendOrigin(new ValidationOrigin("line number", converterException.getLineNo()));
-            fileResult.add(dataProducerError);
-        }
     }
 
     public boolean
@@ -226,6 +173,7 @@ FastqScanner {
         }
     }
 
+
     /**
      * Check the file for duplicate read names and updates the given bloom wrapper with pairing information.
      *
@@ -267,6 +215,55 @@ FastqScanner {
         }
 
         return duplicationsBloomWrapper.getAddCount();
+    }
+
+    private void
+    checkSingleFile(ValidationResult fileResult,
+                    RawReadsFile rawReadsFile,
+                    Set<String> labelSet,
+                    BloomWrapper pairingBloomWrapper,
+                    BloomWrapper duplicationsBloomWrapper) throws Throwable {
+        try {
+            read(rawReadsFile, labelSet, pairingBloomWrapper, duplicationsBloomWrapper);
+
+            logFlushMsg("Processing completed. Result: OK\n");
+
+            fileResult.add(ValidationMessage.info(String.format("Collected %d reads", count)));
+            fileResult.add(ValidationMessage.info(String.format("Collected %d read labels: %s", labelSet.size(), labelSet)));
+            fileResult.add(ValidationMessage.info(String.format("Has possible duplicate read name(s): " + duplicationsBloomWrapper.hasPossibleDuplicates())));
+        } catch (ConverterException converterException) {
+            logFlushMsg(String.format("Processing completed. Result: %s\n", converterException));
+
+            ValidationMessage dataProducerError = ValidationMessage.error(converterException.getMessage());
+            dataProducerError.appendOrigin(new ValidationOrigin("line number", converterException.getLineNo()));
+            fileResult.add(dataProducerError);
+        }
+    }
+
+    private void
+    read(RawReadsFile readsFile,
+         Set<String> labels,
+         BloomWrapper pairingBloomWrapper,
+         BloomWrapper duplicationsBloomWrapper) throws Throwable {
+        try (InputStream inputStream = Utils.openFastqInputStream(Paths.get(readsFile.getFilename()))) {
+            String streamName = readsFile.getFilename();
+            FastqReadScanner fastqReadScanner = new FastqReadScanner(
+                    streamName, labels, pairingBloomWrapper, duplicationsBloomWrapper,
+                    this, MAX_LABEL_SET_SIZE, PRINT_FREQ);
+            AutoNormalizeQualityReadConverter readScanningConverter = new AutoNormalizeQualityReadConverter(
+                    inputStream,
+                    fastqReadScanner,
+                    readLimit, "", readsFile.getFilename());
+
+            log.info("Processing file " + readsFile.getFilename());
+            readScanningConverter.run();
+
+            count = readScanningConverter.getReadCount();
+            logProcessedReadNumber(count);
+            if (count <= 0) {
+                throw new ConverterException( 0, "Empty file" );
+            }
+        }
     }
 
     private Map<String, Set<String>> findAllduplications(BloomWrapper duplications, int limit, RawReadsFile rf) {

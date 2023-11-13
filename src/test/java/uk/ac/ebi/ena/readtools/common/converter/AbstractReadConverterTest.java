@@ -48,7 +48,7 @@ public class AbstractReadConverterTest {
                 },
                 readLimit) {
             @Override
-            public Spot convert(InputStream inputStream) throws IOException {
+            public Spot getNextSpotFromInputStream(InputStream inputStream) throws IOException {
                 //To prevent the test from running indefinitely (just in case).
                 if (getReadCount() > readLimit + 1) {
                     throw new EOFException();

@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.cram.CRAMException;
 
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.BamScanner;
+import uk.ac.ebi.ena.readtools.webin.cli.rawreads.SamScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.FastqScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile.Filetype;
@@ -168,7 +168,10 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
     private void
     readBamOrCramFile( ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired )
     {
-        BamScanner scanner = new BamScanner(manifest.isQuick() ? DEFAULT_QUICK_RUN_DURATION : null) {
+        SamScanner scanner = new SamScanner(
+                manifest.isQuick() ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT,
+                manifest.isQuick() ? DEFAULT_QUICK_RUN_DURATION : null)
+        {
             @Override
             protected void logProcessedReadNumber( long count ) {}
         };

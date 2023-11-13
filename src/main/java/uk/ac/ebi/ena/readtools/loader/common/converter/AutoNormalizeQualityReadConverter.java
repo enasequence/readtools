@@ -69,7 +69,7 @@ public class AutoNormalizeQualityReadConverter extends AbstractReadConverter<Rea
     }
 
     @Override
-    public Read convert(InputStream inputStream) throws IOException {
+    public Read getNextSpotFromInputStream(InputStream inputStream) throws IOException {
         return readReader.read(inputStream);
     }
 }
