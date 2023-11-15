@@ -16,11 +16,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,26 +43,12 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
 
-import uk.ac.ebi.ena.readtools.cram.ref.PathPattern;
 
 public class
 CramReferenceInfo {
-    private static final String REF_INFO_PATH = "/.webin-cli/cram-ref-info/%2s/%2s/%s";
-    private static final String JAVA_IO_TMPDIR_PROPERTY_NAME = "java.io.tmpdir";
-    private static final String USER_HOME_PROPERTY_NAME = "user.home";
-
     private static final String service_link = "https://www.ebi.ac.uk/ena/cram/sequence/%32s/metadata";
-    private static final String info_path = null != System.getProperty(USER_HOME_PROPERTY_NAME) ? System.getProperty(USER_HOME_PROPERTY_NAME) + REF_INFO_PATH
-            : System.getProperty(JAVA_IO_TMPDIR_PROPERTY_NAME) + REF_INFO_PATH;
-
-    private final PathPattern cache_pattern;
 
     private static final Logger log = LoggerFactory.getLogger(CramReferenceInfo.class);
-
-
-    public CramReferenceInfo() {
-        this.cache_pattern = new PathPattern(info_path);
-    }
 
 
     private String
@@ -144,36 +125,6 @@ CramReferenceInfo {
         return new ReferenceInfo();
     }
 
-
-    private boolean
-    findOnDisk(String md5) {
-        String path = cache_pattern.format(md5);
-        Path entry = Paths.get(path);
-        if (Files.exists(entry, LinkOption.NOFOLLOW_LINKS)) {
-            if (1 != entry.toFile().length())
-                return false; //throw new RuntimeException( "The reference sequence is too long: " + md5 );
-
-            return true;
-        }
-
-        return false;
-    }
-
-
-    private boolean
-    putOnDisk(String md5) {
-        try {
-            String path = cache_pattern.format(md5);
-            Path entry = Paths.get(path);
-            Files.createDirectories(entry.getParent());
-            Files.write(entry, new byte[]{'1'}, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
-            return true;
-        } catch (IOException ioe) {
-            return true;
-        }
-    }
-
-
     public Map<String, Boolean>
     confirmFileReferences(File file) throws IOException {
         ThreadPoolExecutor es = new ThreadPoolExecutor(10, 10, 1, TimeUnit.HOURS, new ArrayBlockingQueue<>(10));
@@ -205,12 +156,8 @@ CramReferenceInfo {
                     }
 
                     result.computeIfAbsent(md5, k -> {
-                        if (findOnDisk(md5)) {
-                            return true;
-                        } else {
-                            ReferenceInfo info = fetchReferenceMetadata(md5);
-                            return k.equals(info.getMd5()) && putOnDisk(md5);
-                        }
+                        ReferenceInfo info = fetchReferenceMetadata(md5);
+                        return k.equals(info.getMd5());
                     });
 
                     if (0 == count.get() % 10)
