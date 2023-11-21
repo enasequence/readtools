@@ -74,20 +74,21 @@ public class Fastq2BamWriter implements ReadWriter<PairedRead, Spot> {
 
             if (spot.isPaired()) {
                 SAMRecord rec1 = createSamRecord(
-                        true, spot.name, spot.forward.bases, spot.forward.quals);
+                        true, spot.name, spot.forward.getBases(), spot.forward.getQualityScores());
                 rec1.setFirstOfPairFlag(true);
                 rec1.setSecondOfPairFlag(false);
                 writer.addAlignment(rec1);
 
                 SAMRecord rec2 = createSamRecord(
-                        true, spot.name, spot.reverse.bases, spot.reverse.quals);
+                        true, spot.name, spot.reverse.getBases(), spot.reverse.getQualityScores());
                 rec2.setFirstOfPairFlag(false);
                 rec2.setSecondOfPairFlag(true);
                 writer.addAlignment(rec2);
 
             } else {
                 Read unpaired = spot.getUnpaired();
-                SAMRecord rec = createSamRecord(false, spot.name, unpaired.bases, unpaired.quals);
+                SAMRecord rec = createSamRecord(
+                        false, spot.name, unpaired.getBases(), unpaired.getQualityScores());
                 rec.setReadPairedFlag(false);
                 writer.addAlignment(rec);
             }
@@ -125,22 +126,22 @@ public class Fastq2BamWriter implements ReadWriter<PairedRead, Spot> {
 
     private void validate(PairedRead pairedRead) {
         if (pairedRead.forward != null) {
-            Matcher matcher = validDnaCharsetPattern.matcher(pairedRead.forward.bases);
+            Matcher matcher = validDnaCharsetPattern.matcher(pairedRead.forward.getBases());
             if (!matcher.matches()) {
-                handleInvalidDnaCharset(pairedRead.forward.bases, matcher);
+                handleInvalidDnaCharset(pairedRead.forward.getBases(), matcher);
             }
 
-            if (pairedRead.forward.bases.length() != pairedRead.forward.quals.length())
+            if (pairedRead.forward.getBases().length() != pairedRead.forward.getQualityScores().length())
                 throw new IllegalArgumentException(String.format(
                         "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", pairedRead));
         }
 
         if (pairedRead.reverse != null) {
-            Matcher matcher = validDnaCharsetPattern.matcher(pairedRead.reverse.bases);
+            Matcher matcher = validDnaCharsetPattern.matcher(pairedRead.reverse.getBases());
             if (!matcher.matches())
-                handleInvalidDnaCharset(pairedRead.reverse.bases, matcher);
+                handleInvalidDnaCharset(pairedRead.reverse.getBases(), matcher);
 
-            if (pairedRead.reverse.bases.length() != pairedRead.reverse.quals.length())
+            if (pairedRead.reverse.getBases().length() != pairedRead.reverse.getQualityScores().length())
                 throw new IllegalArgumentException(String.format(
                         "FATAL: Spot bases and qualities length do not match. Malformed spot\n%s\n", pairedRead));
         }

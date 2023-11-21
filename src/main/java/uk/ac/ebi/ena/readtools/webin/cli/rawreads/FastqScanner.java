@@ -60,8 +60,6 @@ FastqScanner {
     private final Long readLimit;
     private Long count = 0L;
 
-    abstract protected void logProcessedReadNumber(long count);
-
     abstract protected void logFlushMsg(String message);
 
     public FastqScanner(int expected_size) {
@@ -281,7 +279,7 @@ FastqScanner {
         Iterator<String> read_name_iterator = new DelegateIterator<PairedRead, String>(wrapper.iterator()) {
             @Override
             public String convert(PairedRead obj) {
-                return obj.forward.name;
+                return obj.forward.getName();
             }
         };
 

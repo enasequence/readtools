@@ -18,14 +18,15 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
  * Holds raw unpaired read information.
  */
 public class Read implements Serializable, Spot {
+    protected final String name;
+    protected final String bases;
+    protected final String qualityScores;
 
-    static final long serialVersionUID = 1L;
-
-    public String defaultReadIndex;
-
-    public String name; // name for bases
-    public String bases;// bases
-    public String quals;
+    public Read(String name, String bases, String qualityScores) {
+        this.name = name;
+        this.bases = bases;
+        this.qualityScores = qualityScores;
+    }
 
     @Override
     public String getName() {
@@ -37,23 +38,29 @@ public class Read implements Serializable, Spot {
         return bases.length();
     }
 
+    public String getBases() {
+        return bases;
+    }
+
+    public String getQualityScores() {
+        return qualityScores;
+    }
+
     public String toString() {
-        return new StringBuilder()
-                .append("base_name = [")
-                .append(name)
-                .append("]\n")
-                .append("bases = [")
-                .append(bases)
-                .append("], length = ")
-                .append(null == bases ? "null" : bases.length())
-                .append("\nquals = [")
-                .append(quals)
-                .append("], length = ")
-                .append(null == quals ? "null" : quals.length())
-                .toString();
+        return "base_name = [" +
+                name +
+                "]\n" +
+                "bases = [" +
+                bases +
+                "], length = " +
+                (null == bases ? "null" : bases.length()) +
+                "\nquals = [" +
+                qualityScores +
+                "], length = " +
+                (null == qualityScores ? "null" : qualityScores.length());
     }
 
     public long getSizeBytes() {
-        return name.getBytes().length + bases.getBytes().length + quals.getBytes().length;
+        return name.getBytes().length + bases.getBytes().length + qualityScores.getBytes().length;
     }
 }

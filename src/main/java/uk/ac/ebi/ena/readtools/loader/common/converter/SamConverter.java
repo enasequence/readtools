@@ -4,6 +4,7 @@ import htsjdk.samtools.*;
 import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
+import uk.ac.ebi.ena.readtools.loader.fastq.SamRecordWrapper;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
 
 import java.io.EOFException;
@@ -52,18 +53,7 @@ public class SamConverter extends AbstractReadConverter<Read> {
     public Read getNextSpotFromInputStream(InputStream inputStream) throws IOException {
         if (samRecordIterator.hasNext()) {
             SAMRecord samRecord = samRecordIterator.next();
-//            if( record.isSecondaryOrSupplementary() )
-//                continue;
-//
-//            if( record.getDuplicateReadFlag() )
-//                continue;
-            Read read = new Read();
-            read.name = samRecord.getReadName();
-            read.bases = samRecord.getReadString();
-            read.quals = samRecord.getBaseQualityString();
-
-            return read;
-
+            return new SamRecordWrapper(samRecord);
         } else {
             throw new EOFException();
         }

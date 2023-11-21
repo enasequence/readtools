@@ -65,7 +65,7 @@ SamScanner
     private final Duration runDuration;
     private final Long readLimit;
 
-    abstract protected void logProcessedReadNumber( long cnt );
+
 
     public SamScanner(Long readLimit) {
         this(readLimit, null);
@@ -210,11 +210,7 @@ SamScanner
                     if( record.getReadString().equals( BAM_STAR ) && record.getBaseQualityString().equals( BAM_STAR ) )
                         continue;
 
-                    if( record.getReadBases().length != record.getBaseQualities().length )
-                    {
-                        ValidationResult readResult = result.create( new ValidationOrigin( "read number", read_no ) );
-                        readResult.add( ValidationMessage.error( "Mismatch between length of read bases and qualities" ) );
-                    }
+
 
                     paired.compareAndSet( false, record.getReadPairedFlag() );
                     reads_cnt++;

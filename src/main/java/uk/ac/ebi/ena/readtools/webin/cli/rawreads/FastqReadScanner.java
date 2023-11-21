@@ -16,7 +16,7 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
-public class FastqReadScanner extends InsdcStandardCheckingScanner {
+public abstract class FastqReadScanner extends InsdcStandardCheckingScanner {
     private final String streamName;
     private final Set<String> labels;
     private final BloomWrapper pairingBloomWrapper;
@@ -46,10 +46,10 @@ public class FastqReadScanner extends InsdcStandardCheckingScanner {
         String pairNumber;
 
         try {
-            readNameWithoutPairNumber = PairedFastqWriter.getReadKey(read.name);
-            pairNumber = PairedFastqWriter.getPairNumber(read.name);
+            readNameWithoutPairNumber = PairedFastqWriter.getReadKey(read.getName());
+            pairNumber = PairedFastqWriter.getPairNumber(read.getName());
         } catch (ReadWriterException ignored) {
-            readNameWithoutPairNumber = read.name;
+            readNameWithoutPairNumber = read.getName();
             pairNumber = streamName;
         }
 
@@ -58,7 +58,7 @@ public class FastqReadScanner extends InsdcStandardCheckingScanner {
         }
 
         pairingBloomWrapper.add(readNameWithoutPairNumber);
-        duplicationsBloomWrapper.add(read.name);
+        duplicationsBloomWrapper.add(read.getName());
 
     }
 }

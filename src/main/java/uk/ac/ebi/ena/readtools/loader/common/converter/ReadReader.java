@@ -146,7 +146,7 @@ SPACE HERE
             readQualityNormalizer = read -> {}; //No normalization is performed.
         } else {
             readQualityNormalizer = read -> {
-                byte[] quals = read.quals.getBytes(StandardCharsets.UTF_8);
+                byte[] quals = read.getQualityScores().getBytes(StandardCharsets.UTF_8);
                 normalizer.normalize(quals);
                 read.quals = new String(quals, StandardCharsets.UTF_8);
             };
@@ -255,7 +255,7 @@ SPACE HERE
 
     private void readQuals(InputStream is, Read read) throws IOException
     {
-        int expectedQualLength = 0 == read.bases.length() ? -1 : read.bases.length();
+        int expectedQualLength = 0 == read.getBases().length() ? -1 : read.getBases().length();
 
         String line = readLine( is, expectedQualLength );
         while( expectedQualLength >= 0 && line.trim().length() == 0 )
@@ -282,7 +282,7 @@ SPACE HERE
 
                 if( expectedQualLength != value.length() )
                     throw new ConverterException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of the read one[%d]",
-                            read.name,
+                            read.getName(),
                             expectedQualLength,
                             value.length() ) );
 
@@ -294,7 +294,7 @@ SPACE HERE
             //check against expected
             if( expectedQualLength >= 0 && expectedQualLength != value.length() )
                 throw new ConverterException( params.line_no, String.format( "%s Expected qual length [%d] does not match length of the read one[%d]",
-                        read.name,
+                        read.getName(),
                         expectedQualLength,
                         value.length() ) );
 
@@ -321,8 +321,8 @@ SPACE HERE
     {
         if( !params.allow_empty )
         {
-            if( null == read.bases || null == read.quals
-                    || 0 == read.bases.length() || 0 == read.quals.length() )
+            if( null == read.getBases() || null == read.getQualityScores()
+                    || 0 == read.getBases().length() || 0 == read.getQualityScores().length() )
                 throw new ConverterException( params.line_no, "Empty lines not allowed" );
         }
 
