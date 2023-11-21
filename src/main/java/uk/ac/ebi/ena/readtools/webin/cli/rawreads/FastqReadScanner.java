@@ -16,18 +16,17 @@ import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
-public abstract class FastqReadScanner extends InsdcStandardCheckingScanner {
+public class FastqReadScanner extends InsdcStandardCheckingScanner {
     private final String streamName;
     private final Set<String> labels;
     private final BloomWrapper pairingBloomWrapper;
     private final BloomWrapper duplicationsBloomWrapper;
-    private final FastqScanner fastqScanner;
     private final int maxLabelSetSize;
 
     public FastqReadScanner(
             String streamName, Set<String> labels,
             BloomWrapper pairingBloomWrapper, BloomWrapper duplicationsBloomWrapper,
-            FastqScanner fastqScanner, int maxLabelSetSize, int printFreq)
+            int maxLabelSetSize, int printFreq)
     {
         super(printFreq);
 
@@ -35,8 +34,12 @@ public abstract class FastqReadScanner extends InsdcStandardCheckingScanner {
         this.labels = labels;
         this.pairingBloomWrapper = pairingBloomWrapper;
         this.duplicationsBloomWrapper = duplicationsBloomWrapper;
-        this.fastqScanner = fastqScanner;
         this.maxLabelSetSize = maxLabelSetSize;
+    }
+
+    @Override
+    protected void logProcessedReadNumber(long cnt) {
+        ;
     }
 
     public void write(Read read) throws ReadWriterException {

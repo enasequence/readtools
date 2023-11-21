@@ -247,7 +247,7 @@ FastqScanner {
             String streamName = readsFile.getFilename();
             FastqReadScanner fastqReadScanner = new FastqReadScanner(
                     streamName, labels, pairingBloomWrapper, duplicationsBloomWrapper,
-                    this, MAX_LABEL_SET_SIZE, PRINT_FREQ);
+                    MAX_LABEL_SET_SIZE, PRINT_FREQ);
             AutoNormalizeQualityReadConverter readScanningConverter = new AutoNormalizeQualityReadConverter(
                     inputStream,
                     fastqReadScanner,
@@ -263,6 +263,8 @@ FastqScanner {
             }
         }
     }
+
+    protected abstract void logProcessedReadNumber(Long count);
 
     private Map<String, Set<String>> findAllduplications(BloomWrapper duplications, int limit, RawReadsFile rf) {
         Map<String, Integer> counts = new HashMap<>(limit);

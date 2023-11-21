@@ -142,10 +142,12 @@ implements Validator<ReadsManifest, ReadsValidationResponse>
         {
             FastqScanner fs = new FastqScanner(manifest.isQuick() ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT) {
                 @Override
-                protected void logProcessedReadNumber( long count ) { }
+                protected void logFlushMsg( String msg ) {}
 
                 @Override
-                protected void logFlushMsg( String msg ) {}
+                protected void logProcessedReadNumber(Long count) {
+                    ;
+                }
             };
 
             fs.checkFiles( result, files.toArray( new RawReadsFile[files.size()] ));

@@ -21,11 +21,17 @@ public class Read implements Serializable, Spot {
     protected final String name;
     protected final String bases;
     protected final String qualityScores;
+    protected final String defaultReadIndex;
 
     public Read(String name, String bases, String qualityScores) {
+        this(name, bases, qualityScores, null);
+    }
+
+    public Read(String name, String bases, String qualityScores, String defaultReadIndex) {
         this.name = name;
         this.bases = bases;
         this.qualityScores = qualityScores;
+        this.defaultReadIndex = defaultReadIndex;
     }
 
     @Override
@@ -44,6 +50,10 @@ public class Read implements Serializable, Spot {
 
     public String getQualityScores() {
         return qualityScores;
+    }
+
+    public String getDefaultReadIndex() {
+        return defaultReadIndex;
     }
 
     public String toString() {

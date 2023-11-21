@@ -178,7 +178,12 @@ SamScanner
                 ir.index( indexMaybe );
 
             try (InputStream inputStream = Utils.openFastqInputStream(file.toPath())) {
-                SamReadScanner samReadScanner = new SamReadScanner(print_freq);
+                SamReadScanner samReadScanner = new SamReadScanner(print_freq) {
+                    @Override
+                    protected void logProcessedReadNumber(long cnt) {
+                        logProcessedReadNumber(cnt);
+                    }
+                };
                 SamConverter samConverter = readLimit <= 0L ?
                         new SamConverter(useCramRefSource, inputStream, samReadScanner) :
                         new SamConverter(useCramRefSource, inputStream, samReadScanner, readLimit);
@@ -193,39 +198,6 @@ SamScanner
                 }
             }
 
-            try( SamReader reader = factory.open(ir) )
-            {
-                Supplier<Boolean> keepReading = createKeepReading();
-
-                for( SAMRecord record : reader )
-                {
-                    read_no++;
-                    //do not load supplementary reads
-                    if( record.isSecondaryOrSupplementary() )
-                        continue;
-
-                    if( record.getDuplicateReadFlag() )
-                        continue;
-
-                    if( record.getReadString().equals( BAM_STAR ) && record.getBaseQualityString().equals( BAM_STAR ) )
-                        continue;
-
-
-
-                    paired.compareAndSet( false, record.getReadPairedFlag() );
-                    reads_cnt++;
-                    if( 0 == reads_cnt % print_freq )
-                        logProcessedReadNumber( reads_cnt );
-
-                    if (!keepReading.get()) {
-                        break;
-                    }
-                }
-
-                logProcessedReadNumber( reads_cnt );
-
-            }
-
             result.add( ValidationMessage.info( "LibraryLayout: " + ( paired.get() ? "PAIRED" : "SINGLE" ) ) );
 
             if( 0 == reads_cnt )
@@ -236,6 +208,8 @@ SamScanner
             result.add( ValidationMessage.error( e ) );
         }
     }
+
+    protected abstract void logProcessedReadNumber(long reads_cnt);
 
     private Supplier<Boolean> createKeepReading() {
         if (runDuration == null) {

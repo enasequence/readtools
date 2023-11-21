@@ -101,7 +101,7 @@ PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead> {
         try {
             readIndexStr = getPairNumber(spot.name);
         } catch (ReadWriterException de) {
-            readIndexStr = spot.defaultReadIndex;
+            readIndexStr = spot.getDefaultReadIndex();
         }
         int readIndex = Integer.parseInt(readIndexStr) - 1;
 
