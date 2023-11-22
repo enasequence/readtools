@@ -1,13 +1,13 @@
 /*
- * Copyright 2010-2021 EMBL - European Bioinformatics Institute
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
- * file except in compliance with the License. You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
- */
+* Copyright 2010-2021 EMBL - European Bioinformatics Institute
+* Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+* file except in compliance with the License. You may obtain a copy of the License at
+* http://www.apache.org/licenses/LICENSE-2.0
+* Unless required by applicable law or agreed to in writing, software distributed under the
+* License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+* CONDITIONS OF ANY KIND, either express or implied. See the License for the
+* specific language governing permissions and limitations under the License.
+*/
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
 import java.io.EOFException;
@@ -15,14 +15,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
-import uk.ac.ebi.ena.readtools.loader.common.Pair;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
 class ReadReader {
@@ -117,7 +115,7 @@ SPACE HERE
      */
     private final String defaultReadIndex;
 
-    private final Consumer<Pair<String, String>> readQualityNormalizer;
+    private final QualityNormalizer qualityNormalizer;
 
     private final int expectedBaseLength;
 
@@ -141,16 +139,7 @@ SPACE HERE
     }
 
     public ReadReader(QualityNormalizer normalizer, String defaultReadIndex, int expectedLength) {
-        if (normalizer == null) {
-            readQualityNormalizer = pair -> {
-            }; //No normalization is performed.
-        } else {
-            readQualityNormalizer = pair -> {
-                byte[] quals = pair.key.getBytes(StandardCharsets.UTF_8);
-                normalizer.normalize(quals);
-                return new String(quals, StandardCharsets.UTF_8);
-            };
-        }
+        qualityNormalizer = normalizer;
 
         this.defaultReadIndex = defaultReadIndex;
         this.expectedBaseLength = expectedLength;
@@ -163,22 +152,21 @@ SPACE HERE
         String qualityScores = null;
         try {
             String name = readBaseName(inputStream);
-
             recordStarted = true;
 
             bases = readBases(inputStream);
             readQualName(inputStream);
             qualityScores = readQualityScores(inputStream, name, bases);
+            checkForEmptyBasesAndQualityScores(bases, qualityScores);
+            if (qualityNormalizer != null) {
+                qualityScores = normaliseQualityScores(bases);
+            }
 
-            checkReadData(bases, qualityScores);
-
-            Read read = new Read(name, bases, qualityScores, defaultReadIndex);
-
-            return read;
+            return new Read(name, bases, qualityScores, defaultReadIndex);
         } catch (EOFException e) {
             // Read data must always be checked even when the end of stream has been reached.
             if (recordStarted) {
-                checkReadData(bases, qualityScores);
+                checkForEmptyBasesAndQualityScores(bases, qualityScores);
             }
 
             throw e;
@@ -304,14 +292,19 @@ SPACE HERE
         return value;
     }
 
-    private void checkReadData(String bases, String qualityScores) {
+    private String normaliseQualityScores(String bases) {
+        byte[] quals = bases.getBytes(StandardCharsets.UTF_8);
+        qualityNormalizer.normalize(quals);
+
+        return new String(quals, StandardCharsets.UTF_8);
+    }
+
+    private void checkForEmptyBasesAndQualityScores(String bases, String qualityScores) {
         if (!params.allow_empty) {
             if (null == bases || null == qualityScores
                     || 0 == bases.length() || 0 == qualityScores.length())
                 throw new ConverterException(params.line_no, "Empty lines not allowed");
         }
-
-        readQualityNormalizer.accept(new Pair<>(bases, qualityScores));
     }
 
     // reads stream line till line separator

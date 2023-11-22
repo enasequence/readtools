@@ -26,10 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.SAMFormatException;
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamFiles;
 import htsjdk.samtools.SamInputResource;
-import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAMException;
@@ -42,7 +40,6 @@ import uk.ac.ebi.ena.readtools.loader.common.converter.SamConverter;
 import uk.ac.ebi.ena.readtools.utils.Utils;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.refs.CramReferenceInfo;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationOrigin;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 

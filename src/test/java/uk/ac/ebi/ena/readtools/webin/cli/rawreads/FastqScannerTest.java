@@ -43,13 +43,11 @@ FastqScannerTest
 			super( expected_size );
 		}
 
-		
-	    @Override protected void
-	    logProcessedReadNumber( long count )
-	    {
-	        String msg = String.format( "\rProcessed %16d read(s)", count );
-	        logFlushMsg( msg );
-	    }
+        @Override
+        protected void logProcessedReadNumber(Long count) {
+            String msg = String.format( "\rProcessed %16d read(s)", count );
+            logFlushMsg( msg );
+        }
 
 	    
 	    @Override protected void

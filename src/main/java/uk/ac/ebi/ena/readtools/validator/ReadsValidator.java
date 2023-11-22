@@ -23,10 +23,10 @@ import java.util.stream.Collectors;
 import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.cram.CRAMException;
 
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.SamScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.FastqScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile.Filetype;
+import uk.ac.ebi.ena.readtools.webin.cli.rawreads.SamScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.refs.CramReferenceInfo;
 import uk.ac.ebi.ena.webin.cli.validator.api.ValidationResponse.status;
 import uk.ac.ebi.ena.webin.cli.validator.api.Validator;

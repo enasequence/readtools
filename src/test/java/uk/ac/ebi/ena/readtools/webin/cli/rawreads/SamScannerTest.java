@@ -31,21 +31,29 @@ import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 public class
 SamScannerTest
 {
+    private static final Long READ_LIMIT = 1024L;
+
     static class 
     MyScanner extends SamScanner
-    { 
-        protected void 
+    {
+        public MyScanner() {
+            super(READ_LIMIT);
+        }
+
+        protected void
         logProcessedReadNumber( long cnt ) 
         {
             System.out.println( cnt );
         }
     };
 
+
+
     
     @Test public void
     testCorrectCram() throws IOException
     {
-        URL url = BamScannerTest.class.getClassLoader().getResource("rawreads/18045_1#93.cram");
+        URL url = SamScannerTest.class.getClassLoader().getResource("rawreads/18045_1#93.cram");
         File file = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
         
         SamScanner bs = new MyScanner();
@@ -62,7 +70,7 @@ SamScannerTest
     @Test public void
     testIncorrectCram() throws IOException
     {
-        URL url = BamScannerTest.class.getClassLoader().getResource("rawreads/15194_1#135.cram");
+        URL url = SamScannerTest.class.getClassLoader().getResource("rawreads/15194_1#135.cram");
         File file = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
         SamScanner bs = new MyScanner();
         AtomicBoolean paired = new AtomicBoolean();
@@ -77,7 +85,7 @@ SamScannerTest
     @Test public void
     testIncorrectBAM() throws IOException
     {
-        URL url = BamScannerTest.class.getClassLoader().getResource("rawreads/m54097_170904_165950.subreads.bam");
+        URL url = SamScannerTest.class.getClassLoader().getResource("rawreads/m54097_170904_165950.subreads.bam");
         File file = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
         SamScanner bs = new MyScanner();
         AtomicBoolean paired = new AtomicBoolean();
@@ -93,7 +101,7 @@ SamScannerTest
     @Test public void
     testCorrectBAM() throws IOException
     {
-        URL url = BamScannerTest.class.getClassLoader().getResource("rawreads/OUTO500m_MetOH_narG_OTU18.bam");
+        URL url = SamScannerTest.class.getClassLoader().getResource("rawreads/OUTO500m_MetOH_narG_OTU18.bam");
         Path file = Paths.get( new File( url.getFile() ).getCanonicalPath() );
         SamScanner bs = new MyScanner();
         AtomicBoolean paired = new AtomicBoolean();
@@ -109,7 +117,7 @@ SamScannerTest
     @Test public void
     testIncorrectBAMHeader() throws IOException
     {
-        URL url = BamScannerTest.class.getClassLoader().getResource("rawreads/invalid.bam");
+        URL url = SamScannerTest.class.getClassLoader().getResource("rawreads/invalid.bam");
         File file = new File( URLDecoder.decode( url.getFile(), "UTF-8" ) );
         SamScanner bs = new MyScanner();
         AtomicBoolean paired = new AtomicBoolean();
@@ -125,7 +133,7 @@ SamScannerTest
 
     @Test
     public void testRunDuration() throws IOException {
-        URL url = BamScannerTest.class.getClassLoader().getResource("bam2fastq/3fastq/M2241_BLV_sense.bam");
+        URL url = SamScannerTest.class.getClassLoader().getResource("bam2fastq/3fastq/M2241_BLV_sense.bam");
         Path file = Paths.get( new File( url.getFile() ).getCanonicalPath() );
 
         //Adjust this if the file above is changed.
@@ -142,7 +150,7 @@ SamScannerTest
         ValidationResult vr = new ValidationResult();
 
         long processedReadCount[] = {0};
-        SamScanner bs = new SamScanner(expectedRunDuration) {
+        SamScanner bs = new SamScanner(READ_LIMIT, expectedRunDuration) {
             @Override
             protected void logProcessedReadNumber(long cnt) {
                 processedReadCount[0] = cnt;

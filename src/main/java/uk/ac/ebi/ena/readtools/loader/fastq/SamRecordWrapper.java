@@ -10,10 +10,9 @@
 */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
-import htsjdk.samtools.SAMRecord;
-import uk.ac.ebi.ena.readtools.loader.common.writer.Spot;
 
-import java.io.Serializable;
+import htsjdk.samtools.SAMRecord;
+
 
 /**
  * Holds raw unpaired read information.

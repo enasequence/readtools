@@ -95,7 +95,7 @@ ReadReaderTest {
 
 			Read read = ds.read(is);
 
-			Assert.assertEquals(expectedNormalizedQualityScores, read.quals);
+			Assert.assertEquals(expectedNormalizedQualityScores, read.getQualityScores());
 		}
 	}
 
