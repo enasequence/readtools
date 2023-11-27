@@ -1,7 +1,8 @@
-package uk.ac.ebi.ena.readtools;
+package uk.ac.ebi.ena.readtools.refactored.provider;
 
 import htsjdk.samtools.*;
 import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
+import uk.ac.ebi.ena.readtools.refactored.read.SamRead;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,11 +10,11 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class SamReadsProducer implements ReadsProducer {
+public class SamReadsProvider implements ReadsProvider<SamRead> {
     private final SamReader reader;
     private final Iterator<SAMRecord> samIterator;
 
-    public SamReadsProducer(File samFile) {
+    public SamReadsProvider(File samFile) {
         if (isCram(samFile)) {
             reader = SamReaderFactory.makeDefault()
                     .referenceSource(new ENAReferenceSource())
@@ -26,21 +27,21 @@ public class SamReadsProducer implements ReadsProducer {
     }
 
     @Override
-    public Iterator<Read> iterator() {
-        return new Iterator<Read>() {
+    public Iterator<SamRead> iterator() {
+        return new Iterator<SamRead>() {
             @Override
             public boolean hasNext() {
                 return samIterator.hasNext();
             }
 
             @Override
-            public Read next() {
+            public SamRead next() {
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
 
                 SAMRecord samRecord = samIterator.next();
-                return new Read(samRecord.getReadName(), samRecord.getReadString(), samRecord.getBaseQualityString());
+                return new SamRead(samRecord);
             }
         };
     }

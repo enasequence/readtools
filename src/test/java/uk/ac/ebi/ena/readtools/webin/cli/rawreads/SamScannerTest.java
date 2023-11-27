@@ -12,6 +12,7 @@ package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Assert;
 import org.junit.Test;
 
+import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
+import uk.ac.ebi.ena.readtools.refactored.validator.ValidatorWrapper;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 
@@ -171,5 +174,18 @@ SamScannerTest
         //then processed read count should be lower than total read count in the file.
         //Which means the timeout functionality worked.
         Assert.assertTrue(processedReadCount[0] > 0 && processedReadCount[0] < fileReadCount);
+    }
+
+    @Test
+    public void srv1() throws UnsupportedEncodingException, ReadsValidationException {
+        URL url = SamScannerTest.class.getClassLoader().getResource("rawreads/15194_1#135.cram");
+        File file = new File(URLDecoder.decode(url.getFile(), "UTF-8"));
+        ValidatorWrapper.validateSam(file);
+    }
+    @Test
+    public void srv2() throws UnsupportedEncodingException, ReadsValidationException {
+        URL url = SamScannerTest.class.getClassLoader().getResource("rawreads/m54097_170904_165950.subreads.bam");
+        File file = new File( URLDecoder.decode(url.getFile(), "UTF-8"));
+        ValidatorWrapper.validateSam(file);
     }
 }
