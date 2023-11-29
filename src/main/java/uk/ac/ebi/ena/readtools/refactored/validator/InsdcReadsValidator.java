@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.HashSet;
 
 public class InsdcReadsValidator implements ReadsValidator<IRead> {
-    private static final String IUPAC_CODES = "ACGTURYSWKMBDHVN.-";
+    public static final String IUPAC_CODES = "ACGTURYSWKMBDHVNacgturyswkmbdhv.-";
     private static final int MIN_QUALITY_SCORE = 30;
 
     public static String ERROR_NULL_READS = "Reads cannot be null";

@@ -3,7 +3,6 @@ package uk.ac.ebi.ena.readtools.refactored.provider;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
 import uk.ac.ebi.ena.readtools.refactored.read.FastqRead;
-import uk.ac.ebi.ena.readtools.refactored.read.IRead;
 
 import java.io.File;
 import java.util.Iterator;
