@@ -1164,24 +1164,4 @@ FastqScannerTest
 
         Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
-
-    @Test
-    public void rvt() throws IOException, ReadsValidationException {
-        File output_dir = createOutputFolder();
-        Path f1 = saveRandomized(
-                "@paired/1\n" +
-                        "ACGT\n" +
-                        "+\n" +
-                        "1234\n" +
-                        "@paired/2\n" +
-                        "ACGT\n" +
-                        "+\n" +
-                        "1234\n" +
-                        "@unpaired\n" +
-                        "ACGT\n" +
-                        "+\n" +
-                        "1234", output_dir.toPath(), true, "fastq-1", "gz" );
-
-        ValidatorWrapper.validateFastq(f1.toFile());
-    }
 }

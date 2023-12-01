@@ -1,18 +1,27 @@
 package uk.ac.ebi.ena.readtools.refactored.provider;
 
+import htsjdk.samtools.SAMException;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
+import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.refactored.read.FastqRead;
+import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
 
 import java.io.File;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FastqReadsProvider implements ReadsProvider<FastqRead> {
     private FastqReader reader;
 
-    public FastqReadsProvider(File fastqFile) {
-        this.reader = new FastqReader(fastqFile);
+    public FastqReadsProvider(File fastqFile) throws ReadsValidationException {
+        try {
+            this.reader = new FastqReader(fastqFile);
+        } catch (SAMException e) {
+            throw new ReadsValidationException(e.getMessage(), 1);
+        }
     }
 
     @Override

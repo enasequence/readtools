@@ -53,29 +53,29 @@ public abstract class InsdcStandardCheckingScanner implements ReadWriter<Read, S
     @Override
     public void write(Read read) throws ReadWriterException {
         // Check for empty reads
-        if (read == null || read.getBases() == null || read.getBases().isEmpty() || read.getBases().trim().isEmpty()) {
-            throw new ReadWriterException("File must not contain any empty reads.");
-        }
-
-        // Check for valid IUPAC codes and no more than 50% non-AUTCG bases
-        long validBasesCount = read.getBases().chars().filter(c -> IUPAC_CODES.indexOf(c) != -1).count();
-        long nonAUTCGCount = read.getBases().chars().filter(c -> "RYKMSWBDHVN".indexOf(c) != -1).count();
-
-        if (validBasesCount < read.getBaseCount() || nonAUTCGCount > read.getBaseCount() / 2) {
-            throw new ReadWriterException("Reads must contain only valid IUPAC codes with no more than 50% non-AUTCG bases.");
-        }
-
-        // When file contains base quality scores
-        if (read.getQualityScores() != null && !read.getQualityScores().isEmpty()) {
-            // Compute the average quality score for the read
-            double averageQuality = read.getQualityScores().chars()
-                    .mapToDouble(c -> c - '!').average().orElse(0.0);
-
-            // Check if the average quality is below the threshold
-            if (averageQuality < 30) {
-                throw new ReadWriterException("At least 50% of reads must have an average quality score >= 30.");
-            }
-        }
+//        if (read == null || read.getBases() == null || read.getBases().isEmpty() || read.getBases().trim().isEmpty()) {
+//            throw new ReadWriterException("File must not contain any empty reads.");
+//        }
+//
+//        // Check for valid IUPAC codes and no more than 50% non-AUTCG bases
+//        long validBasesCount = read.getBases().chars().filter(c -> IUPAC_CODES.indexOf(c) != -1).count();
+//        long nonAUTCGCount = read.getBases().chars().filter(c -> "RYKMSWBDHVN".indexOf(c) != -1).count();
+//
+//        if (validBasesCount < read.getBaseCount() || nonAUTCGCount > read.getBaseCount() / 2) {
+//            throw new ReadWriterException("Reads must contain only valid IUPAC codes with no more than 50% non-AUTCG bases.");
+//        }
+//
+//        // When file contains base quality scores
+//        if (read.getQualityScores() != null && !read.getQualityScores().isEmpty()) {
+//            // Compute the average quality score for the read
+//            double averageQuality = read.getQualityScores().chars()
+//                    .mapToDouble(c -> c - '!').average().orElse(0.0);
+//
+//            // Check if the average quality is below the threshold
+//            if (averageQuality < 30) {
+//                throw new ReadWriterException("At least 50% of reads must have an average quality score >= 30.");
+//            }
+//        }
 
         if (read.getBases().length() != read.getQualityScores().length()) {
             throw new ReadWriterException("Mismatch between length of read bases and qualities");

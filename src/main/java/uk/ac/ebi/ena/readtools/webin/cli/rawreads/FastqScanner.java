@@ -230,6 +230,8 @@ FastqScanner {
             fileResult.add(ValidationMessage.info(String.format("Collected %d read labels: %s", labelSet.size(), labelSet)));
             fileResult.add(ValidationMessage.info(String.format("Has possible duplicate read name(s): " + duplicationsBloomWrapper.hasPossibleDuplicates())));
         } catch (ConverterException converterException) {
+            converterException.printStackTrace();
+
             logFlushMsg(String.format("Processing completed. Result: %s\n", converterException));
 
             ValidationMessage dataProducerError = ValidationMessage.error(converterException.getMessage());
