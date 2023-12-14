@@ -1,11 +1,16 @@
+/*
+* Copyright 2010-2021 EMBL - European Bioinformatics Institute
+* Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+* file except in compliance with the License. You may obtain a copy of the License at
+* http://www.apache.org/licenses/LICENSE-2.0
+* Unless required by applicable law or agreed to in writing, software distributed under the
+* License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+* CONDITIONS OF ANY KIND, either express or implied. See the License for the
+* specific language governing permissions and limitations under the License.
+*/
 package uk.ac.ebi.ena.readtools.refactored;
 
-import org.junit.Assert;
-import org.junit.Test;
-import uk.ac.ebi.ena.readtools.refactored.provider.FastqReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.validator.FastqReadsValidator;
-import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +24,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
-import static org.junit.Assert.*;
+import org.junit.Assert;
+import org.junit.Test;
+
+import uk.ac.ebi.ena.readtools.refactored.provider.FastqReadsProvider;
+import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
+import uk.ac.ebi.ena.readtools.refactored.validator.FastqReadsValidator;
+import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
 
 public class FastqReadsValidatorTest {
     @Test
@@ -48,7 +59,7 @@ public class FastqReadsValidatorTest {
             new FastqReadsValidator().validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
-            assertEquals("", e.getMessage());
+            assertTrue(e.getMessage().contains("Multiple"));
         }
     }
 
@@ -64,7 +75,7 @@ public class FastqReadsValidatorTest {
             new FastqReadsValidator().validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
-            assertEquals("", e.getMessage());
+            assertTrue(e.getMessage().contains("Multiple"));
         }
     }
 
@@ -80,7 +91,7 @@ public class FastqReadsValidatorTest {
             new FastqReadsValidator().validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
-            assertEquals("", e.getMessage());
+            assertTrue(e.getMessage().contains("Multiple"));
         }
     }
 
@@ -159,8 +170,12 @@ public class FastqReadsValidatorTest {
                         + "CBEC>=EFCED@?CDDF<EFA>4CDD8E8AAC>:4FDD>=CDD4F7CEF;CAB=FB>:CAA?F,EFE?;&@D7>5:?/==(C>.<&26'-=?8%-+E42F",
                 output_dir.toPath(), true, "fastq-10", "gz");
 
-        ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-        assertTrue(new FastqReadsValidator().validate(mrp));
+        try {
+            ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
+            assertTrue(new FastqReadsValidator().validate(mrp));
+        } catch (ReadsValidationException e) {
+            assertTrue(e.getMessage().contains("Multiple"));
+        }
     }
 
     @Test

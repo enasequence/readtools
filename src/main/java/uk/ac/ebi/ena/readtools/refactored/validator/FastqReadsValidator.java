@@ -1,6 +1,23 @@
+/*
+* Copyright 2010-2021 EMBL - European Bioinformatics Institute
+* Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+* file except in compliance with the License. You may obtain a copy of the License at
+* http://www.apache.org/licenses/LICENSE-2.0
+* Unless required by applicable law or agreed to in writing, software distributed under the
+* License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+* CONDITIONS OF ANY KIND, either express or implied. See the License for the
+* specific language governing permissions and limitations under the License.
+*/
 package uk.ac.ebi.ena.readtools.refactored.validator;
 
+import java.io.File;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import htsjdk.samtools.SAMException;
+
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
 import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
@@ -8,14 +25,6 @@ import uk.ac.ebi.ena.readtools.refactored.read.FastqRead;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.BloomWrapper;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.DelegateIterator;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
-
-import java.io.File;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class FastqReadsValidator implements ReadsValidator<FastqRead> {
     /*
@@ -55,6 +64,7 @@ SPACE HERE
             "^(.+)( +|\\t+)([0-9]+):[YN]:[0-9]*[02468]($|:.*$)");
 
     final static private Pattern pQuals = Pattern.compile("^([!-~]*?)$"); //qualities
+    private static final int PAIRING_THRESHOLD = 20;
     private ReadStyle readStyle = null; // Field to keep track of the read style
     private final long expectedSize = 100;
     private final long readLimit = 20;
@@ -62,7 +72,7 @@ SPACE HERE
     @Override
     public boolean validate(ReadsProvider<FastqRead> provider) throws ReadsValidationException {
         BloomWrapper duplicationsBloomWrapper = new BloomWrapper(expectedSize);
-        BloomWrapper pairingBloomWrapper = new BloomWrapper(expectedSize / 10);
+        Map<String, Integer> counts = new HashMap<>(100);
 
         long readCount = 0;
         try {
@@ -75,27 +85,22 @@ SPACE HERE
                 validateRead(read, readCount);
 
                 duplicationsBloomWrapper.add(read.getName());
-                pairingBloomWrapper.add(read.getNameWithoutIndex());
+                if (duplicationsBloomWrapper.getPossibleDuplicates().contains(read.getName())) {
+                    counts.put(read.getName(), counts.getOrDefault(read.getName(), 0) + 1);
+                }
             }
 
             if (duplicationsBloomWrapper.hasPossibleDuplicates()) {
-                // read name, list
-                Map<String, Set<String>> duplicates = findAllDuplications(duplicationsBloomWrapper, 100, rawReadsFile);
-
-                ValidationResult duplicationResult = validationResult.create();
-                duplicates.entrySet().stream().forEach(e -> duplicationResult.add(ValidationMessage.error(
-                        String.format("Multiple (%d) occurrences of read name \"%s\" at: %s\n",
-                                e.getValue().size(),
-                                e.getKey(),
-                                e.getValue().toString()))));
-
-//                if (duplicationResult.isValid()) {
-//                    validationResult.add(ValidationMessage.info("No actual duplicate read names found."));
-//                }
+                for (Map.Entry<String, Integer> e : counts.entrySet()) {
+                    if (e.getValue() > 0) {
+                        throw new ReadsValidationException(
+                                String.format("Multiple (%d) occurrences of read name \"%s\" at: %s\n",
+                                        e.getValue(),
+                                        e.getKey(),
+                                        e.getValue()), readCount);
+                    }
+                }
             }
-
-            long pairedCount = pairingBloomWrapper.getPossibleDuplicateCount();
-            double pairingPercentage = 100 * ((double) pairedCount / (double) readCount);
 
             return true;
         } catch (SAMException e) {
@@ -103,7 +108,7 @@ SPACE HERE
         }
     }
 
-    private void determineReadStyle(String name) throws ReadsValidationException {
+    private void determineReadStyle(String name) {
         Matcher casavaMatcher = pCasava18Name.matcher(name);
         readStyle = casavaMatcher.matches() ? ReadStyle.CASAVA18 : ReadStyle.FASTQ;
     }

@@ -26,8 +26,6 @@ import java.util.zip.GZIPOutputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
-import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
-import uk.ac.ebi.ena.readtools.refactored.validator.ValidatorWrapper;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage.Severity;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
