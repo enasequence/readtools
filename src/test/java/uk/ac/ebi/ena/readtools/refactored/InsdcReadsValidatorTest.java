@@ -15,6 +15,10 @@ import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.createOutputFolder
 import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.saveRandomized;
 import static uk.ac.ebi.ena.readtools.refactored.validator.InsdcReadsValidator.*;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+
 import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.refactored.MockReadsProvider.MockRead;
@@ -22,10 +26,6 @@ import uk.ac.ebi.ena.readtools.refactored.provider.FastqReadsProvider;
 import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.refactored.validator.InsdcReadsValidator;
 import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
 
 public class InsdcReadsValidatorTest {
     @Test

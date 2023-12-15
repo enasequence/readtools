@@ -16,17 +16,9 @@ import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.saveRandomized;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.zip.GZIPOutputStream;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.refactored.provider.FastqReadsProvider;

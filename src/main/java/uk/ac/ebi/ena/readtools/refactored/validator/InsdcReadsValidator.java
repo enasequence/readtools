@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import htsjdk.samtools.SAMException;
+
 import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.refactored.read.IRead;
 
