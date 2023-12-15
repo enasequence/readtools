@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import htsjdk.samtools.SAMException;
 import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.refactored.read.IRead;
 
@@ -28,6 +29,7 @@ public class InsdcReadsValidator implements ReadsValidator<IRead> {
             "with no more than 50% of bases being non-AUTCG";
     public static String ERROR_QUALITY = "When submitted file contains base quality scores " +
             "then >= 50% of reads must have average quality >= 30";
+    public static String INVALID_FILE = "Invalid file structure";
 
     @Override
     public boolean validate(ReadsProvider<IRead> provider) throws ReadsValidationException {
@@ -38,7 +40,13 @@ public class InsdcReadsValidator implements ReadsValidator<IRead> {
             throw new ReadsValidationException(ERROR_NULL_READS, readCount);
         }
 
-        Iterator<IRead> iterator = provider.iterator();
+        Iterator<IRead> iterator;
+        try {
+            iterator = provider.iterator();
+        } catch (SAMException e) {
+            throw new ReadsValidationException(INVALID_FILE, readCount);
+        }
+
         if (!iterator.hasNext()) {
             throw new ReadsValidationException(ERROR_NO_READS, readCount);
         }

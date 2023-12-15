@@ -11,6 +11,8 @@
 package uk.ac.ebi.ena.readtools.refactored;
 
 import static org.junit.Assert.*;
+import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.createOutputFolder;
+import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.saveRandomized;
 
 import java.io.File;
 import java.io.IOException;
@@ -209,28 +211,5 @@ public class FastqReadsValidatorTest {
 
         ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
         assertTrue(new FastqReadsValidator().validate(mrp));
-    }
-
-    private File
-    createOutputFolder() throws IOException {
-        File output = File.createTempFile( "test", "test" );
-        Assert.assertTrue( output.delete() );
-        Assert.assertTrue( output.mkdirs() );
-        return output;
-    }
-
-    private Path
-    saveRandomized(String content, Path folder, boolean gzip, String... suffix) throws IOException {
-        Path file = Files.createTempFile( "_content_", "_content_" );
-        Files.write( file, content.getBytes( StandardCharsets.UTF_8 ), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.SYNC );
-        Path path = Files.createTempFile( folder, "COPY", ( file.getName( file.getNameCount() - 1 ) + ( suffix.length > 0 ? Stream.of( suffix ).collect( Collectors.joining( ".", ".", "" ) ) : "" ) ));
-        OutputStream os;
-        Files.copy( file, ( os = gzip ? new GZIPOutputStream( Files.newOutputStream( path, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.SYNC ) )
-                : Files.newOutputStream( path, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.SYNC ) ) );
-        os.flush();
-        os.close();
-        Assert.assertTrue( Files.exists( path ) );
-        Assert.assertTrue( Files.isRegularFile( path ) );
-        return path;
     }
 }
