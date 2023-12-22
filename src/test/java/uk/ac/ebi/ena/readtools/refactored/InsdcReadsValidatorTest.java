@@ -169,4 +169,22 @@ public class InsdcReadsValidatorTest {
             assertEquals(ERROR_QUALITY, e.getErrorMessage());
         }
     }
+
+    @Test public void
+    validFastq() throws IOException, ReadsValidationException {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@CL100031435L2C001R001_63456 :TGGTCCTTCC\n"
+                        + "ATCCTTATAGTGGGCCAAGCTCTCACATGCAAACACGTTGCCTGCTGGATTTTGTTTCAGAGAGGAAATGTTTATGTGAGACAGAAAAAGCCGGGGGCC\n"
+                        + "+\n"
+                        + "FDFFFFFFFG3FFFFFF7?D8FFFFF=>DFG(FBEFFFFDF;FF?FF<8FGGFFFCBB8F0F@FBC?FAGFEE>.FFEFCF:?E(E@;3*(,FD/BFE-\n"
+                        + "@CL100031435L2C001R001_63487 :TGGTCCTTCC\n"
+                        + "CCGCTCTGCCCACCACAATCCGGCCCCTGTGTACGGCAACACAGGGCCCAGGCAAGCAGATCCTTCCTGCTGGGAGCTCCAGCTTGTAGAATTTCACCC\n"
+                        + "+\n"
+                        + "FFFFFFFFFEFFFFFFD5FEFFEEEFFEBCE?EEFFFECD:DAFFCDFFBFFDB@>FCFBEEFF>F-CBFFF&E9F=BBF:4@B?B45E2F+A-EFFCA\n",
+                output_dir.toPath(), true, "fastq-10", "gz");
+
+        ReadsProvider mrp = new FastqReadsProvider(f1.toFile(), true);
+        new InsdcReadsValidator().validate(mrp);
+    }
 }

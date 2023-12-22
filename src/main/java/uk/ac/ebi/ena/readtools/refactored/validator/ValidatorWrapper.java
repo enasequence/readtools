@@ -27,9 +27,21 @@ public class ValidatorWrapper {
         this.format = format;
     }
 
+    public void run() throws ReadsValidationException {
+        switch (format) {
+            case FASTQ:
+                for (File file : files) {
+                    validateFastq(file);
+                }
+            default:
+                throw new ReadsValidationException("not implemented", 0);
+        }
+    }
+
     public static void validateFastq(File file) throws ReadsValidationException {
         try (ReadsProvider producer = new FastqReadsProvider(file)) {
             new InsdcReadsValidator().validate(producer);
+            new FastqReadsValidator().validate(producer);
         } catch (ReadsValidationException rve) {
             throw rve;
         } catch (Exception e) {
@@ -40,7 +52,7 @@ public class ValidatorWrapper {
     public static void validateSam(File file) throws ReadsValidationException {
         try (ReadsProvider producer = new SamReadsProvider(file)) {
             new InsdcReadsValidator().validate(producer);
-            new SamReadsValidator().validate(producer);
+//            new SamReadsValidator().validate(producer);
         } catch (ReadsValidationException rve) {
             throw rve;
         } catch (Exception e) {

@@ -11,6 +11,7 @@
 package uk.ac.ebi.ena.readtools.refactored.provider;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -18,18 +19,39 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
 
+import htsjdk.samtools.util.FastqQualityFormat;
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.refactored.read.FastqRead;
 import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
+import uk.ac.ebi.ena.readtools.utils.Utils;
+
+import static htsjdk.samtools.SAMUtils.phredToFastq;
 
 public class FastqReadsProvider implements ReadsProvider<FastqRead> {
     private FastqReader reader;
+    private FastqQualityFormat qualityFormat = null;
+    private QualityNormalizer qualityNormalizer;
+    private final boolean normaliseQualityScores;
 
     public FastqReadsProvider(File fastqFile) throws ReadsValidationException {
+        this(fastqFile, false);
+    }
+
+    public FastqReadsProvider(File fastqFile, boolean normaliseQualityScores) throws ReadsValidationException {
+        this.normaliseQualityScores = normaliseQualityScores;
         try {
             this.reader = new FastqReader(fastqFile);
+            if (this.normaliseQualityScores) {
+                qualityFormat = Utils.detectFastqQualityFormat(fastqFile.getAbsolutePath(), null);
+                qualityNormalizer = Utils.getQualityNormalizer(qualityFormat);
+            }
         } catch (SAMException e) {
             throw new ReadsValidationException(e.getMessage(), 1);
         }
+    }
+
+    public FastqQualityFormat getQualityFormat() {
+        return qualityFormat;
     }
 
     @Override
@@ -48,8 +70,15 @@ public class FastqReadsProvider implements ReadsProvider<FastqRead> {
                     throw new NoSuchElementException();
                 }
 
+                String normalisedQualityString = nextRecord.getBaseQualityString();
+                if (normaliseQualityScores || qualityFormat == FastqQualityFormat.Standard) {
+                    byte[] normalisedQualityBytes = normalisedQualityString.getBytes(StandardCharsets.UTF_8);
+                    qualityNormalizer.normalize(normalisedQualityBytes);
+                    normalisedQualityString = phredToFastq(normalisedQualityBytes);
+                }
+
                 FastqRead currentRead = new FastqRead(
-                        nextRecord.getReadName(), nextRecord.getReadString(), nextRecord.getBaseQualityString());
+                        nextRecord.getReadName(), nextRecord.getReadString(), normalisedQualityString);
                 nextRecord = reader.hasNext() ? reader.next() : null;
 
                 return currentRead;

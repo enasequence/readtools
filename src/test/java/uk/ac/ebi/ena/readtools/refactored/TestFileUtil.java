@@ -35,6 +35,7 @@ public class TestFileUtil {
     public static Path
     saveRandomized(String content, Path folder, boolean gzip, String... suffix) throws IOException {
         Path file = Files.createTempFile( "_content_", "_content_" );
+        file.toFile().deleteOnExit();
         Files.write( file, content.getBytes( StandardCharsets.UTF_8 ), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.SYNC );
         Path path = Files.createTempFile( folder, "COPY", ( file.getName( file.getNameCount() - 1 ) + ( suffix.length > 0 ? Stream.of( suffix ).collect( Collectors.joining( ".", ".", "" ) ) : "" ) ));
         OutputStream os;

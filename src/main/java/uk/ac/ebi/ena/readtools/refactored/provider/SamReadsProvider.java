@@ -26,14 +26,22 @@ public class SamReadsProvider implements ReadsProvider<SamRead> {
     private final Iterator<SAMRecord> samIterator;
 
     public SamReadsProvider(File samFile) {
+        SamReaderFactory.setDefaultValidationStringency(ValidationStringency.SILENT);
         if (isCram(samFile)) {
-            reader = SamReaderFactory.makeDefault()
+            reader = SamReaderFactory.make()
+                    .enable(SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX)
+                    .validationStringency(ValidationStringency.SILENT)
+                    .samRecordFactory(DefaultSAMRecordFactory.getInstance())
                     .referenceSource(new ENAReferenceSource())
                     .open(samFile);
         } else {
-            reader = SamReaderFactory.makeDefault()
+            reader = SamReaderFactory.make()
+                    .enable(SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX)
+                    .validationStringency(ValidationStringency.SILENT)
+                    .samRecordFactory(DefaultSAMRecordFactory.getInstance())
                     .open(samFile);
         }
+
         samIterator = reader.iterator();
     }
 
