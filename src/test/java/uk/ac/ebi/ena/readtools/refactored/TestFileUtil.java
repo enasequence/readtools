@@ -24,6 +24,7 @@ import java.util.zip.GZIPOutputStream;
 import org.junit.Assert;
 
 public class TestFileUtil {
+    public static final long READ_COUNT_LIMIT = 10L;
     public static File
     createOutputFolder() throws IOException {
         File output = File.createTempFile( "test", "test" );

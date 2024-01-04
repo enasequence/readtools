@@ -21,10 +21,12 @@ import uk.ac.ebi.ena.readtools.refactored.provider.SamReadsProvider;
 public class ValidatorWrapper {
     protected final List<File> files;
     protected final FileFormat format;
+    protected final long readCountLimit;
 
-    public ValidatorWrapper(List<File> files, FileFormat format) {
+    public ValidatorWrapper(List<File> files, FileFormat format, long readCountLimit) {
         this.files = files;
         this.format = format;
+        this.readCountLimit = readCountLimit;
     }
 
     public void run() throws ReadsValidationException {
@@ -33,15 +35,22 @@ public class ValidatorWrapper {
                 for (File file : files) {
                     validateFastq(file);
                 }
+                break;
+            case BAM:
+            case CRAM:
+                for (File file : files) {
+                    validateSam(file);
+                }
+                break;
             default:
                 throw new ReadsValidationException("not implemented", 0);
         }
     }
 
-    public static void validateFastq(File file) throws ReadsValidationException {
+    public void validateFastq(File file) throws ReadsValidationException {
         try (ReadsProvider producer = new FastqReadsProvider(file)) {
-            new InsdcReadsValidator().validate(producer);
-            new FastqReadsValidator().validate(producer);
+            new InsdcReadsValidator(readCountLimit).validate(producer);
+            new FastqReadsValidator(readCountLimit).validate(producer);
         } catch (ReadsValidationException rve) {
             throw rve;
         } catch (Exception e) {
@@ -49,10 +58,9 @@ public class ValidatorWrapper {
         }
     }
 
-    public static void validateSam(File file) throws ReadsValidationException {
+    public void validateSam(File file) throws ReadsValidationException {
         try (ReadsProvider producer = new SamReadsProvider(file)) {
-            new InsdcReadsValidator().validate(producer);
-//            new SamReadsValidator().validate(producer);
+            new InsdcReadsValidator(readCountLimit).validate(producer);
         } catch (ReadsValidationException rve) {
             throw rve;
         } catch (Exception e) {

@@ -19,7 +19,7 @@ import htsjdk.samtools.SAMException;
 import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.refactored.read.IRead;
 
-public class InsdcReadsValidator implements ReadsValidator<IRead> {
+public class InsdcReadsValidator extends ReadsValidator<IRead> {
     public static final String IUPAC_CODES = "ACGTURYSWKMBDHVNacgturyswkmbdhv.-";
     private static final int MIN_QUALITY_SCORE = 30;
 
@@ -31,6 +31,10 @@ public class InsdcReadsValidator implements ReadsValidator<IRead> {
     public static String ERROR_QUALITY = "When submitted file contains base quality scores " +
             "then >= 50% of reads must have average quality >= 30";
     public static String INVALID_FILE = "Invalid file structure";
+
+    public InsdcReadsValidator(long readCountLimit) {
+        super(readCountLimit);
+    }
 
     @Override
     public boolean validate(ReadsProvider<IRead> provider) throws ReadsValidationException {
@@ -57,6 +61,10 @@ public class InsdcReadsValidator implements ReadsValidator<IRead> {
         }
 
         while (iterator.hasNext()) {
+            if (readCount >= readCountLimit) {
+                break;
+            }
+
             IRead read = iterator.next();
             String bases = read.getBases();
             String qualityScores = read.getQualityScores();

@@ -11,8 +11,7 @@
 package uk.ac.ebi.ena.readtools.refactored;
 
 import static org.junit.Assert.*;
-import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.createOutputFolder;
-import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.saveRandomized;
+import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.*;
 import static uk.ac.ebi.ena.readtools.refactored.validator.InsdcReadsValidator.*;
 
 import java.io.File;
@@ -32,7 +31,7 @@ public class InsdcReadsValidatorTest {
     public void noReads() {
         try {
             ReadsProvider mrp = new MockReadsProvider();
-            new InsdcReadsValidator().validate(mrp);
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
             assertEquals(ERROR_NO_READS, e.getErrorMessage());
@@ -46,7 +45,7 @@ public class InsdcReadsValidatorTest {
         try {
             mrp = new MockReadsProvider(
                     new MockRead("r1", null, "1234"));
-            new InsdcReadsValidator().validate(mrp);
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
             assertEquals(ERROR_EMPTY_READ, e.getErrorMessage());
@@ -55,7 +54,7 @@ public class InsdcReadsValidatorTest {
         try {
             mrp = new MockReadsProvider(
                     new MockRead("r1", "", "1234"));
-            new InsdcReadsValidator().validate(mrp);
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
             assertEquals(ERROR_EMPTY_READ, e.getErrorMessage());
@@ -71,7 +70,7 @@ public class InsdcReadsValidatorTest {
 
         try {
             ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-            new InsdcReadsValidator().validate(mrp);
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
             assertEquals(ERROR_NO_READS, e.getMessage());
@@ -90,7 +89,7 @@ public class InsdcReadsValidatorTest {
 
         try {
             ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-            new InsdcReadsValidator().validate(mrp);
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
             assertTrue(e.getMessage().contains("Missing Sequence Line"));
@@ -108,7 +107,7 @@ public class InsdcReadsValidatorTest {
 
         try {
             ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-            new InsdcReadsValidator().validate(mrp);
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
             assertTrue(e.getMessage().contains("File is too short"));
@@ -135,7 +134,7 @@ public class InsdcReadsValidatorTest {
 
         try {
             ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-            new InsdcReadsValidator().validate(mrp);
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
             assertEquals(INVALID_FILE, e.getMessage());
@@ -147,7 +146,7 @@ public class InsdcReadsValidatorTest {
         try {
             ReadsProvider mrp = new MockReadsProvider(
                     new MockRead("r1", "AFFF", "1234"));
-            new InsdcReadsValidator().validate(mrp);
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
             assertEquals(ERROR_NOT_IUPAC, e.getErrorMessage());
@@ -158,12 +157,12 @@ public class InsdcReadsValidatorTest {
     public void lowQuality() throws ReadsValidationException {
         ReadsProvider mrp = new MockReadsProvider(
                 new MockRead("r1", "AGTC", ">>>>"));
-        new InsdcReadsValidator().validate(mrp);
+        new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
 
         try {
             mrp = new MockReadsProvider(
                     new MockRead("r1", "AGTC", "@@@@"));
-            new InsdcReadsValidator().validate(mrp);
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
             assertEquals(ERROR_QUALITY, e.getErrorMessage());
@@ -185,6 +184,6 @@ public class InsdcReadsValidatorTest {
                 output_dir.toPath(), true, "fastq-10", "gz");
 
         ReadsProvider mrp = new FastqReadsProvider(f1.toFile(), true);
-        new InsdcReadsValidator().validate(mrp);
+        new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
     }
 }

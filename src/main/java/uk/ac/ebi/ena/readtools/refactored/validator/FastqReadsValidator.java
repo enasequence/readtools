@@ -26,7 +26,7 @@ import uk.ac.ebi.ena.readtools.webin.cli.rawreads.BloomWrapper;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.DelegateIterator;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
 
-public class FastqReadsValidator implements ReadsValidator<FastqRead> {
+public class FastqReadsValidator extends ReadsValidator<FastqRead> {
     /*
     @ Each sequence identifier line starts with @
 1    <instrument> Characters
@@ -69,6 +69,10 @@ SPACE HERE
     private final long expectedSize = 100;
     private final long readLimit = 20;
 
+    public FastqReadsValidator(long readCountLimit) {
+        super(readCountLimit);
+    }
+
     @Override
     public boolean validate(ReadsProvider<FastqRead> provider) throws ReadsValidationException {
         BloomWrapper duplicationsBloomWrapper = new BloomWrapper(expectedSize);
@@ -77,6 +81,10 @@ SPACE HERE
         long readCount = 0;
         try {
             for (FastqRead read : provider) {
+                if (readCount >= readCountLimit) {
+                    break;
+                }
+
                 readCount++;
                 if (readCount == 1) {
                     determineReadStyle(read.getName()); // Determine style based on the first read

@@ -13,6 +13,12 @@ package uk.ac.ebi.ena.readtools.refactored.validator;
 import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.refactored.read.IRead;
 
-public interface ReadsValidator<T extends IRead> {
-    boolean validate(ReadsProvider<T> provider) throws ReadsValidationException;
+public abstract class ReadsValidator<T extends IRead> {
+    protected final long readCountLimit;
+
+    public ReadsValidator(long readCountLimit) {
+        this.readCountLimit = readCountLimit;
+    }
+
+    abstract boolean validate(ReadsProvider<T> provider) throws ReadsValidationException;
 }

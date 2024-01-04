@@ -23,6 +23,8 @@ import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
 
+import static htsjdk.samtools.SAMUtils.phredToFastq;
+
 class ReadReader {
 
     public enum ReadStyle {
@@ -159,7 +161,7 @@ SPACE HERE
             qualityScores = readQualityScores(inputStream, name, bases);
             checkForEmptyBasesAndQualityScores(bases, qualityScores);
             if (qualityNormalizer != null) {
-                qualityScores = normaliseQualityScores(bases);
+                qualityScores = normaliseQualityScores(qualityScores);
             }
 
             return new Read(name, bases, qualityScores, defaultReadIndex);
@@ -292,10 +294,9 @@ SPACE HERE
         return value;
     }
 
-    private String normaliseQualityScores(String bases) {
-        byte[] quals = bases.getBytes(StandardCharsets.UTF_8);
+    private String normaliseQualityScores(String qualityScores) {
+        byte[] quals = qualityScores.getBytes(StandardCharsets.UTF_8);
         qualityNormalizer.normalize(quals);
-
         return new String(quals, StandardCharsets.UTF_8);
     }
 
