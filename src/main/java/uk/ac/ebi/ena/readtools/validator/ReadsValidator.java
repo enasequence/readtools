@@ -26,6 +26,7 @@ import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile.Filetype;
 import uk.ac.ebi.ena.webin.cli.validator.api.ValidationResponse.status;
 import uk.ac.ebi.ena.webin.cli.validator.api.Validator;
 import uk.ac.ebi.ena.webin.cli.validator.file.SubmissionFile;
+import uk.ac.ebi.ena.webin.cli.validator.file.SubmissionFiles;
 import uk.ac.ebi.ena.webin.cli.validator.manifest.ReadsManifest;
 import uk.ac.ebi.ena.webin.cli.validator.manifest.ReadsManifest.FileType;
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
@@ -37,12 +38,10 @@ public class ReadsValidator
     private static final long QUICK_READ_LIMIT = 100_000;
     private static final long EXTENDED_READ_LIMIT = 100_000_000;
 
-    private ReadsManifest manifest;
 
     @Override
     public ReadsValidationResponse
     validate(ReadsManifest manifest) {
-        this.manifest = manifest;
         if (manifest == null) {
             throw new RuntimeException("Manifest is missing.");
         }
@@ -52,28 +51,42 @@ public class ReadsValidator
         if (manifest.getProcessDir() == null) {
             throw new RuntimeException("Process directory is missing.");
         }
-        return validateSubmissionForContext();
+
+        return validate(
+                manifest.getReportFile(),
+                manifest.getQualityScore(),
+                manifest.files(),
+                manifest.isQuick());
     }
 
-    private ReadsValidationResponse
-    validateSubmissionForContext() {
-        ValidationResult result = new ValidationResult(manifest.getReportFile());
+    public ReadsValidationResponse
+    validate(File reportFile,
+             ReadsManifest.QualityScore qualityScore,
+             SubmissionFiles<FileType> submissionFiles,
+             boolean isQuick) {
+        ValidationResult result = new ValidationResult(reportFile);
+        List<RawReadsFile> files = submissionFilesToRawReadsFiles(qualityScore, submissionFiles);
 
+        return validate(result, files, isQuick);
+    }
+
+    public ReadsValidationResponse
+    validate(ValidationResult result, List<RawReadsFile> files, boolean isQuick) {
         AtomicBoolean paired = new AtomicBoolean();
 
-        List<RawReadsFile> files = createReadFiles();
         if (files != null && files.size() > 0) {
             Filetype fileType = files.get(0).getFiletype();
 
             if (files.size() == 2 && Filetype.fastq.equals(fileType)) {
-                readFastqFile(result, files, paired);
+                readFastqFile(result, files, paired, isQuick);
             } else if (Filetype.fastq.equals(fileType)
                     || Filetype.bam.equals(fileType)
                     || Filetype.cram.equals(fileType)) {
                 runValidatorWrapper(
                         result,
                         files.stream().map(e -> new File(e.getFilename())).collect(Collectors.toList()),
-                        FileFormat.valueOf(fileType.toString().toUpperCase()));
+                        FileFormat.valueOf(fileType.toString().toUpperCase()),
+                        isQuick);
             } else {
                 throw new RuntimeException("Unsupported file type: " + fileType.name());
             }
@@ -86,9 +99,9 @@ public class ReadsValidator
     }
 
     private void
-    runValidatorWrapper(ValidationResult result, List<File> files, FileFormat fileFormat) {
+    runValidatorWrapper(ValidationResult result, List<File> files, FileFormat fileFormat, boolean isQuick) {
         ValidatorWrapper validatorWrapper = new ValidatorWrapper(
-                files, fileFormat, manifest.isQuick() ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT);
+                files, fileFormat, isQuick ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT);
         try {
             validatorWrapper.run();
         } catch (ReadsValidationException e) {
@@ -98,9 +111,9 @@ public class ReadsValidator
     }
 
     private void
-    readFastqFile(ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired) {
+    readFastqFile(ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired, boolean isQuick) {
         try {
-            FastqScanner fs = new FastqScanner(manifest.isQuick() ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT) {
+            FastqScanner fs = new FastqScanner(isQuick ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT) {
                 @Override
                 protected void logFlushMsg(String msg) {
                 }
@@ -113,20 +126,24 @@ public class ReadsValidator
 
             fs.checkFiles(result, files.toArray(new RawReadsFile[files.size()]));
             paired.set(fs.getPaired());
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             throw new RuntimeException(ex);
-        } catch (Throwable throwable) {
-            throw new RuntimeException(throwable);
         }
     }
 
     private List<RawReadsFile>
-    createReadFiles() {
+    submissionFilesToRawReadsFiles(
+            ReadsManifest.QualityScore qualityScore, SubmissionFiles<FileType> submissionFiles) {
+        List<RawReadsFile> files = submissionFiles.get()
+                .stream()
+                .map(ReadsValidator::submissionFilesToRawReadsFile)
+                .collect(Collectors.toList());
+
         RawReadsFile.AsciiOffset asciiOffset = null;
         RawReadsFile.QualityScoringSystem qualityScoringSystem = null;
 
-        if (manifest.getQualityScore() != null) {
-            switch (manifest.getQualityScore()) {
+        if (qualityScore != null) {
+            switch (qualityScore) {
                 case PHRED_33:
                     asciiOffset = RawReadsFile.AsciiOffset.FROM33;
                     qualityScoringSystem = RawReadsFile.QualityScoringSystem.phred;
@@ -136,15 +153,11 @@ public class ReadsValidator
                     qualityScoringSystem = RawReadsFile.QualityScoringSystem.phred;
                     break;
                 case LOGODDS:
-                    asciiOffset = null;
+//                    asciiOffset = null;
                     qualityScoringSystem = RawReadsFile.QualityScoringSystem.log_odds;
                     break;
             }
         }
-        List<RawReadsFile> files = this.manifest.files().get()
-                .stream()
-                .map(file -> createRawReadsFile(file))
-                .collect(Collectors.toList());
 
         // Set FASTQ quality scoring system and ascii offset.
 
@@ -164,7 +177,7 @@ public class ReadsValidator
 
 
     public static RawReadsFile
-    createRawReadsFile(SubmissionFile<FileType> file) {
+    submissionFilesToRawReadsFile(SubmissionFile<FileType> file) {
         Path inputDir = file.getFile().toPath().getParent();
 
         RawReadsFile f = new RawReadsFile();
@@ -174,8 +187,9 @@ public class ReadsValidator
 
         String fileName = file.getFile().getPath();
 
-        if (!Paths.get(fileName).isAbsolute()) {
-            f.setFilename(inputDir.resolve(Paths.get(fileName)).toString());
+        Path path = Paths.get(fileName);
+        if (!path.isAbsolute()) {
+            f.setFilename(inputDir.resolve(path).toString());
         } else {
             f.setFilename(fileName);
         }
