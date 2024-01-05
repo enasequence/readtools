@@ -10,6 +10,7 @@
 */
 package uk.ac.ebi.ena.readtools.loader.common.converter;
 
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,8 +23,6 @@ import java.util.stream.Collectors;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
-
-import static htsjdk.samtools.SAMUtils.phredToFastq;
 
 class ReadReader {
 

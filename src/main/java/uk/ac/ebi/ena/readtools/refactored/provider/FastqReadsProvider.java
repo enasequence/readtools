@@ -10,6 +10,8 @@
 */
 package uk.ac.ebi.ena.readtools.refactored.provider;
 
+import static htsjdk.samtools.SAMUtils.phredToFastq;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
@@ -18,14 +20,12 @@ import java.util.NoSuchElementException;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
-
 import htsjdk.samtools.util.FastqQualityFormat;
+
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.refactored.read.FastqRead;
 import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
 import uk.ac.ebi.ena.readtools.utils.Utils;
-
-import static htsjdk.samtools.SAMUtils.phredToFastq;
 
 public class FastqReadsProvider implements ReadsProvider<FastqRead> {
     private FastqReader reader;
