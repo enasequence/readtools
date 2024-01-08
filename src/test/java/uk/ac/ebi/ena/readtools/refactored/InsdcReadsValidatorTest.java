@@ -97,6 +97,25 @@ public class InsdcReadsValidatorTest {
     }
 
     @Test public void
+    testReadNameLength() throws IOException {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@aaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccddddaaaabbbbccccdddd1\n"
+                        + "AGTC\n"
+                        + "+\n"
+                        + "1234\n",
+                output_dir.toPath(), true, "fastq", "gz");
+
+        try {
+            ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
+            fail();
+        } catch (ReadsValidationException e) {
+            assertTrue(e.getMessage().contains("Read name length exceeds 256 characters"));
+        }
+    }
+
+    @Test public void
     testZeroQualitiesSingleFile() throws IOException {
         File output_dir = createOutputFolder();
         Path f1 = saveRandomized(

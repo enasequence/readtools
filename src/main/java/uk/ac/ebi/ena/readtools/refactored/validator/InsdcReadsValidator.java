@@ -26,6 +26,7 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
     public static String ERROR_NULL_READS = "Reads cannot be null";
     public static String ERROR_NO_READS = "Submitted files must contain a minimum of 1 sequence read";
     public static String ERROR_EMPTY_READ = "Submitted files must not contain any empty reads";
+    public static String ERROR_READ_NAME_LENGTH = "Read name length exceeds 256 characters";
     public static String ERROR_NOT_IUPAC = "Reads must contain only valid IUPAC codes, " +
             "with no more than 50% of bases being non-AUTCG";
     public static String ERROR_QUALITY = "When submitted file contains base quality scores " +
@@ -73,6 +74,10 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
 
             if (bases == null || bases.isEmpty()) {
                 throw new ReadsValidationException(ERROR_EMPTY_READ, readCount);
+            }
+
+            if (read.getName().trim().length() > 256) {
+                throw new ReadsValidationException(ERROR_READ_NAME_LENGTH, readCount);
             }
 
             int nonIUPACCount = 0;
