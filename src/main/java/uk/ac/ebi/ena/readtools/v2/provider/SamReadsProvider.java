@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored.provider;
+package uk.ac.ebi.ena.readtools.v2.provider;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,7 +19,7 @@ import java.util.NoSuchElementException;
 import htsjdk.samtools.*;
 
 import uk.ac.ebi.ena.readtools.cram.ref.ENAReferenceSource;
-import uk.ac.ebi.ena.readtools.refactored.read.SamRead;
+import uk.ac.ebi.ena.readtools.v2.read.SamRead;
 
 public class SamReadsProvider implements ReadsProvider<SamRead> {
     private final SamReader reader;

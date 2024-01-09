@@ -8,11 +8,10 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored;
+package uk.ac.ebi.ena.readtools.v2.read;
 
-public enum FileFormat {
-    BAM,
-    CRAM,
-    FASTA,
-    FASTQ
+public interface IRead {
+    String getName();
+    String getBases();
+    String getQualityScores();
 }

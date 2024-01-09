@@ -8,11 +8,11 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored;
+package uk.ac.ebi.ena.readtools.v2;
 
 import static org.junit.Assert.*;
-import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.*;
-import static uk.ac.ebi.ena.readtools.refactored.validator.InsdcReadsValidator.*;
+import static uk.ac.ebi.ena.readtools.v2.TestFileUtil.*;
+import static uk.ac.ebi.ena.readtools.v2.validator.InsdcReadsValidator.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,11 +20,11 @@ import java.nio.file.Path;
 
 import org.junit.Test;
 
-import uk.ac.ebi.ena.readtools.refactored.MockReadsProvider.MockRead;
-import uk.ac.ebi.ena.readtools.refactored.provider.FastqReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.validator.InsdcReadsValidator;
-import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
+import uk.ac.ebi.ena.readtools.v2.MockReadsProvider.MockRead;
+import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.validator.InsdcReadsValidator;
+import uk.ac.ebi.ena.readtools.v2.validator.ReadsValidationException;
 
 public class InsdcReadsValidatorTest {
     @Test

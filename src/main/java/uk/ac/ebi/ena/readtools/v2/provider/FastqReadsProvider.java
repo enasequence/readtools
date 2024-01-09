@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored.provider;
+package uk.ac.ebi.ena.readtools.v2.provider;
 
 import static htsjdk.samtools.SAMUtils.phredToFastq;
 
@@ -23,9 +23,9 @@ import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.FastqQualityFormat;
 
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
-import uk.ac.ebi.ena.readtools.refactored.read.FastqRead;
-import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
 import uk.ac.ebi.ena.readtools.utils.Utils;
+import uk.ac.ebi.ena.readtools.v2.read.FastqRead;
+import uk.ac.ebi.ena.readtools.v2.validator.ReadsValidationException;
 
 public class FastqReadsProvider implements ReadsProvider<FastqRead> {
     private FastqReader reader;

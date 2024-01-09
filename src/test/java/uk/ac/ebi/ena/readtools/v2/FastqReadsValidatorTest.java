@@ -8,10 +8,10 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored;
+package uk.ac.ebi.ena.readtools.v2;
 
 import static org.junit.Assert.*;
-import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.*;
+import static uk.ac.ebi.ena.readtools.v2.TestFileUtil.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,10 +20,10 @@ import java.nio.file.Paths;
 
 import org.junit.Test;
 
-import uk.ac.ebi.ena.readtools.refactored.provider.FastqReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.validator.FastqReadsValidator;
-import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
+import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.validator.FastqReadsValidator;
+import uk.ac.ebi.ena.readtools.v2.validator.ReadsValidationException;
 
 public class FastqReadsValidatorTest {
     @Test

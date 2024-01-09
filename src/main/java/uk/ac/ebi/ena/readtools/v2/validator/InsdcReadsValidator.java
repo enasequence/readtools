@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored.validator;
+package uk.ac.ebi.ena.readtools.v2.validator;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -16,8 +16,8 @@ import java.util.Set;
 
 import htsjdk.samtools.SAMException;
 
-import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.read.IRead;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.read.IRead;
 
 public class InsdcReadsValidator extends ReadsValidator<IRead> {
     public static final String IUPAC_CODES = "ACGTURYSWKMBDHVNacgturyswkmbdhv.-";

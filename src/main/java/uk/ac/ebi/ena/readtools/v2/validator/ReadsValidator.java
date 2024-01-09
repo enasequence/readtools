@@ -8,7 +8,17 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored.converter;
+package uk.ac.ebi.ena.readtools.v2.validator;
 
-public class ToFastqReadsConverter {
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.read.IRead;
+
+public abstract class ReadsValidator<T extends IRead> {
+    protected final long readCountLimit;
+
+    public ReadsValidator(long readCountLimit) {
+        this.readCountLimit = readCountLimit;
+    }
+
+    abstract boolean validate(ReadsProvider<T> provider) throws ReadsValidationException;
 }

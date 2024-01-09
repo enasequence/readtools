@@ -8,7 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored.validator;
+package uk.ac.ebi.ena.readtools.v2.validator;
 
 import java.io.File;
 import java.util.*;
@@ -20,8 +20,8 @@ import htsjdk.samtools.SAMException;
 
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
-import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.read.FastqRead;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.read.FastqRead;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.BloomWrapper;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.DelegateIterator;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;

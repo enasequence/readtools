@@ -8,17 +8,23 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored.validator;
+package uk.ac.ebi.ena.readtools.v2.validator;
 
-import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.read.IRead;
+public class ReadsValidationException extends Exception {
+    private final String errorMessage;
+    private final long readIndex;
 
-public abstract class ReadsValidator<T extends IRead> {
-    protected final long readCountLimit;
-
-    public ReadsValidator(long readCountLimit) {
-        this.readCountLimit = readCountLimit;
+    public ReadsValidationException(String errorMessage, long readIndex) {
+        super(errorMessage);
+        this.errorMessage = errorMessage;
+        this.readIndex = readIndex;
     }
 
-    abstract boolean validate(ReadsProvider<T> provider) throws ReadsValidationException;
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public long getReadIndex() {
+        return readIndex;
+    }
 }

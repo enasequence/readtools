@@ -17,9 +17,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import uk.ac.ebi.ena.readtools.refactored.FileFormat;
-import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
-import uk.ac.ebi.ena.readtools.refactored.validator.ValidatorWrapper;
+import uk.ac.ebi.ena.readtools.v2.FileFormat;
+import uk.ac.ebi.ena.readtools.v2.validator.ReadsValidationException;
+import uk.ac.ebi.ena.readtools.v2.validator.ValidatorWrapper;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.FastqScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile.Filetype;

@@ -8,23 +8,7 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored.validator;
+package uk.ac.ebi.ena.readtools.v2.converter;
 
-public class ReadsValidationException extends Exception {
-    private final String errorMessage;
-    private final long readIndex;
-
-    public ReadsValidationException(String errorMessage, long readIndex) {
-        super(errorMessage);
-        this.errorMessage = errorMessage;
-        this.readIndex = readIndex;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public long getReadIndex() {
-        return readIndex;
-    }
+public class ToFastqReadsConverter {
 }

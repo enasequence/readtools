@@ -8,11 +8,11 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored;
+package uk.ac.ebi.ena.readtools.v2;
 
 import static org.junit.Assert.assertEquals;
-import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.createOutputFolder;
-import static uk.ac.ebi.ena.readtools.refactored.TestFileUtil.saveRandomized;
+import static uk.ac.ebi.ena.readtools.v2.TestFileUtil.createOutputFolder;
+import static uk.ac.ebi.ena.readtools.v2.TestFileUtil.saveRandomized;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,8 +22,8 @@ import org.junit.Test;
 
 import htsjdk.samtools.util.FastqQualityFormat;
 
-import uk.ac.ebi.ena.readtools.refactored.provider.FastqReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.validator.ReadsValidationException;
+import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.validator.ReadsValidationException;
 
 public class FastqReadsProviderTest {
     @Test

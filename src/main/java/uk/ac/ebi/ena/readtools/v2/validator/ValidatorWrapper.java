@@ -8,15 +8,15 @@
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */
-package uk.ac.ebi.ena.readtools.refactored.validator;
+package uk.ac.ebi.ena.readtools.v2.validator;
 
 import java.io.File;
 import java.util.List;
 
-import uk.ac.ebi.ena.readtools.refactored.FileFormat;
-import uk.ac.ebi.ena.readtools.refactored.provider.FastqReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.provider.ReadsProvider;
-import uk.ac.ebi.ena.readtools.refactored.provider.SamReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.FileFormat;
+import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.provider.SamReadsProvider;
 
 public class ValidatorWrapper {
     protected final List<File> files;
