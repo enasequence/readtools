@@ -162,7 +162,7 @@ public class InsdcReadsValidatorTest {
     }
 
     @Test
-    public void notIupac() {
+    public void notIUPAC() {
         try {
             ReadsProvider mrp = new MockReadsProvider(
                     new MockRead("r1", "AFFF", "1234"));
@@ -170,6 +170,18 @@ public class InsdcReadsValidatorTest {
             fail();
         } catch (ReadsValidationException e) {
             assertEquals(ERROR_NOT_IUPAC, e.getErrorMessage());
+        }
+    }
+
+    @Test
+    public void notAUTCG() {
+        try {
+            ReadsProvider mrp = new MockReadsProvider(
+                    new MockRead("r1", "AWWW", "1234"));
+            new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
+            fail();
+        } catch (ReadsValidationException e) {
+            assertEquals(ERROR_NOT_AUTCG, e.getErrorMessage());
         }
     }
 

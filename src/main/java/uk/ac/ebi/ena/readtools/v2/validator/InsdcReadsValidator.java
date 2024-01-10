@@ -21,13 +21,15 @@ import uk.ac.ebi.ena.readtools.v2.read.IRead;
 
 public class InsdcReadsValidator extends ReadsValidator<IRead> {
     public static final String IUPAC_CODES = "ACGTURYSWKMBDHVNacgturyswkmbdhv.-";
+    private final Set<Character> iupacSet;
     private static final int MIN_QUALITY_SCORE = 30;
 
     public static String ERROR_NULL_READS = "Reads cannot be null";
     public static String ERROR_NO_READS = "Submitted files must contain a minimum of 1 sequence read";
     public static String ERROR_EMPTY_READ = "Submitted files must not contain any empty reads";
     public static String ERROR_READ_NAME_LENGTH = "Read name length exceeds 256 characters";
-    public static String ERROR_NOT_IUPAC = "Reads must contain only valid IUPAC codes, " +
+    public static String ERROR_NOT_IUPAC = "Reads must contain only valid IUPAC codes";
+    public static String ERROR_NOT_AUTCG = "Reads must contain only valid IUPAC codes, " +
             "with no more than 50% of bases being non-AUTCG";
     public static String ERROR_QUALITY = "When submitted file contains base quality scores " +
             "then >= 50% of reads must have average quality >= 30";
@@ -35,6 +37,11 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
 
     public InsdcReadsValidator(long readCountLimit) {
         super(readCountLimit);
+
+        iupacSet = new HashSet<>();
+        for (char c : IUPAC_CODES.toCharArray()) {
+            iupacSet.add(c);
+        }
     }
 
     @Override
@@ -56,10 +63,6 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
         if (!iterator.hasNext()) {
             throw new ReadsValidationException(ERROR_NO_READS, readCount);
         }
-        Set<Character> iupacSet = new HashSet<>();
-        for (char c : IUPAC_CODES.toCharArray()) {
-            iupacSet.add(c);
-        }
 
         while (iterator.hasNext()) {
             if (readCount >= readCountLimit) {
@@ -80,16 +83,21 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
                 throw new ReadsValidationException(ERROR_READ_NAME_LENGTH, readCount);
             }
 
-            int nonIUPACCount = 0;
-            for (char base : bases.toCharArray()) {
-                if (!iupacSet.contains(base)) {
-                    nonIUPACCount++;
+            int autcgCount = 0;
+            for (char base : bases.toUpperCase().toCharArray()) {
+                if (iupacSet.contains(base)) {
+                    if (base == 'A' || base == 'U' || base == 'T' || base == 'C' || base == 'G') {
+                        autcgCount++;
+                    }
+                } else {
+                    throw new ReadsValidationException(ERROR_NOT_IUPAC, readCount);
                 }
             }
 
-            if (((double) nonIUPACCount / bases.length()) > 0.5) {
-                throw new ReadsValidationException(ERROR_NOT_IUPAC, readCount);
+            if ((bases.length() - autcgCount) > (bases.length() / 2)) {
+                throw new ReadsValidationException(ERROR_NOT_AUTCG, readCount);
             }
+
 
             if (!qualityScores.isEmpty()) {
                 int totalQuality = 0;
