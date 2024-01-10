@@ -101,9 +101,9 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
                 }
             }
 
-            if ((double) highQualityReadCount / readCount < 0.5) {
-                throw new ReadsValidationException(ERROR_QUALITY, readCount);
-            }
+//            if ((double) highQualityReadCount / readCount < 0.5) {
+//                throw new ReadsValidationException(ERROR_QUALITY, readCount);
+//            }
         }
 
         return true;

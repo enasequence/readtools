@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.v2.MockReadsProvider.MockRead;
@@ -172,6 +173,7 @@ public class InsdcReadsValidatorTest {
         }
     }
 
+    @Ignore("rejects too many submissions")
     @Test
     public void lowQuality() throws ReadsValidationException {
         ReadsProvider mrp = new MockReadsProvider(
