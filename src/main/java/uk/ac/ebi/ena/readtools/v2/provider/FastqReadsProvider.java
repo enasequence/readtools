@@ -46,7 +46,7 @@ public class FastqReadsProvider implements ReadsProvider<FastqRead> {
                 qualityNormalizer = Utils.getQualityNormalizer(qualityFormat);
             }
         } catch (SAMException e) {
-            throw new ReadsValidationException(e.getMessage(), 1);
+            throw new ReadsValidationException(e.getMessage());
         }
     }
 

@@ -105,7 +105,7 @@ SPACE HERE
                                 String.format("Multiple (%d) occurrences of read name \"%s\" at: %s\n",
                                         e.getValue(),
                                         e.getKey(),
-                                        e.getValue()), readCount);
+                                        e.getValue()));
                     }
                 }
             }
@@ -123,7 +123,7 @@ SPACE HERE
 
     private void validateRead(FastqRead read, long readCount) throws ReadsValidationException {
         validateReadName(read.getName(), readCount);
-        validateQualityScores(read.getQualityScores(), readCount);
+        validateQualityScores(read.getName(), read.getQualityScores(), readCount);
     }
 
     private void validateReadName(String name, long readCount) throws ReadsValidationException {
@@ -131,25 +131,25 @@ SPACE HERE
             case CASAVA18:
                 Matcher casavaMatcher = pCasava18Name.matcher(name);
                 if (!casavaMatcher.matches()) {
-                    throw new ReadsValidationException("Invalid CASAVA 1.8 read name: " + name, readCount);
+                    throw new ReadsValidationException("Invalid CASAVA 1.8 read name", readCount, name);
                 }
                 break;
             case FASTQ:
                 // For FASTQ, no specific pattern, but you can add basic checks if needed
                 if (name == null || name.trim().isEmpty()) {
-                    throw new ReadsValidationException("Invalid FASTQ read name: " + name, readCount);
+                    throw new ReadsValidationException("Invalid FASTQ read name", readCount, name);
                 }
                 // Other basic validations for FASTQ can be added here if needed
                 break;
             default:
-                throw new ReadsValidationException("Read style not determined for read name: " + name, readCount);
+                throw new ReadsValidationException("Read style not determined for read name", readCount, name);
         }
     }
 
-    private void validateQualityScores(String qualityScores, long readCount) throws ReadsValidationException {
+    private void validateQualityScores(String readName, String qualityScores, long readCount) throws ReadsValidationException {
         Matcher matcher = pQuals.matcher(qualityScores);
         if (!matcher.matches()) {
-            throw new ReadsValidationException("Invalid quality scores: " + qualityScores, readCount);
+            throw new ReadsValidationException("Invalid quality scores: " + qualityScores, readCount, readName);
         }
     }
 

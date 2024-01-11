@@ -179,7 +179,7 @@ public class FastqReadsValidatorTest {
             new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
-            assertEquals(1, e.getReadIndex());
+            assertEquals(0, e.getReadIndex());
         }
     }
 

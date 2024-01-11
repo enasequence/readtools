@@ -35,7 +35,7 @@ public class InsdcReadsValidatorTest {
             new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
-            assertEquals(ERROR_NO_READS, e.getErrorMessage());
+            assertTrue(e.getErrorMessage().contains(ERROR_NO_READS));
         }
     }
 
@@ -49,7 +49,7 @@ public class InsdcReadsValidatorTest {
             new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
-            assertEquals(ERROR_EMPTY_READ, e.getErrorMessage());
+            assertTrue(e.getErrorMessage().contains(ERROR_EMPTY_READ));
         }
 
         try {
@@ -58,7 +58,7 @@ public class InsdcReadsValidatorTest {
             new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
-            assertEquals(ERROR_EMPTY_READ, e.getErrorMessage());
+            assertTrue(e.getErrorMessage().contains(ERROR_EMPTY_READ));
         }
     }
 
@@ -169,10 +169,11 @@ public class InsdcReadsValidatorTest {
             new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
-            assertEquals(ERROR_NOT_IUPAC, e.getErrorMessage());
+            assertTrue(e.getErrorMessage().contains(ERROR_NOT_IUPAC));
         }
     }
 
+    @Ignore("Causes too many rejections")
     @Test
     public void notAUTCG() {
         try {
@@ -181,7 +182,7 @@ public class InsdcReadsValidatorTest {
             new InsdcReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
-            assertEquals(ERROR_NOT_AUTCG, e.getErrorMessage());
+            assertTrue(e.getErrorMessage().contains(ERROR_NOT_AUTCG));
         }
     }
 

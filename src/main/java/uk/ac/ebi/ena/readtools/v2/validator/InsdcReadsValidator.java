@@ -20,7 +20,7 @@ import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.read.IRead;
 
 public class InsdcReadsValidator extends ReadsValidator<IRead> {
-    public static final String IUPAC_CODES = "ACGTURYSWKMBDHVNacgturyswkmbdhv.-";
+    public static final String IUPAC_CODES = "ACGTURYSWKMBDHVN.-";
     private final Set<Character> iupacSet;
     private static final int MIN_QUALITY_SCORE = 30;
 
@@ -50,18 +50,18 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
         long highQualityReadCount = 0;
 
         if (provider == null) {
-            throw new ReadsValidationException(ERROR_NULL_READS, readCount);
+            throw new ReadsValidationException(ERROR_NULL_READS);
         }
 
         Iterator<IRead> iterator;
         try {
             iterator = provider.iterator();
         } catch (SAMException e) {
-            throw new ReadsValidationException(INVALID_FILE, readCount);
+            throw new ReadsValidationException(INVALID_FILE);
         }
 
         if (!iterator.hasNext()) {
-            throw new ReadsValidationException(ERROR_NO_READS, readCount);
+            throw new ReadsValidationException(ERROR_NO_READS);
         }
 
         while (iterator.hasNext()) {
@@ -80,7 +80,7 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
             }
 
             if (read.getName().trim().length() > 256) {
-                throw new ReadsValidationException(ERROR_READ_NAME_LENGTH, readCount);
+                throw new ReadsValidationException(ERROR_READ_NAME_LENGTH, readCount, bases);
             }
 
             int autcgCount = 0;
@@ -90,13 +90,13 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
                         autcgCount++;
                     }
                 } else {
-                    throw new ReadsValidationException(ERROR_NOT_IUPAC, readCount);
+                    throw new ReadsValidationException(ERROR_NOT_IUPAC, readCount, bases);
                 }
             }
 
-            if ((bases.length() - autcgCount) > (bases.length() / 2)) {
-                throw new ReadsValidationException(ERROR_NOT_AUTCG, readCount);
-            }
+//            if ((bases.length() - autcgCount) > (bases.length() / 2)) {
+//                throw new ReadsValidationException(ERROR_NOT_AUTCG, readCount);
+//            }
 
 
             if (!qualityScores.isEmpty()) {

@@ -43,7 +43,7 @@ public class ValidatorWrapper {
                 }
                 break;
             default:
-                throw new ReadsValidationException("not implemented", 0);
+                throw new ReadsValidationException("not implemented");
         }
     }
 

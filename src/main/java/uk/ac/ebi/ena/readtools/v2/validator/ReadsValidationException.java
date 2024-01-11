@@ -13,15 +13,32 @@ package uk.ac.ebi.ena.readtools.v2.validator;
 public class ReadsValidationException extends Exception {
     private final String errorMessage;
     private final long readIndex;
+    private final String readName;
+
+    public ReadsValidationException(String errorMessage) {
+        this(errorMessage, 0, "");
+    }
 
     public ReadsValidationException(String errorMessage, long readIndex) {
+        this(errorMessage, readIndex, "");
+    }
+
+    public ReadsValidationException(String errorMessage, long readIndex, String readName) {
         super(errorMessage);
         this.errorMessage = errorMessage;
         this.readIndex = readIndex;
+        this.readName = readName;
     }
 
     public String getErrorMessage() {
-        return errorMessage;
+        String message = errorMessage;
+        if (readIndex > 0) {
+            message = "Read Index: " + readIndex + " " + message;
+        }
+        if (readName != null) {
+            message = "Read Name: " + readName + " " + message;
+        }
+        return message;
     }
 
     public long getReadIndex() {
