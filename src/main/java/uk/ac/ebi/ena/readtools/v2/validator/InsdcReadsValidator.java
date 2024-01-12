@@ -47,6 +47,8 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
     @Override
     public boolean validate(ReadsProvider<IRead> provider) throws ReadsValidationException {
         long readCount = 0;
+        long basesCount = 0;
+        long autcgCount = 0;
         long highQualityReadCount = 0;
 
         if (provider == null) {
@@ -83,7 +85,7 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
                 throw new ReadsValidationException(ERROR_READ_NAME_LENGTH, readCount, bases);
             }
 
-            int autcgCount = 0;
+            basesCount += bases.length();
             for (char base : bases.toUpperCase().toCharArray()) {
                 if (iupacSet.contains(base)) {
                     if (base == 'A' || base == 'U' || base == 'T' || base == 'C' || base == 'G') {
@@ -94,9 +96,9 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
                 }
             }
 
-//            if ((bases.length() - autcgCount) > (bases.length() / 2)) {
-//                throw new ReadsValidationException(ERROR_NOT_AUTCG, readCount);
-//            }
+            if ((basesCount - autcgCount) > (basesCount / 2)) {
+                throw new ReadsValidationException(ERROR_NOT_AUTCG, readCount);
+            }
 
 
             if (!qualityScores.isEmpty()) {

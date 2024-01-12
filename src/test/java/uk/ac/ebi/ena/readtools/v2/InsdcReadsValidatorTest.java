@@ -173,7 +173,6 @@ public class InsdcReadsValidatorTest {
         }
     }
 
-    @Ignore("Causes too many rejections")
     @Test
     public void notAUTCG() {
         try {
