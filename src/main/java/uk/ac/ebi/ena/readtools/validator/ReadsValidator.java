@@ -13,6 +13,7 @@ package uk.ac.ebi.ena.readtools.validator;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -38,6 +39,11 @@ public class ReadsValidator
     private static final long QUICK_READ_LIMIT = 100_000;
     private static final long EXTENDED_READ_LIMIT = 100_000_000;
 
+    private List<ValidatorWrapper.FileQualityStats> fileQualityStats = new ArrayList<>();
+
+    public List<ValidatorWrapper.FileQualityStats> getFileQualityStats() {
+        return fileQualityStats;
+    }
 
     @Override
     public ReadsValidationResponse
@@ -72,6 +78,8 @@ public class ReadsValidator
 
     public ReadsValidationResponse
     validate(ValidationResult result, List<RawReadsFile> files, boolean isQuick) {
+        fileQualityStats.clear();
+
         AtomicBoolean paired = new AtomicBoolean();
 
         if (files != null && files.size() > 0) {
@@ -104,6 +112,7 @@ public class ReadsValidator
                 files, fileFormat, isQuick ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT);
         try {
             validatorWrapper.run();
+            fileQualityStats = validatorWrapper.getFileQualityStats();
         } catch (ReadsValidationException e) {
             result.add(ValidationMessage.error(e.getMessage()));
             e.printStackTrace();

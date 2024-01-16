@@ -11,6 +11,7 @@
 package uk.ac.ebi.ena.readtools.v2.validator;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ebi.ena.readtools.v2.FileFormat;
@@ -19,9 +20,37 @@ import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.provider.SamReadsProvider;
 
 public class ValidatorWrapper {
-    protected final List<File> files;
-    protected final FileFormat format;
-    protected final long readCountLimit;
+    private final List<File> files;
+    private final FileFormat format;
+    private final long readCountLimit;
+
+    private List<FileQualityStats> fileQualityStats = new ArrayList<>();
+
+    public static class FileQualityStats {
+        private File file = null;
+        private long readCount = 0;
+        private long highQualityReadCount = 0;
+
+        public FileQualityStats() {}
+
+        public FileQualityStats(File file, long readCount, long highQualityReadCount) {
+            this.file = file;
+            this.readCount = readCount;
+            this.highQualityReadCount = highQualityReadCount;
+        }
+
+        public File getFile() {
+            return file;
+        }
+
+        public long getReadCount() {
+            return readCount;
+        }
+
+        public long getHighQualityReadCount() {
+            return highQualityReadCount;
+        }
+    }
 
     public ValidatorWrapper(List<File> files, FileFormat format, long readCountLimit) {
         this.files = files;
@@ -29,7 +58,13 @@ public class ValidatorWrapper {
         this.readCountLimit = readCountLimit;
     }
 
+    public List<FileQualityStats> getFileQualityStats() {
+        return fileQualityStats;
+    }
+
     public void run() throws ReadsValidationException {
+        fileQualityStats.clear();
+
         switch (format) {
             case FASTQ:
                 for (File file : files) {
@@ -49,7 +84,7 @@ public class ValidatorWrapper {
 
     public void validateFastq(File file) throws ReadsValidationException {
         try (ReadsProvider producer = new FastqReadsProvider(file)) {
-            new InsdcReadsValidator(readCountLimit).validate(producer);
+            validateInsdc(file, producer);
             new FastqReadsValidator(readCountLimit).validate(producer);
         } catch (ReadsValidationException rve) {
             throw rve;
@@ -60,11 +95,19 @@ public class ValidatorWrapper {
 
     public void validateSam(File file) throws ReadsValidationException {
         try (ReadsProvider producer = new SamReadsProvider(file)) {
-            new InsdcReadsValidator(readCountLimit).validate(producer);
+            validateInsdc(file, producer);
         } catch (ReadsValidationException rve) {
             throw rve;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void validateInsdc(File file, ReadsProvider producer) throws ReadsValidationException {
+        InsdcReadsValidator insdcReadsValidator = new InsdcReadsValidator(readCountLimit);
+        insdcReadsValidator.validate(producer);
+
+        fileQualityStats.add(new FileQualityStats(
+                file, insdcReadsValidator.getReadCount(), insdcReadsValidator.getHighQualityReadCount()));
     }
 }

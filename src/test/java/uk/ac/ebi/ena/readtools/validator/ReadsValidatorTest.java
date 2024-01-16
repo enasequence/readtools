@@ -14,10 +14,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+import uk.ac.ebi.ena.readtools.v2.validator.ValidatorWrapper;
 import uk.ac.ebi.ena.webin.cli.validator.api.ValidationResponse;
 import uk.ac.ebi.ena.webin.cli.validator.file.SubmissionFile;
 import uk.ac.ebi.ena.webin.cli.validator.file.SubmissionFiles;
@@ -52,7 +54,10 @@ public class ReadsValidatorTest {
         ReadsValidator readsValidator = new ReadsValidator();
 
         ReadsValidationResponse validationResponse = readsValidator.validate(readsManifest);
-
         Assert.assertEquals(ValidationResponse.status.VALIDATION_SUCCESS, validationResponse.getStatus());
+
+        List<ValidatorWrapper.FileQualityStats> qs = readsValidator.getFileQualityStats();
+        Assert.assertEquals(3, qs.size());
+        qs.forEach(e -> Assert.assertTrue(e.getReadCount() > 0 && e.getHighQualityReadCount() > 0));
     }
 }

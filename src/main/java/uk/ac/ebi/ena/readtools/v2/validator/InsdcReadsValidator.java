@@ -35,6 +35,9 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
             "then >= 50% of reads must have average quality >= 30";
     public static String INVALID_FILE = "Invalid file structure";
 
+    private long readCount = 0;
+    private long highQualityReadCount = 0;
+
     public InsdcReadsValidator(long readCountLimit) {
         super(readCountLimit);
 
@@ -44,12 +47,18 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
         }
     }
 
+    public long getReadCount() {
+        return readCount;
+    }
+
+    public long getHighQualityReadCount() {
+        return highQualityReadCount;
+    }
+
     @Override
     public boolean validate(ReadsProvider<IRead> provider) throws ReadsValidationException {
-        long readCount = 0;
-        long basesCount = 0;
         long autcgCount = 0;
-        long highQualityReadCount = 0;
+        long basesCount = 0;
 
         if (provider == null) {
             throw new ReadsValidationException(ERROR_NULL_READS);
