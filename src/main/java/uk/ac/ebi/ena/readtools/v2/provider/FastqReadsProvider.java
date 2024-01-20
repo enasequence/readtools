@@ -40,11 +40,11 @@ public class FastqReadsProvider implements ReadsProvider<FastqRead> {
     public FastqReadsProvider(File fastqFile, boolean normaliseQualityScores) throws ReadsValidationException {
         this.normaliseQualityScores = normaliseQualityScores;
         try {
-            this.reader = new FastqReader(fastqFile);
             if (this.normaliseQualityScores) {
                 qualityFormat = Utils.detectFastqQualityFormat(fastqFile.getAbsolutePath(), null);
                 qualityNormalizer = Utils.getQualityNormalizer(qualityFormat);
             }
+            this.reader = new FastqReader(fastqFile);
         } catch (SAMException e) {
             throw new ReadsValidationException(e.getMessage());
         }

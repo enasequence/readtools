@@ -20,13 +20,14 @@ import htsjdk.samtools.SAMException;
 
 import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
-import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 import uk.ac.ebi.ena.readtools.v2.read.FastqRead;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.BloomWrapper;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.DelegateIterator;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
 
-public class FastqReadsValidator extends ReadsValidator<FastqRead> {
+public class FastqReadsValidator extends ReadsValidator {
     /*
     @ Each sequence identifier line starts with @
 1    <instrument> Characters
@@ -74,45 +75,68 @@ SPACE HERE
     }
 
     @Override
-    public boolean validate(ReadsProvider<FastqRead> provider) throws ReadsValidationException {
+    public boolean validate(ReadsProviderFactory readsProviderFactory) throws ReadsValidationException {
         BloomWrapper duplicationsBloomWrapper = new BloomWrapper(expectedSize);
         Map<String, Integer> counts = new HashMap<>(100);
 
         long readCount = 0;
         try {
-            for (FastqRead read : provider) {
-                if (readCount >= readCountLimit) {
-                    break;
+            try (FastqReadsProvider provider = (FastqReadsProvider) readsProviderFactory.makeReadsProvider()) {
+                for (FastqRead read : provider) {
+                    if (readCount >= readCountLimit) {
+                        break;
+                    }
+                    readCount++;
+
+                    if (readCount == 1) {
+                        determineReadStyle(read.getName()); // Determine style based on the first read
+                    }
+
+                    validateRead(read, readCount);
+
+                    duplicationsBloomWrapper.add(read.getName());
                 }
+            }
 
-                readCount++;
-                if (readCount == 1) {
-                    determineReadStyle(read.getName()); // Determine style based on the first read
-                }
+            try (FastqReadsProvider provider = (FastqReadsProvider) readsProviderFactory.makeReadsProvider()) {
+                long dupCheckReadCount = 0;
+                for (FastqRead read : provider) {
+                    if (dupCheckReadCount >= readCountLimit) {
+                        break;
+                    }
+                    dupCheckReadCount++;
 
-                validateRead(read, readCount);
-
-                duplicationsBloomWrapper.add(read.getName());
-                if (duplicationsBloomWrapper.getPossibleDuplicates().contains(read.getName())) {
-                    counts.put(read.getName(), counts.getOrDefault(read.getName(), 0) + 1);
+                    duplicationsBloomWrapper.add(read.getName());
+                    if (duplicationsBloomWrapper.getPossibleDuplicates().contains(read.getName())) {
+                        counts.put(read.getName(), counts.getOrDefault(read.getName(), 0) + 1);
+                    }
                 }
             }
 
             if (duplicationsBloomWrapper.hasPossibleDuplicates()) {
+                StringBuilder errorReport = new StringBuilder();
+                boolean found = false;
+
                 for (Map.Entry<String, Integer> e : counts.entrySet()) {
-                    if (e.getValue() > 0) {
-                        throw new ReadsValidationException(
-                                String.format("Multiple (%d) occurrences of read name \"%s\" at: %s\n",
-                                        e.getValue(),
-                                        e.getKey(),
-                                        e.getValue()));
+                    if (e.getValue() > 1) {
+                        found = true;
+                        errorReport.append(String.format("Multiple (%d) occurrences of read name \"%s\" at: %s\n",
+                                e.getValue(),
+                                e.getKey(),
+                                e.getValue()));
                     }
+                }
+
+                if (found) {
+                    throw new ReadsValidationException(errorReport.toString());
                 }
             }
 
             return true;
         } catch (SAMException e) {
             throw new ReadsValidationException(e.getMessage(), readCount);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

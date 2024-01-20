@@ -10,15 +10,16 @@
 */
 package uk.ac.ebi.ena.readtools.v2.validator;
 
-import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
-import uk.ac.ebi.ena.readtools.v2.read.IRead;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 
-public abstract class ReadsValidator<T extends IRead> {
+import java.io.File;
+
+public abstract class ReadsValidator {
     protected final long readCountLimit;
 
     public ReadsValidator(long readCountLimit) {
         this.readCountLimit = readCountLimit;
     }
 
-    abstract boolean validate(ReadsProvider<T> provider) throws ReadsValidationException;
+    abstract boolean validate(ReadsProviderFactory readsProviderFactory) throws ReadsValidationException;
 }

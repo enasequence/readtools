@@ -15,9 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ebi.ena.readtools.v2.FileFormat;
-import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
-import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
-import uk.ac.ebi.ena.readtools.v2.provider.SamReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 
 public class ValidatorWrapper {
     private final List<File> files;
@@ -83,9 +81,10 @@ public class ValidatorWrapper {
     }
 
     public void validateFastq(File file) throws ReadsValidationException {
-        try (ReadsProvider producer = new FastqReadsProvider(file)) {
-            validateInsdc(file, producer);
-            new FastqReadsValidator(readCountLimit).validate(producer);
+        try {
+            ReadsProviderFactory factory = new ReadsProviderFactory(file, format);
+            validateInsdc(file);
+            new FastqReadsValidator(readCountLimit).validate(factory);
         } catch (ReadsValidationException rve) {
             throw rve;
         } catch (Exception e) {
@@ -94,8 +93,8 @@ public class ValidatorWrapper {
     }
 
     public void validateSam(File file) throws ReadsValidationException {
-        try (ReadsProvider producer = new SamReadsProvider(file)) {
-            validateInsdc(file, producer);
+        try {
+            validateInsdc(file);
         } catch (ReadsValidationException rve) {
             throw rve;
         } catch (Exception e) {
@@ -103,9 +102,10 @@ public class ValidatorWrapper {
         }
     }
 
-    private void validateInsdc(File file, ReadsProvider producer) throws ReadsValidationException {
+    private void validateInsdc(File file) throws ReadsValidationException {
+        ReadsProviderFactory factory = new ReadsProviderFactory(file, format);
         InsdcReadsValidator insdcReadsValidator = new InsdcReadsValidator(readCountLimit);
-        insdcReadsValidator.validate(producer);
+        insdcReadsValidator.validate(factory);
 
         fileQualityStats.add(new FileQualityStats(
                 file, insdcReadsValidator.getReadCount(), insdcReadsValidator.getHighQualityReadCount()));

@@ -17,27 +17,30 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 
 import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 import uk.ac.ebi.ena.readtools.v2.validator.FastqReadsValidator;
 import uk.ac.ebi.ena.readtools.v2.validator.ReadsValidationException;
+import uk.ac.ebi.ena.readtools.v2.validator.ValidatorWrapper;
 
 public class FastqReadsValidatorTest {
     @Test
     public void validSingleFile1() throws ReadsValidationException {
-        ReadsProvider mrp = new FastqReadsProvider(
-                Paths.get("src/test/resources/rawreads/EP0_GTTCCTT_S1.txt.gz").toFile());
-        assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp));
+        ReadsProviderFactory factory = new ReadsProviderFactory(
+                Paths.get("src/test/resources/rawreads/EP0_GTTCCTT_S1.txt.gz").toFile(), FileFormat.FASTQ);
+        assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(factory));
     }
 
     @Test
     public void validSingleFile2() throws ReadsValidationException {
-        ReadsProvider mrp = new FastqReadsProvider(
-                Paths.get("src/test/resources/rawreads/SPOP-87C_plKO2-min.fastq.gz").toFile());
-        assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp));
+        ReadsProviderFactory factory = new ReadsProviderFactory(
+                Paths.get("src/test/resources/rawreads/SPOP-87C_plKO2-min.fastq.gz").toFile(), FileFormat.FASTQ);
+        assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(factory));
     }
 
     @Test
@@ -48,8 +51,8 @@ public class FastqReadsValidatorTest {
                 + "@NAME1/1\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-1", "gz" );
 
         try {
-            ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-            new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp);
+            ReadsProviderFactory factory = new ReadsProviderFactory(f1.toFile(), FileFormat.FASTQ);
+            new FastqReadsValidator(READ_COUNT_LIMIT).validate(factory);
             fail();
         } catch (ReadsValidationException e) {
             assertTrue(e.getMessage().contains("Multiple"));
@@ -59,13 +62,18 @@ public class FastqReadsValidatorTest {
     @Test
     public void readNameDuplicate2() throws IOException {
         File output_dir = createOutputFolder();
-        Path f1 = saveRandomized( "@NAME1/1\nACGT\n+\n1234\n"
-                + "@NAME1/1\nACGT\n+\n1234\n"
-                + "@NAME2/1\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-1", "gz" );
+        Path f1 = saveRandomized(
+                "@NAME1/1\nACGT\n+\n1234\n" +
+                        "@NAME1/1\nACGT\n+\n1234\n" +
+                        "@NAME2/1\nACGT\n+\n1234",
+                output_dir.toPath(), true, "fastq-1", "gz" );
 
         try {
-            ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-            new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp);
+            ValidatorWrapper vw = new ValidatorWrapper(
+                    Collections.singletonList(f1.toFile()), FileFormat.FASTQ, READ_COUNT_LIMIT);
+            vw.run();
+//            ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
+//            new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp);
             fail();
         } catch (ReadsValidationException e) {
             assertTrue(e.getMessage().contains("Multiple"));
@@ -75,13 +83,16 @@ public class FastqReadsValidatorTest {
     @Test
     public void readNameDuplicate3() throws IOException {
         File output_dir = createOutputFolder();
-        Path f1 = saveRandomized( "@NAME1/1\nACGT\n+\n1234\n"
+        Path f1 = saveRandomized(
+                "@NAME1/1\nACGT\n+\n1234\n"
                 + "@NAME1/2\nACGT\n+\n1234\n"
-                + "@NAME1/1\nACGT\n+\n1234", output_dir.toPath(), true, "fastq-1", "gz" );
+                + "@NAME1/1\nACGT\n+\n1234\n"
+                + "@NAME1/1\nACGT\n+\n1234",
+                output_dir.toPath(), true, "fastq-1", "gz" );
 
         try {
-            ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-            new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp);
+            ReadsProviderFactory factory = new ReadsProviderFactory(f1.toFile(), FileFormat.FASTQ);
+            new FastqReadsValidator(READ_COUNT_LIMIT).validate(factory);
             fail();
         } catch (ReadsValidationException e) {
             assertTrue(e.getMessage().contains("Multiple"));
@@ -113,8 +124,8 @@ public class FastqReadsValidatorTest {
                         + "/&\"-('--.#/\n",
                 output_dir.toPath(), true, "fastq-9", "gz" );
 
-        ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-        assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp));
+        ReadsProviderFactory factory = new ReadsProviderFactory(f1.toFile(), FileFormat.FASTQ);
+        assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(factory));
     }
 
     @Test
@@ -164,8 +175,8 @@ public class FastqReadsValidatorTest {
                 output_dir.toPath(), true, "fastq-10", "gz");
 
         try {
-            ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-            assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp));
+            ReadsProviderFactory factory = new ReadsProviderFactory(f1.toFile(), FileFormat.FASTQ);
+            assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(factory));
         } catch (ReadsValidationException e) {
             assertTrue(e.getMessage().contains("Multiple"));
         }
@@ -175,8 +186,8 @@ public class FastqReadsValidatorTest {
     public void testInvalid() {
         File f1 = Paths.get("src/test/resources/invalid.fastq.gz").toFile();
         try {
-            ReadsProvider mrp = new FastqReadsProvider(f1);
-            new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp);
+            ReadsProviderFactory factory = new ReadsProviderFactory(f1, FileFormat.FASTQ);
+            new FastqReadsValidator(READ_COUNT_LIMIT).validate(factory);
             fail();
         } catch (ReadsValidationException e) {
             assertEquals(0, e.getReadIndex());
@@ -200,7 +211,7 @@ public class FastqReadsValidatorTest {
                         "+\n" +
                         "1234", output_dir.toPath(), true, "fastq-1", "gz");
 
-        ReadsProvider mrp = new FastqReadsProvider(f1.toFile());
-        assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(mrp));
+        ReadsProviderFactory factory = new ReadsProviderFactory(f1.toFile(), FileFormat.FASTQ);
+        assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(factory));
     }
 }

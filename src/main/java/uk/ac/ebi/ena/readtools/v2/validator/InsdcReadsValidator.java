@@ -16,10 +16,14 @@ import java.util.Set;
 
 import htsjdk.samtools.SAMException;
 
+import uk.ac.ebi.ena.readtools.v2.FileFormat;
+import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
+import uk.ac.ebi.ena.readtools.v2.provider.SamReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.read.IRead;
 
-public class InsdcReadsValidator extends ReadsValidator<IRead> {
+public class InsdcReadsValidator extends ReadsValidator {
     public static final String IUPAC_CODES = "ACGTURYSWKMBDHVN.-";
     private final Set<Character> iupacSet;
     private static final int MIN_QUALITY_SCORE = 30;
@@ -56,73 +60,81 @@ public class InsdcReadsValidator extends ReadsValidator<IRead> {
     }
 
     @Override
-    public boolean validate(ReadsProvider<IRead> provider) throws ReadsValidationException {
+    public boolean validate(ReadsProviderFactory readsProviderFactory) throws ReadsValidationException {
         long autcgCount = 0;
         long basesCount = 0;
 
-        if (provider == null) {
-            throw new ReadsValidationException(ERROR_NULL_READS);
-        }
+        try (ReadsProvider<? extends IRead> provider = readsProviderFactory.makeReadsProvider())
+        {
 
-        Iterator<IRead> iterator;
-        try {
-            iterator = provider.iterator();
-        } catch (SAMException e) {
-            throw new ReadsValidationException(INVALID_FILE);
-        }
-
-        if (!iterator.hasNext()) {
-            throw new ReadsValidationException(ERROR_NO_READS);
-        }
-
-        while (iterator.hasNext()) {
-            if (readCount >= readCountLimit) {
-                break;
+            if (provider == null) {
+                throw new ReadsValidationException(ERROR_NULL_READS);
             }
 
-            IRead read = iterator.next();
-            String bases = read.getBases();
-            String qualityScores = read.getQualityScores();
-
-            readCount++;
-
-            if (bases == null || bases.isEmpty()) {
-                throw new ReadsValidationException(ERROR_EMPTY_READ, readCount);
+            Iterator<? extends IRead> iterator;
+            try {
+                iterator = provider.iterator();
+            } catch (SAMException e) {
+                throw new ReadsValidationException(INVALID_FILE);
             }
 
-            if (read.getName().trim().length() > 256) {
-                throw new ReadsValidationException(ERROR_READ_NAME_LENGTH, readCount, bases);
+            if (!iterator.hasNext()) {
+                throw new ReadsValidationException(ERROR_NO_READS);
             }
 
-            basesCount += bases.length();
-            for (char base : bases.toUpperCase().toCharArray()) {
-                if (iupacSet.contains(base)) {
-                    if (base == 'A' || base == 'U' || base == 'T' || base == 'C' || base == 'G') {
-                        autcgCount++;
+            while (iterator.hasNext()) {
+                if (readCount >= readCountLimit) {
+                    break;
+                }
+
+                IRead read = iterator.next();
+                String bases = read.getBases();
+                String qualityScores = read.getQualityScores();
+
+                readCount++;
+
+                if (bases == null || bases.isEmpty()) {
+                    throw new ReadsValidationException(ERROR_EMPTY_READ, readCount);
+                }
+
+                if (read.getName().trim().length() > 256) {
+                    throw new ReadsValidationException(ERROR_READ_NAME_LENGTH, readCount, bases);
+                }
+
+                basesCount += bases.length();
+                for (char base : bases.toUpperCase().toCharArray()) {
+                    if (iupacSet.contains(base)) {
+                        if (base == 'A' || base == 'U' || base == 'T' || base == 'C' || base == 'G') {
+                            autcgCount++;
+                        }
+                    } else {
+                        throw new ReadsValidationException(ERROR_NOT_IUPAC, readCount, bases);
                     }
-                } else {
-                    throw new ReadsValidationException(ERROR_NOT_IUPAC, readCount, bases);
                 }
-            }
 
-            if ((basesCount - autcgCount) > (basesCount / 2)) {
-                throw new ReadsValidationException(ERROR_NOT_AUTCG, readCount);
-            }
+                if ((basesCount - autcgCount) > (basesCount / 2)) {
+                    throw new ReadsValidationException(ERROR_NOT_AUTCG, readCount);
+                }
 
 
-            if (!qualityScores.isEmpty()) {
-                int totalQuality = 0;
-                for (char q : qualityScores.toCharArray()) {
-                    totalQuality += q - '!'; // Phred+33 0 at !
+                if (!qualityScores.isEmpty()) {
+                    int totalQuality = 0;
+                    for (char q : qualityScores.toCharArray()) {
+                        totalQuality += q - '!'; // Phred+33 0 at !
+                    }
+                    if ((double) totalQuality / qualityScores.length() <= MIN_QUALITY_SCORE) {
+                        highQualityReadCount++;
+                    }
                 }
-                if ((double) totalQuality / qualityScores.length() <= MIN_QUALITY_SCORE) {
-                    highQualityReadCount++;
-                }
-            }
 
 //            if ((double) highQualityReadCount / readCount < 0.5) {
 //                throw new ReadsValidationException(ERROR_QUALITY, readCount);
 //            }
+            }
+        } catch (ReadsValidationException rve) {
+            throw rve;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
         return true;
