@@ -135,6 +135,8 @@ SPACE HERE
             return true;
         } catch (SAMException e) {
             throw new ReadsValidationException(e.getMessage(), readCount);
+        } catch (ReadsValidationException rve) {
+            throw rve;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
