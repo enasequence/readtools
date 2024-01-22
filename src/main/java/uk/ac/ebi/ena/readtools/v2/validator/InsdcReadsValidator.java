@@ -16,11 +16,8 @@ import java.util.Set;
 
 import htsjdk.samtools.SAMException;
 
-import uk.ac.ebi.ena.readtools.v2.FileFormat;
-import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
-import uk.ac.ebi.ena.readtools.v2.provider.SamReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.read.IRead;
 
 public class InsdcReadsValidator extends ReadsValidator {

@@ -10,9 +10,8 @@
 */
 package uk.ac.ebi.ena.readtools.v2.validator;
 
-import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 
-import java.io.File;
+import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 
 public abstract class ReadsValidator {
     protected final long readCountLimit;

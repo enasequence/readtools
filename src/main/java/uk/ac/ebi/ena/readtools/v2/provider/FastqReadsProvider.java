@@ -34,7 +34,7 @@ public class FastqReadsProvider implements ReadsProvider<FastqRead> {
     private final boolean normaliseQualityScores;
 
     public FastqReadsProvider(File fastqFile) throws ReadsValidationException {
-        this(fastqFile, false);
+        this(fastqFile, true);
     }
 
     public FastqReadsProvider(File fastqFile, boolean normaliseQualityScores) throws ReadsValidationException {
@@ -71,7 +71,7 @@ public class FastqReadsProvider implements ReadsProvider<FastqRead> {
                 }
 
                 String normalisedQualityString = nextRecord.getBaseQualityString();
-                if (normaliseQualityScores || qualityFormat == FastqQualityFormat.Standard) {
+                if (normaliseQualityScores && qualityFormat != FastqQualityFormat.Standard) {
                     byte[] normalisedQualityBytes = normalisedQualityString.getBytes(StandardCharsets.UTF_8);
                     qualityNormalizer.normalize(normalisedQualityBytes);
                     normalisedQualityString = phredToFastq(normalisedQualityBytes);

@@ -36,7 +36,7 @@ public class FastqReadsProviderTest {
                         + "!\"#${|}~\n",
                 output_dir.toPath(), true, "fastq", "gz");
 
-        FastqReadsProvider mrp = new FastqReadsProvider(f1.toFile());
+        FastqReadsProvider mrp = new FastqReadsProvider(f1.toFile(), false);
         assertEquals(null, mrp.getQualityFormat());
         assertEquals("!\"#${|}~", mrp.iterator().next().getQualityScores());
     }

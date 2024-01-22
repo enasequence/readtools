@@ -21,8 +21,6 @@ import java.util.Collections;
 
 import org.junit.Test;
 
-import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
-import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 import uk.ac.ebi.ena.readtools.v2.validator.FastqReadsValidator;
 import uk.ac.ebi.ena.readtools.v2.validator.ReadsValidationException;
