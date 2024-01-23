@@ -119,7 +119,7 @@ public class InsdcReadsValidator extends ReadsValidator {
                     for (char q : qualityScores.toCharArray()) {
                         totalQuality += q - '!'; // Phred+33 0 at !
                     }
-                    if ((double) totalQuality / qualityScores.length() <= MIN_QUALITY_SCORE) {
+                    if ((double) totalQuality / qualityScores.length() >= MIN_QUALITY_SCORE) {
                         highQualityReadCount++;
                     }
                 }
