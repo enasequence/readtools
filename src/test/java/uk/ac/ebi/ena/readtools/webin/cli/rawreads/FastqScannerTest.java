@@ -416,7 +416,6 @@ FastqScannerTest
         Assert.assertEquals( 0, vr.count(Severity.ERROR) );
     }
 
-
     @Test public void
     testZeroReadsSingleFile() throws Throwable {
         File output_dir = createOutputFolder();

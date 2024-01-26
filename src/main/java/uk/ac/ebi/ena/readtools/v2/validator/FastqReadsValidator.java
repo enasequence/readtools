@@ -10,22 +10,16 @@
 */
 package uk.ac.ebi.ena.readtools.v2.validator;
 
-import java.io.File;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import htsjdk.samtools.SAMException;
 
-import uk.ac.ebi.ena.readtools.loader.fastq.FastqIterativeWriter;
-import uk.ac.ebi.ena.readtools.loader.fastq.PairedRead;
 import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 import uk.ac.ebi.ena.readtools.v2.read.FastqRead;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.BloomWrapper;
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.DelegateIterator;
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
 
 public class FastqReadsValidator extends ReadsValidator {
     /*
@@ -65,18 +59,24 @@ SPACE HERE
             "^(.+)( +|\\t+)([0-9]+):[YN]:[0-9]*[02468]($|:.*$)");
 
     final static private Pattern pQuals = Pattern.compile("^([!-~]*?)$"); //qualities
-    private static final int PAIRING_THRESHOLD = 20;
     private ReadStyle readStyle = null; // Field to keep track of the read style
-    private final long expectedSize = 100;
-    private final long readLimit = 20;
+    public final static long EXPECTED_SIZE = 100;
+    private BloomWrapper pairingBloomWrapper = null;
+    private Set<String> labels = null;
 
     public FastqReadsValidator(long readCountLimit) {
         super(readCountLimit);
     }
 
+    public FastqReadsValidator(long readCountLimit, BloomWrapper pairingBloomWrapper, Set<String> labels) {
+        super(readCountLimit);
+        this.pairingBloomWrapper = pairingBloomWrapper;
+        this.labels = labels;
+    }
+
     @Override
     public boolean validate(ReadsProviderFactory readsProviderFactory) throws ReadsValidationException {
-        BloomWrapper duplicationsBloomWrapper = new BloomWrapper(expectedSize);
+        BloomWrapper duplicationsBloomWrapper = new BloomWrapper(EXPECTED_SIZE);
         Map<String, Integer> counts = new HashMap<>(100);
 
         long readCount = 0;
@@ -95,6 +95,12 @@ SPACE HERE
                     validateRead(read, readCount);
 
                     duplicationsBloomWrapper.add(read.getName());
+                    if (pairingBloomWrapper != null) {
+                        pairingBloomWrapper.add(read.getNameWithoutIndex());
+                    }
+                    if (labels != null) {
+                        labels.add(read.getIndex());
+                    }
                 }
             }
 
@@ -177,46 +183,6 @@ SPACE HERE
         if (!matcher.matches()) {
             throw new ReadsValidationException("Invalid quality scores: " + qualityScores, readCount, readName);
         }
-    }
-
-    private Map<String, Set<String>> findAllDuplications(BloomWrapper duplications, int limit, RawReadsFile rf) {
-        Map<String, Integer> counts = new HashMap<>(limit);
-        Map<String, Set<String>> results = new LinkedHashMap<>(limit);
-
-        String msg = "Verifying possible duplicates for file " + rf.getFilename();
-//        log.info(msg);
-
-        FastqIterativeWriter wrapper = new FastqIterativeWriter();
-        wrapper.setFiles(new File[]{new File(rf.getFilename())});
-        wrapper.setReadType(FastqIterativeWriter.READ_TYPE.SINGLE);
-        wrapper.setReadLimit(readLimit);
-
-        Iterator<String> read_name_iterator = new DelegateIterator<PairedRead, String>(wrapper.iterator()) {
-            @Override
-            public String convert(PairedRead obj) {
-                return obj.forward.getName();
-            }
-        };
-
-        long index = 1;
-
-        while (read_name_iterator.hasNext()) {
-            String read_name = read_name_iterator.next();
-            if (duplications.getPossibleDuplicates().contains(read_name)) {
-                counts.put(read_name, counts.getOrDefault(read_name, 0) + 1);
-                Set<String> dlist = results.getOrDefault(read_name, new LinkedHashSet<>());
-                dlist.add(rf.getFilename() + ", read " + index);
-                results.put(read_name, dlist);
-            }
-            ++index;
-        }
-
-        return results.entrySet()
-                .stream()
-                //only read names occurring more than once are considered duplicates
-                .filter(e -> counts.get(e.getKey()) > 1)
-                .limit(limit)
-                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (v1, v2) -> v1, LinkedHashMap::new));
     }
 
     public enum ReadStyle {FASTQ, CASAVA18}

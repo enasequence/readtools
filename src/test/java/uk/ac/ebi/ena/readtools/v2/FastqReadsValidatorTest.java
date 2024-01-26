@@ -15,16 +15,23 @@ import static uk.ac.ebi.ena.readtools.v2.TestFileUtil.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 import uk.ac.ebi.ena.readtools.v2.validator.FastqReadsValidator;
 import uk.ac.ebi.ena.readtools.v2.validator.ReadsValidationException;
 import uk.ac.ebi.ena.readtools.v2.validator.ValidatorWrapper;
+import uk.ac.ebi.ena.readtools.webin.cli.rawreads.FastqScanner;
+import uk.ac.ebi.ena.readtools.webin.cli.rawreads.FastqScannerTest;
+import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
+import uk.ac.ebi.ena.webin.cli.validator.message.ValidationResult;
 
 public class FastqReadsValidatorTest {
     @Test
@@ -211,5 +218,14 @@ public class FastqReadsValidatorTest {
 
         ReadsProviderFactory factory = new ReadsProviderFactory(f1.toFile(), FileFormat.FASTQ);
         assertTrue(new FastqReadsValidator(READ_COUNT_LIMIT).validate(factory));
+    }
+
+    @Test public void
+    testPair() throws ReadsValidationException {
+        File f1 = Paths.get("src/test/resources/rawreads/EP0_GTTCCTT_S1.txt.gz").toFile();
+        File f2 = Paths.get("src/test/resources/rawreads/EP0_GTTCCTT_S2.txt.gz").toFile();
+
+        ValidatorWrapper vw = new ValidatorWrapper(Arrays.asList(f1, f2), FileFormat.FASTQ, READ_COUNT_LIMIT);
+        vw.run();
     }
 }
