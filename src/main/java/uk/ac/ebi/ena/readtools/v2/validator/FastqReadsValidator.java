@@ -53,11 +53,10 @@ SPACE HERE
     ACTG Index sequence
     */
     //                                                          1        :  2   :    3       :   4  :  5   :   6   :  7          8 :  9 :  10         : 11
-//    final static private Pattern p_casava_1_8_name = Pattern.compile( "^@([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+) ([12]):[YN]:[0-9]*[02468]:[ACGTN]+$" );
+    //    final static private Pattern p_casava_1_8_name = Pattern.compile( "^@([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+) ([12]):[YN]:[0-9]*[02468]:[ACGTN]+$" );
     // relaxed regular expression
-    final static Pattern pCasava18Name = Pattern.compile(
-            "^(.+)( +|\\t+)([0-9]+):[YN]:[0-9]*[02468]($|:.*$)");
-
+    final public static String CASAVA_18_NAME = "^(.+)( +|\\t+)([0-9]+):[YN]:[0-9]*[02468]($|:.*$)";
+    final public static Pattern P_CASAVA_18_NAME = Pattern.compile(CASAVA_18_NAME);
     final static private Pattern pQuals = Pattern.compile("^([!-~]*?)$"); //qualities
     private ReadStyle readStyle = null; // Field to keep track of the read style
     public final static long EXPECTED_SIZE = 100;
@@ -95,11 +94,14 @@ SPACE HERE
                     validateRead(read, readCount);
 
                     duplicationsBloomWrapper.add(read.getName());
-                    if (pairingBloomWrapper != null) {
-                        pairingBloomWrapper.add(read.getNameWithoutIndex());
-                    }
-                    if (labels != null) {
-                        labels.add(read.getIndex());
+                    if (pairingBloomWrapper != null && labels != null) {
+                        if (readStyle == ReadStyle.CASAVA18) {
+                            pairingBloomWrapper.add(getCasavaReadNameWithoutIndex(read.getName(), readCount));
+                            labels.add(getCasavaReadIndex(read.getName(), readCount));
+                        } else {
+                            pairingBloomWrapper.add(getNonCasavaReadNameWithoutIndex(read.getName()));
+                            labels.add(getNonCasavaReadIndex(read.getName()));
+                        }
                     }
                 }
             }
@@ -149,7 +151,7 @@ SPACE HERE
     }
 
     private void determineReadStyle(String name) {
-        Matcher casavaMatcher = pCasava18Name.matcher(name);
+        Matcher casavaMatcher = P_CASAVA_18_NAME.matcher(name);
         readStyle = casavaMatcher.matches() ? ReadStyle.CASAVA18 : ReadStyle.FASTQ;
     }
 
@@ -161,7 +163,7 @@ SPACE HERE
     private void validateReadName(String name, long readCount) throws ReadsValidationException {
         switch (readStyle) {
             case CASAVA18:
-                Matcher casavaMatcher = pCasava18Name.matcher(name);
+                Matcher casavaMatcher = P_CASAVA_18_NAME.matcher(name);
                 if (!casavaMatcher.matches()) {
                     throw new ReadsValidationException("Invalid CASAVA 1.8 read name", readCount, name);
                 }
@@ -185,5 +187,72 @@ SPACE HERE
         }
     }
 
+
     public enum ReadStyle {FASTQ, CASAVA18}
+
+    /*
+    @ Each sequence identifier line starts with @
+    1    <instrument> Characters
+    allowed:
+    a-z, A-Z, 0-9 and
+    underscore
+    2    Instrument ID
+    <run number> Numerical Run number on instrument
+    3    <flowcell
+    ID>
+    Characters
+    allowed:
+    a-z, A-Z, 0-9
+    4    <lane> Numerical Lane number
+    5    <tile> Numerical Tile number
+    6    <x_pos> Numerical X coordinate of cluster
+    7    <y_pos> Numerical Y coordinate of cluster
+    */
+    //    A00953:544:HMTFHDSX3:2:1101:6768:1
+    //             1        :  2   :    3       :   4  :  5   :   6   :  7
+    //    "^([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)$"
+    static final Pattern CASAVA_LIKE_EXCLUDE_REGEXP = Pattern.compile(
+            "^([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9_-]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)$");
+    // Provided readname structure is @{readkey}{separator:1(.|/|:|_)}{index:1(0:1:2)}
+    static final Pattern SPLIT_REGEXP = Pattern.compile("^(.*)(?:[\\.|:|/|_])([0-9]+)$");
+
+    public static String getCasavaReadNameWithoutIndex(String readName, long readIndex) throws ReadsValidationException {
+        Matcher matcher = P_CASAVA_18_NAME.matcher(readName);
+        if (!matcher.matches())
+            throw new ReadsValidationException(
+                    String.format("Line [%s] does not match %s regexp", readName, ReadStyle.CASAVA18),
+                    readIndex);
+        return matcher.group(1);
+    }
+
+    public static String getCasavaReadIndex(String readName, long readIndex) throws ReadsValidationException {
+        Matcher matcher = P_CASAVA_18_NAME.matcher(readName);
+        if (!matcher.matches())
+            throw new ReadsValidationException(
+                    String.format("Line [%s] does not match %s regexp", readName, ReadStyle.CASAVA18),
+                    readIndex);
+        return matcher.group(3);
+    }
+
+    public static String getNonCasavaReadNameWithoutIndex(String readName) throws ReadsValidationException {
+        Matcher casavaLikeMatcher = CASAVA_LIKE_EXCLUDE_REGEXP.matcher(readName);
+        if (!casavaLikeMatcher.find()) {
+            Matcher m = SPLIT_REGEXP.matcher(readName);
+            if (m.find()) {
+                return m.group(1);
+            }
+        }
+        throw new ReadsValidationException("Read name " + readName + " doesn't match CASAVA 1.8 style");
+    }
+
+    public static String getNonCasavaReadIndex(String readName) throws ReadsValidationException {
+        Matcher casavaLikeMatcher = CASAVA_LIKE_EXCLUDE_REGEXP.matcher(readName);
+        if (!casavaLikeMatcher.find()) {
+            Matcher m = SPLIT_REGEXP.matcher(readName);
+            if (m.find()) {
+                return m.group(2);
+            }
+        }
+        throw new ReadsValidationException("Read name " + readName + " doesn't match CASAVA 1.8 style");
+    }
 }

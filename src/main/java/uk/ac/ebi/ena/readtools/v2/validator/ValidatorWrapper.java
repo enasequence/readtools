@@ -110,22 +110,24 @@ public class ValidatorWrapper {
             /** Should ideally have high number of duplicates as it will point to higher pairing percentage.
              * To keep memory consumption lower, because we can tolerate false positive here, use lower expected read size. */
             BloomWrapper mainFileOnlyPairingBloomWrapper = new BloomWrapper(EXPECTED_SIZE / 10);
+            validateInsdc(files.get(0));
+
+            FastqReadsValidator validator = new FastqReadsValidator(readCountLimit, mainFileOnlyPairingBloomWrapper, labels);
+            ReadsProviderFactory factory = new ReadsProviderFactory(files.get(0), format);
+            validator.validate(factory);
+
             List<PairedFiles> pairedFiles = new ArrayList<>();
-            int fileNumber = 0;
-            for (File file : files) {
-                ReadsProviderFactory factory = new ReadsProviderFactory(file, format);
+            for (int fileNumber = 1; fileNumber < files.size(); fileNumber++) {
+                File file = files.get(fileNumber);
+
                 validateInsdc(file);
 
-                BloomWrapper bloomWrapper;
-                if (fileNumber == 0) {
-                    bloomWrapper = mainFileOnlyPairingBloomWrapper;
-                } else {
-                    //Make a copy of the main file's pairing information so we do not have re-create it for every other file.
-                    bloomWrapper = mainFileOnlyPairingBloomWrapper.getCopy();
-                }
-                FastqReadsValidator validator = new FastqReadsValidator(readCountLimit, bloomWrapper, labels);
+                //Make a copy of the main file's pairing information so we do not have re-create it for every other file.
+                BloomWrapper bloomWrapper = mainFileOnlyPairingBloomWrapper.getCopy();
+
+                validator = new FastqReadsValidator(readCountLimit, bloomWrapper, labels);
+                factory = new ReadsProviderFactory(file, format);
                 validator.validate(factory);
-                fileNumber++;
 
                 long readCount = Math.max(mainFileOnlyPairingBloomWrapper.getAddCount(), bloomWrapper.getAddCount());
                 long pairedCount = bloomWrapper.getPossibleDuplicateCount();
@@ -150,6 +152,9 @@ public class ValidatorWrapper {
 //                    validationResult.add(ValidationMessage.error(
 //                            String.format("Detected paired fastq submission with less than %d%% of paired reads between %s and %s",
 //                                    PAIRING_THRESHOLD, lowestPairingPercentagePair.fileName1, lowestPairingPercentagePair.fileName2)));
+                    throw new ReadsValidationException(
+                            String.format("Detected paired fastq submission with less than %d%% of paired reads between %s and %s",
+                                    PAIRING_THRESHOLD, lowestPairingPercentagePair.fileName1, lowestPairingPercentagePair.fileName2));
                 }
             } else {
 //                validationResult.add(ValidationMessage.error(String.format(
@@ -157,6 +162,12 @@ public class ValidatorWrapper {
 //                                + "This was not the case for the submitted Fastq files: %s. Unable to determine pairing from set: %s",
 //                        files,
 //                        labels.stream().limit(10).collect(Collectors.joining(",", "", 10 < labels.size() ? "..." : "")))));
+                throw new ReadsValidationException(
+                        String.format(
+                        "When submitting paired reads using two Fastq files the reads must follow Illumina paired read naming conventions. "
+                                + "This was not the case for the submitted Fastq files: %s. Unable to determine pairing from set: %s",
+                        files,
+                        labels.stream().limit(10).collect(Collectors.joining(",", "", 10 < labels.size() ? "..." : ""))));
             }
         } catch (ReadsValidationException rve) {
             throw rve;
