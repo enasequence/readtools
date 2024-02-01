@@ -10,6 +10,8 @@
 */
 package uk.ac.ebi.ena.readtools.v2.validator;
 
+import static uk.ac.ebi.ena.readtools.v2.validator.FastqReadsValidator.EXPECTED_SIZE;
+
 import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,9 +19,6 @@ import java.util.stream.Collectors;
 import uk.ac.ebi.ena.readtools.v2.FileFormat;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.BloomWrapper;
-import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage;
-
-import static uk.ac.ebi.ena.readtools.v2.validator.FastqReadsValidator.EXPECTED_SIZE;
 
 public class ValidatorWrapper {
     private final List<File> files;
@@ -112,7 +111,9 @@ public class ValidatorWrapper {
             BloomWrapper mainFileOnlyPairingBloomWrapper = new BloomWrapper(EXPECTED_SIZE / 10);
             validateInsdc(files.get(0));
 
-            FastqReadsValidator validator = new FastqReadsValidator(readCountLimit, mainFileOnlyPairingBloomWrapper, labels);
+
+            PairedFastqReadsValidator validator = new PairedFastqReadsValidator(
+                    readCountLimit, files.get(0).getAbsolutePath(), mainFileOnlyPairingBloomWrapper, labels);
             ReadsProviderFactory factory = new ReadsProviderFactory(files.get(0), format);
             validator.validate(factory);
 
@@ -125,7 +126,7 @@ public class ValidatorWrapper {
                 //Make a copy of the main file's pairing information so we do not have re-create it for every other file.
                 BloomWrapper bloomWrapper = mainFileOnlyPairingBloomWrapper.getCopy();
 
-                validator = new FastqReadsValidator(readCountLimit, bloomWrapper, labels);
+                validator = new PairedFastqReadsValidator(readCountLimit, file.getAbsolutePath(), bloomWrapper, labels);
                 factory = new ReadsProviderFactory(file, format);
                 validator.validate(factory);
 
