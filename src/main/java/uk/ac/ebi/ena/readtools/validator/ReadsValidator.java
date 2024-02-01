@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import uk.ac.ebi.ena.readtools.v2.FileFormat;
 import uk.ac.ebi.ena.readtools.v2.validator.ReadsValidationException;
 import uk.ac.ebi.ena.readtools.v2.validator.ValidatorWrapper;
-import uk.ac.ebi.ena.readtools.webin.cli.rawreads.FastqScanner;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile;
 import uk.ac.ebi.ena.readtools.webin.cli.rawreads.RawReadsFile.Filetype;
 import uk.ac.ebi.ena.webin.cli.validator.api.ValidationResponse.status;
@@ -85,9 +84,7 @@ public class ReadsValidator
         if (files != null && files.size() > 0) {
             Filetype fileType = files.get(0).getFiletype();
 
-            if (files.size() == 2 && Filetype.fastq.equals(fileType)) {
-                readFastqFile(result, files, paired, isQuick);
-            } else if (Filetype.fastq.equals(fileType)
+            if (Filetype.fastq.equals(fileType)
                     || Filetype.bam.equals(fileType)
                     || Filetype.cram.equals(fileType)) {
                 runValidatorWrapper(
@@ -116,27 +113,6 @@ public class ReadsValidator
         } catch (ReadsValidationException e) {
             result.add(ValidationMessage.error(e.getMessage()));
             e.printStackTrace();
-        }
-    }
-
-    private void
-    readFastqFile(ValidationResult result, List<RawReadsFile> files, AtomicBoolean paired, boolean isQuick) {
-        try {
-            FastqScanner fs = new FastqScanner(isQuick ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT) {
-                @Override
-                protected void logFlushMsg(String msg) {
-                }
-
-                @Override
-                protected void logProcessedReadNumber(Long count) {
-                    ;
-                }
-            };
-
-            fs.checkFiles(result, files.toArray(new RawReadsFile[files.size()]));
-            paired.set(fs.getPaired());
-        } catch (Throwable ex) {
-            throw new RuntimeException(ex);
         }
     }
 
