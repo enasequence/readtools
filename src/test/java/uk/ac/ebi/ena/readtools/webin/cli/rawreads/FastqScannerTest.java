@@ -1161,4 +1161,74 @@ FastqScannerTest
 
         Assert.assertEquals( 1, vr.count(Severity.ERROR) );
     }
+
+    @Test
+    public void testPairingThresholdPass() throws Throwable
+    {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@NAME1/1\nACGT\n+\n1234\n" +
+                        "@NAME2/1\nACGT\n+\n1234\n" +
+                        "@NAME3/1\nACGT\n+\n1234\n" +
+                        "@NAME4/1\nACGT\n+\n1234\n" +
+                        "@NAME5/1\nACGT\n+\n1234\n" +
+                        "@NAME6/1\nACGT\n+\n1234\n",
+                output_dir.toPath(), true, "fastq-1", "gz" );
+        Path f2 = saveRandomized(
+                "@NAME1/2\nACGT\n+\n1234\n" +
+                        "@NAME2/2\nACGT\n+\n1234\n" +
+                        "@NAME8/2\nACGT\n+\n1234\n" +
+                        "@NAME9/2\nACGT\n+\n1234\n" +
+                        "@NAME10/2\nACGT\n+\n1234\n" +
+                        "@NAME11/2\nACGT\n+\n1234\n",
+                output_dir.toPath(), true, "fastq-2", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+
+        RawReadsFile rf2 = new RawReadsFile();
+        rf2.setFilename( f2.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
+
+        Assert.assertEquals( 0, vr.count(Severity.ERROR) );
+    }
+
+    @Test
+    public void testPairingThresholdFail() throws Throwable
+    {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@NAME1/1\nACGT\n+\n1234\n" +
+                        "@NAME2/1\nACGT\n+\n1234\n" +
+                        "@NAME3/1\nACGT\n+\n1234\n" +
+                        "@NAME4/1\nACGT\n+\n1234\n" +
+                        "@NAME5/1\nACGT\n+\n1234\n" +
+                        "@NAME6/1\nACGT\n+\n1234\n",
+                output_dir.toPath(), true, "fastq-1", "gz" );
+        Path f2 = saveRandomized(
+                "@NAME1/2\nACGT\n+\n1234\n" +
+                        "@NAME7/2\nACGT\n+\n1234\n" +
+                        "@NAME8/2\nACGT\n+\n1234\n" +
+                        "@NAME9/2\nACGT\n+\n1234\n" +
+                        "@NAME10/2\nACGT\n+\n1234\n" +
+                        "@NAME11/2\nACGT\n+\n1234\n",
+                output_dir.toPath(), true, "fastq-2", "gz" );
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+
+        RawReadsFile rf2 = new RawReadsFile();
+        rf2.setFilename( f2.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
+    }
 }

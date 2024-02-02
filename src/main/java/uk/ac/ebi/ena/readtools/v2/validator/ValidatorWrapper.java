@@ -112,10 +112,10 @@ public class ValidatorWrapper {
             validateInsdc(files.get(0));
 
 
-            PairedFastqReadsValidator validator = new PairedFastqReadsValidator(
+            PairedFastqReadsValidator mainValidator = new PairedFastqReadsValidator(
                     readCountLimit, files.get(0).getAbsolutePath(), mainFileOnlyPairingBloomWrapper, labels);
             ReadsProviderFactory factory = new ReadsProviderFactory(files.get(0), format);
-            validator.validate(factory);
+            mainValidator.validate(factory);
 
             List<PairedFiles> pairedFiles = new ArrayList<>();
             for (int fileNumber = 1; fileNumber < files.size(); fileNumber++) {
@@ -126,11 +126,12 @@ public class ValidatorWrapper {
                 //Make a copy of the main file's pairing information so we do not have re-create it for every other file.
                 BloomWrapper bloomWrapper = mainFileOnlyPairingBloomWrapper.getCopy();
 
-                validator = new PairedFastqReadsValidator(readCountLimit, file.getAbsolutePath(), bloomWrapper, labels);
+                PairedFastqReadsValidator secondaryValidator = new PairedFastqReadsValidator(
+                        readCountLimit, file.getAbsolutePath(), bloomWrapper, labels);
                 factory = new ReadsProviderFactory(file, format);
-                validator.validate(factory);
+                secondaryValidator.validate(factory);
 
-                long readCount = Math.max(mainFileOnlyPairingBloomWrapper.getAddCount(), bloomWrapper.getAddCount());
+                long readCount = Math.max(mainValidator.getAddCount(), secondaryValidator.getAddCount());
                 long pairedCount = bloomWrapper.getPossibleDuplicateCount();
                 double pairingPercentage = 100 * ((double) pairedCount / (double) readCount);
 

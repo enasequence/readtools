@@ -48,6 +48,8 @@ public class PairedFastqReadsValidator extends FastqReadsValidator {
     private final BloomWrapper pairingBloomWrapper;
     private final Set<String> labels;
 
+    private long addCount = 0;
+
     public PairedFastqReadsValidator(
             long readCountLimit, String providerName, BloomWrapper pairingBloomWrapper, Set<String> labels) {
         super(readCountLimit);
@@ -56,9 +58,15 @@ public class PairedFastqReadsValidator extends FastqReadsValidator {
         this.labels = labels;
     }
 
+    public long getAddCount() {
+        return addCount;
+    }
+
     @Override
     protected void
     extraReadsValidation(ReadStyle readStyle, long readCount, FastqRead read) throws ReadsValidationException {
+        addCount++;
+
         if (pairingBloomWrapper != null && labels != null) {
             if (readStyle == ReadStyle.CASAVA18) {
                 pairingBloomWrapper.add(getCasavaReadNameWithoutIndex(read.getName(), readCount));

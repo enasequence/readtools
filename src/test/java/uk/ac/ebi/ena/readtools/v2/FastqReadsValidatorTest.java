@@ -601,7 +601,7 @@ public class FastqReadsValidatorTest {
 
     @Test
     public void
-    testMultiFileValid() throws Throwable {
+    testMultiFileValid() throws ReadsValidationException {
         Path f1 = Paths.get("src/test/resources/10x/4fastq/I1.fastq");
         Path f2 = Paths.get("src/test/resources/10x/4fastq/R1.fastq");
         Path f3 = Paths.get("src/test/resources/10x/4fastq/R2.fastq");
@@ -676,7 +676,7 @@ public class FastqReadsValidatorTest {
     }
 
     @Test
-    public void testMultiplePairedFastqsWithLowPairingPercentage() throws Throwable {
+    public void testMultiplePairedFastqsWithLowPairingPercentage() throws IOException {
         File output_dir = createOutputFolder();
 
         //Following files' pairing arrangment is:
@@ -695,9 +695,65 @@ public class FastqReadsValidatorTest {
 
         Path f4 = saveRandomized("@NAME2/4\nACGT\n+\n1234\n"
                 + "@NAME4/4\nACGT\n+\n2341", output_dir.toPath(), true, "fastq-4", "gz");
+
         try {
             ValidatorWrapper vw = new ValidatorWrapper(
                     Arrays.asList(f1.toFile(), f2.toFile(), f3.toFile(), f4.toFile()), FileFormat.FASTQ, READ_COUNT_LIMIT);
+            vw.run();
+            fail();
+        } catch (ReadsValidationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testPairingThresholdPass() throws IOException, ReadsValidationException {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@NAME1/1\nACGT\n+\n1234\n" +
+                        "@NAME2/1\nACGT\n+\n1234\n" +
+                        "@NAME3/1\nACGT\n+\n1234\n" +
+                        "@NAME4/1\nACGT\n+\n1234\n" +
+                        "@NAME5/1\nACGT\n+\n1234\n" +
+                        "@NAME6/1\nACGT\n+\n1234\n",
+                output_dir.toPath(), true, "fastq-1", "gz");
+        Path f2 = saveRandomized(
+                "@NAME1/2\nACGT\n+\n1234\n" +
+                        "@NAME2/2\nACGT\n+\n1234\n" +
+                        "@NAME8/2\nACGT\n+\n1234\n" +
+                        "@NAME9/2\nACGT\n+\n1234\n" +
+                        "@NAME10/2\nACGT\n+\n1234\n" +
+                        "@NAME11/2\nACGT\n+\n1234\n",
+                output_dir.toPath(), true, "fastq-2", "gz");
+
+        ValidatorWrapper vw = new ValidatorWrapper(
+                Arrays.asList(f1.toFile(), f2.toFile()), FileFormat.FASTQ, READ_COUNT_LIMIT);
+        vw.run();
+    }
+
+    @Test
+    public void testPairingThresholdFail() throws IOException {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@NAME1/1\nACGT\n+\n1234\n" +
+                        "@NAME2/1\nACGT\n+\n1234\n" +
+                        "@NAME3/1\nACGT\n+\n1234\n" +
+                        "@NAME4/1\nACGT\n+\n1234\n" +
+                        "@NAME5/1\nACGT\n+\n1234\n" +
+                        "@NAME6/1\nACGT\n+\n1234\n",
+                output_dir.toPath(), true, "fastq-1", "gz");
+        Path f2 = saveRandomized(
+                "@NAME1/2\nACGT\n+\n1234\n" +
+                        "@NAME7/2\nACGT\n+\n1234\n" +
+                        "@NAME8/2\nACGT\n+\n1234\n" +
+                        "@NAME9/2\nACGT\n+\n1234\n" +
+                        "@NAME10/2\nACGT\n+\n1234\n" +
+                        "@NAME11/2\nACGT\n+\n1234\n",
+                output_dir.toPath(), true, "fastq-2", "gz");
+
+        try {
+            ValidatorWrapper vw = new ValidatorWrapper(
+                    Arrays.asList(f1.toFile(), f2.toFile()), FileFormat.FASTQ, READ_COUNT_LIMIT);
             vw.run();
             fail();
         } catch (ReadsValidationException e) {
