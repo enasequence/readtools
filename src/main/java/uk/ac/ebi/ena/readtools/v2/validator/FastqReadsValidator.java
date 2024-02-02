@@ -113,10 +113,9 @@ SPACE HERE
                 for (Map.Entry<String, Integer> e : counts.entrySet()) {
                     if (e.getValue() > 1) {
                         found = true;
-                        errorReport.append(String.format("Multiple (%d) occurrences of read name \"%s\" at: %s\n",
+                        errorReport.append(String.format("Multiple (%d) occurrences of read name \"%s\"",
                                 e.getValue(),
-                                e.getKey(),
-                                e.getValue()));
+                                e.getKey()));
                     }
                 }
 

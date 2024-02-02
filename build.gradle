@@ -20,7 +20,7 @@ wrapper{
 }
 
 group = 'uk.ac.ebi.ena'
-ext.version_base = '2.3.0'
+ext.version_base = '2.3.1'
 version = version_base
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
