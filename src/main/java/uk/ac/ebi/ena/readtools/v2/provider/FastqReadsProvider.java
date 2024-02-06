@@ -44,7 +44,7 @@ public class FastqReadsProvider implements ReadsProvider<FastqRead> {
                 qualityFormat = Utils.detectFastqQualityFormat(fastqFile.getAbsolutePath(), null);
                 qualityNormalizer = Utils.getQualityNormalizer(qualityFormat);
             }
-            this.reader = new FastqReader(fastqFile);
+            this.reader = new FastqReader(fastqFile, true);
         } catch (SAMException e) {
             throw new ReadsValidationException(e.getMessage());
         }

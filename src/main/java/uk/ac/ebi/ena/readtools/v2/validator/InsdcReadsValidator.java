@@ -72,7 +72,7 @@ public class InsdcReadsValidator extends ReadsValidator {
             try {
                 iterator = provider.iterator();
             } catch (SAMException e) {
-                throw new ReadsValidationException(INVALID_FILE);
+                throw new ReadsValidationException(INVALID_FILE + ": " + e.getMessage());
             }
 
             if (!iterator.hasNext()) {
