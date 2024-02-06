@@ -59,7 +59,6 @@ SPACE HERE
     final public static Pattern P_CASAVA_18_NAME = Pattern.compile(CASAVA_18_NAME);
     final static private Pattern pQuals = Pattern.compile("^([!-~]*?)$"); //qualities
     private ReadStyle readStyle = null; // Field to keep track of the read style
-    public final static long EXPECTED_SIZE = 100;
 
     public FastqReadsValidator(long readCountLimit) {
         super(readCountLimit);
@@ -67,7 +66,7 @@ SPACE HERE
 
     @Override
     public boolean validate(ReadsProviderFactory readsProviderFactory) throws ReadsValidationException {
-        BloomWrapper duplicationsBloomWrapper = new BloomWrapper(EXPECTED_SIZE);
+        BloomWrapper duplicationsBloomWrapper = new BloomWrapper(5 * readCountLimit);
         Map<String, Integer> counts = new HashMap<>(100);
 
         long readCount = 0;

@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
@@ -190,6 +191,26 @@ public class FastqReadsValidatorTest {
             fail();
         } catch (ReadsValidationException e) {
             assertEquals(0, e.getReadIndex());
+        }
+    }
+
+    @Test
+    public void testInvalid2() throws IOException {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@Chr4 (34221604..34224117) consensus\n" +
+                        "ACAGCACACAGCACAGTGTTTCTTTCATCACAATGGACCGCTCTTTTCTTTTTAGCCTCTTGATCTTATTCTCTGTGGTCGCGTCCACCGTATTCGCTGATGAGTTAATCAACGGCGATGATGATCCTTTGATCCAACAGGTGGTTTCGGGCGGTGATGATGATCTTCTTCTCCACGCGGAGCATCATTTCTCGAACTTCAAGGCGAAATTCGGAAAGAGTTATGGTAGCAAAGAGGAGCATGATTATAGGCTCGGTGTGTTTAAGTCGAATCTTCGTCGAGCCAAGATGCATCAGAAGCTGGACCCTAACGCAGTCCACGGCGTCACGAAATTCTCCGATCTCACTCCCGCTGAGTTCCGGCGAAACTTTCTTGGCTTGAAGAAGGTTCGGCTCCCGAACGATGCTCAGAAGGCTCCTATTCTTCCCACCAACGATCTTCCCACTGACTTTGACTGGCGCGATCACGGCGCCGTTACCGGCGTCAAAGACCAGGTTTTAAATTTTCAATATAATCAATAATTATATTATTATTATTGTTTTGTTAATTTATAAAGTTTAATCTAAAAATTGAGATTTCATATATTTATATAAATTGTTGGGAATTAGGGTGCGTGTGGATCGTGCTGGTCGTTTAGTACAACGGGAGCTTTGGAAGGAGCTCATTATTTGGCGACTGGGGAGCTAGTGAGCCTCAGTGAACAACAGCTTGTGGATTGTGACCATGAGGTTTGAGTTTGACTCGTTCTTCCTTTGTG   TTGTTTGTTTGGTTTTTTGGTGTGGAGGTGAAATTGTCGTTATGGTTTTGTTGGTCTTTTATTGTTGATAGACTAATTATGTGGTTGTTTTTGTTAGAACAGTAGATAATTGTCTAAATATACACTTTCTTATTAGTTTAAGCTTTTAGGATAGAGCAGATGGTTTAAAAGTTAAAACAAATTGCTTTCATTAGCTTTTGTGAATGAATTTTATTTGAGATTCTTCTACTTTACCTAGTACGTGGCAAAGGTGCCAATTGCCTAAGATACCCAGAAGTGCTCACCTTGTTAATCCCTAGAACTGGAAGTCAAAACTCAAGAGTAATGCTACCTACATTAACATAATTCACAACAAATTTCACAACTGCTGAGATGACAGTTTTTTATTAGTTCTCATCTAGACCTACCACTGACATCACTTTATTATTTATCGTTTATAAGAGCAAATTGTGAAGAAGAA    AAAAAATTCTGAAATTTTGTGTGCCTCTAAACTTATTGAAACAAAATTGAAAGCTTGGGCATGTAGTTGTTCACTATATCAGTATTAGAGATGACTTGCATATAGTTATTTTGTATCTAACCCATGATCATGTGTCGCTATTCTGAAGTTTGACAACCTCGCTAGCGGGAGAGAAAAACCAAAATATGACTATTTCTAAGCATCTTTCTTGCCTCACATTGATTGCTTTGGTCTTGTCTTAGATCACCCCTATGATTCTTTTTGCAGTGTGATCCCGAGGAATATGGTGCATGCGACTCGGGGTGTAATGGTGGGCTGATGACCTCTGCCTTTGAGTACACCCTCAAGGCTGGTGGACTCGAGAGAGAGAAGGATTATCCTTACACCGGGACTGATCGTGGGACCTGCAAATTTGACAAGAGCAAGATTGTTGCTTCTGTATCTAACTTCAGTGTCGTTTCGATTGATGAAGATCAAATTGCCGCGAAATTTGGTGAAGAATGGCCCTCTTGCAAGTAATTACTAATTAACCTTCTTCGAAACCTAGTAAATTGTTTTCATTTCCATCTTTTATTTTTTTTCTTGTTTGGTTGTGTGCTGATGTTGAAATTAGGATAGGCTATGTAACTGTTTTCTTTTTTATTTGAAAAATGGGGTCAAGAATGATAGAGTAAATCGAGTGATGGATATGATATAAATAATGATTCTTTTGCTCTGCTTTGTGCAGTTGGCATCAATGCAGTTTTCATGCAGACCTACATGAAGGGAGTTTCATGCCCATACATCTGCGGGAGGCATTTGGATCATGGTGTGCTTCTGGTGGGTTTTGGATCTGCTGGTTATGCTCCTATCCGGCTCAAGGAGAAGCCTTTCTGGATCATAAAGAACTCCTGGGGAGAAAACTGGGGAGAGAATGGATATTACAAGATCTGTAGGGGCCGTAATGTATGTGGAGTGGATTCCATGGTCTCAACTGTGGCTGCTATAAATGATTAGATTAAGAAGTTTCATGGCAGTGCTGTGTTAGGCAAGTGGAGTCGTTGTAAATATTTAAGTGATAATATGTATTAAGATGACTTCCTAAACTTGTATAAGCTCTTGATGCTTCCATCAAATTACCCAAAAACATGTGTGTCTTGCTCTTGATGGTTCTTTGAAACTTTGTGTCAAGCATTGTCCTGTGTTATTATTCATATTTATCATATGGGTAAGTGAAGCTTGATGCCATGCAGTGGGATGGTTAATTATGTTTTGCTGCGTCCTGATTTGGATTGAAAAATAATGAGTTGATGTACTA\n" +
+                        "+\n" +
+                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n",
+                output_dir.toPath(), true, "fastq-1", "gz");
+
+        try {
+            ValidatorWrapper vw = new ValidatorWrapper(
+                    Arrays.asList(f1.toFile()), FileFormat.FASTQ, READ_COUNT_LIMIT);
+            vw.run();
+            fail();
+        } catch (ReadsValidationException e) {
+            e.printStackTrace();
         }
     }
 
@@ -754,6 +775,22 @@ public class FastqReadsValidatorTest {
         try {
             ValidatorWrapper vw = new ValidatorWrapper(
                     Arrays.asList(f1.toFile(), f2.toFile()), FileFormat.FASTQ, READ_COUNT_LIMIT);
+            vw.run();
+            fail();
+        } catch (ReadsValidationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Ignore("Manual test")
+    @Test
+    public void testERR12476718() {
+        Path f1 = Paths.get("src/test/resources/ERR12476718/122-2_1.fq.gz");
+        Path f2 = Paths.get("src/test/resources/ERR12476718/122-2_2.fq.gz");
+
+        try {
+            ValidatorWrapper vw = new ValidatorWrapper(
+                    Arrays.asList(f1.toFile(), f2.toFile()), FileFormat.FASTQ, 100_000);
             vw.run();
             fail();
         } catch (ReadsValidationException e) {

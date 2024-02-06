@@ -10,8 +10,6 @@
 */
 package uk.ac.ebi.ena.readtools.v2.validator;
 
-import static uk.ac.ebi.ena.readtools.v2.validator.FastqReadsValidator.EXPECTED_SIZE;
-
 import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -108,7 +106,7 @@ public class ValidatorWrapper {
         try {
             /** Should ideally have high number of duplicates as it will point to higher pairing percentage.
              * To keep memory consumption lower, because we can tolerate false positive here, use lower expected read size. */
-            BloomWrapper mainFileOnlyPairingBloomWrapper = new BloomWrapper(EXPECTED_SIZE / 10);
+            BloomWrapper mainFileOnlyPairingBloomWrapper = new BloomWrapper(readCountLimit / 2);
             validateInsdc(files.get(0));
 
 

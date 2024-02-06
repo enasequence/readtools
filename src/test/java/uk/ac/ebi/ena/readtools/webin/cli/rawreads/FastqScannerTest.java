@@ -17,6 +17,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -24,6 +25,7 @@ import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import uk.ac.ebi.ena.webin.cli.validator.message.ValidationMessage.Severity;
@@ -952,6 +954,27 @@ FastqScannerTest
         Assert.assertTrue( vr.isValid() );
     }
 
+    @Test
+    public void testCase11() throws Throwable {
+        File output_dir = createOutputFolder();
+        Path f1 = saveRandomized(
+                "@Chr4 (34221604..34224117) consensus\n" +
+                        "ACAGCACACAGCACAGTGTTTCTTTCATCACAATGGACCGCTCTTTTCTTTTTAGCCTCTTGATCTTATTCTCTGTGGTCGCGTCCACCGTATTCGCTGATGAGTTAATCAACGGCGATGATGATCCTTTGATCCAACAGGTGGTTTCGGGCGGTGATGATGATCTTCTTCTCCACGCGGAGCATCATTTCTCGAACTTCAAGGCGAAATTCGGAAAGAGTTATGGTAGCAAAGAGGAGCATGATTATAGGCTCGGTGTGTTTAAGTCGAATCTTCGTCGAGCCAAGATGCATCAGAAGCTGGACCCTAACGCAGTCCACGGCGTCACGAAATTCTCCGATCTCACTCCCGCTGAGTTCCGGCGAAACTTTCTTGGCTTGAAGAAGGTTCGGCTCCCGAACGATGCTCAGAAGGCTCCTATTCTTCCCACCAACGATCTTCCCACTGACTTTGACTGGCGCGATCACGGCGCCGTTACCGGCGTCAAAGACCAGGTTTTAAATTTTCAATATAATCAATAATTATATTATTATTATTGTTTTGTTAATTTATAAAGTTTAATCTAAAAATTGAGATTTCATATATTTATATAAATTGTTGGGAATTAGGGTGCGTGTGGATCGTGCTGGTCGTTTAGTACAACGGGAGCTTTGGAAGGAGCTCATTATTTGGCGACTGGGGAGCTAGTGAGCCTCAGTGAACAACAGCTTGTGGATTGTGACCATGAGGTTTGAGTTTGACTCGTTCTTCCTTTGTG   TTGTTTGTTTGGTTTTTTGGTGTGGAGGTGAAATTGTCGTTATGGTTTTGTTGGTCTTTTATTGTTGATAGACTAATTATGTGGTTGTTTTTGTTAGAACAGTAGATAATTGTCTAAATATACACTTTCTTATTAGTTTAAGCTTTTAGGATAGAGCAGATGGTTTAAAAGTTAAAACAAATTGCTTTCATTAGCTTTTGTGAATGAATTTTATTTGAGATTCTTCTACTTTACCTAGTACGTGGCAAAGGTGCCAATTGCCTAAGATACCCAGAAGTGCTCACCTTGTTAATCCCTAGAACTGGAAGTCAAAACTCAAGAGTAATGCTACCTACATTAACATAATTCACAACAAATTTCACAACTGCTGAGATGACAGTTTTTTATTAGTTCTCATCTAGACCTACCACTGACATCACTTTATTATTTATCGTTTATAAGAGCAAATTGTGAAGAAGAA    AAAAAATTCTGAAATTTTGTGTGCCTCTAAACTTATTGAAACAAAATTGAAAGCTTGGGCATGTAGTTGTTCACTATATCAGTATTAGAGATGACTTGCATATAGTTATTTTGTATCTAACCCATGATCATGTGTCGCTATTCTGAAGTTTGACAACCTCGCTAGCGGGAGAGAAAAACCAAAATATGACTATTTCTAAGCATCTTTCTTGCCTCACATTGATTGCTTTGGTCTTGTCTTAGATCACCCCTATGATTCTTTTTGCAGTGTGATCCCGAGGAATATGGTGCATGCGACTCGGGGTGTAATGGTGGGCTGATGACCTCTGCCTTTGAGTACACCCTCAAGGCTGGTGGACTCGAGAGAGAGAAGGATTATCCTTACACCGGGACTGATCGTGGGACCTGCAAATTTGACAAGAGCAAGATTGTTGCTTCTGTATCTAACTTCAGTGTCGTTTCGATTGATGAAGATCAAATTGCCGCGAAATTTGGTGAAGAATGGCCCTCTTGCAAGTAATTACTAATTAACCTTCTTCGAAACCTAGTAAATTGTTTTCATTTCCATCTTTTATTTTTTTTCTTGTTTGGTTGTGTGCTGATGTTGAAATTAGGATAGGCTATGTAACTGTTTTCTTTTTTATTTGAAAAATGGGGTCAAGAATGATAGAGTAAATCGAGTGATGGATATGATATAAATAATGATTCTTTTGCTCTGCTTTGTGCAGTTGGCATCAATGCAGTTTTCATGCAGACCTACATGAAGGGAGTTTCATGCCCATACATCTGCGGGAGGCATTTGGATCATGGTGTGCTTCTGGTGGGTTTTGGATCTGCTGGTTATGCTCCTATCCGGCTCAAGGAGAAGCCTTTCTGGATCATAAAGAACTCCTGGGGAGAAAACTGGGGAGAGAATGGATATTACAAGATCTGTAGGGGCCGTAATGTATGTGGAGTGGATTCCATGGTCTCAACTGTGGCTGCTATAAATGATTAGATTAAGAAGTTTCATGGCAGTGCTGTGTTAGGCAAGTGGAGTCGTTGTAAATATTTAAGTGATAATATGTATTAAGATGACTTCCTAAACTTGTATAAGCTCTTGATGCTTCCATCAAATTACCCAAAAACATGTGTGTCTTGCTCTTGATGGTTCTTTGAAACTTTGTGTCAAGCATTGTCCTGTGTTATTATTCATATTTATCATATGGGTAAGTGAAGCTTGATGCCATGCAGTGGGATGGTTAATTATGTTTTGCTGCGTCCTGATTTGGATTGAAAAATAATGAGTTGATGTACTA\n" +
+                        "+\n" +
+                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n",
+                output_dir.toPath(), true, "fastq-1", "gz");
+
+        FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles(vr, rf1);
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
+    }
+
     @Test public void 
     testPairWithDuplication() throws Throwable
     {
@@ -1219,6 +1242,26 @@ FastqScannerTest
                 output_dir.toPath(), true, "fastq-2", "gz" );
 
         FastqScanner fs = new MyScanner( expected_reads );
+        RawReadsFile rf1 = new RawReadsFile();
+        rf1.setFilename( f1.toFile().getCanonicalPath() );
+
+        RawReadsFile rf2 = new RawReadsFile();
+        rf2.setFilename( f2.toFile().getCanonicalPath() );
+
+        ValidationResult vr = new ValidationResult();
+
+        fs.checkFiles( vr, rf1, rf2 );
+
+        Assert.assertEquals( 1, vr.count(Severity.ERROR) );
+    }
+
+    @Ignore("Manual test")
+    @Test
+    public void testERR12476718() throws Throwable {
+        Path f1 = Paths.get("src/test/resources/ERR12476718/122-2_1.fq.gz");
+        Path f2 = Paths.get("src/test/resources/ERR12476718/122-2_2.fq.gz");
+
+        FastqScanner fs = new MyScanner( 5 * 100_000 );
         RawReadsFile rf1 = new RawReadsFile();
         rf1.setFilename( f1.toFile().getCanonicalPath() );
 
