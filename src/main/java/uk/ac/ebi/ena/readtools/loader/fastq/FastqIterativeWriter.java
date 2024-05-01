@@ -1,121 +1,107 @@
 /*
-* Copyright 2010-2021 EMBL - European Bioinformatics Institute
-* Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-* file except in compliance with the License. You may obtain a copy of the License at
-* http://www.apache.org/licenses/LICENSE-2.0
-* Unless required by applicable law or agreed to in writing, software distributed under the
-* License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-* CONDITIONS OF ANY KIND, either express or implied. See the License for the
-* specific language governing permissions and limitations under the License.
-*/
+ * Copyright 2010-2021 EMBL - European Bioinformatics Institute
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
 import java.io.File;
 import java.util.Iterator;
-
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 
-public class
-FastqIterativeWriter implements Iterable<PairedRead> {
-    public enum
-    READ_TYPE {
-        SINGLE,
-        PAIRED
+public class FastqIterativeWriter implements Iterable<PairedRead> {
+  public enum READ_TYPE {
+    SINGLE,
+    PAIRED
+  }
+
+  private File[] files;
+  private int spill_page_size = 4_500_000;
+  private long spill_page_size_bytes = 4L * 1024L * 1024L * 1024L;
+  private long spill_abandon_limit_bytes = 10L * 1024L * 1024L * 1024L;
+  private File tmp_folder = new File(".");
+  private READ_TYPE read_type;
+  private QualityNormalizer[] normalizers;
+
+  private Long readLimit = null;
+
+  @Override
+  public Iterator<PairedRead> iterator() {
+    try {
+      return new MultiFastqConverterIterator(
+          tmp_folder,
+          spill_page_size,
+          spill_page_size_bytes,
+          spill_abandon_limit_bytes,
+          read_type,
+          files,
+          normalizers,
+          readLimit);
+    } catch (Throwable t) {
+      t.printStackTrace();
     }
 
-    private File[] files;
-    private int spill_page_size = 4_500_000;
-    private long spill_page_size_bytes = 4L * 1024L * 1024L * 1024L;
-    private long spill_abandon_limit_bytes = 10L * 1024L * 1024L * 1024L;
-    private File tmp_folder = new File(".");
-    private READ_TYPE read_type;
-    private QualityNormalizer[] normalizers;
+    return null;
+  }
 
-    private Long readLimit = null;
+  public void setFiles(File files[]) {
+    this.files = files;
+  }
 
-    @Override
-    public Iterator<PairedRead>
-    iterator() {
-        try {
-            return new MultiFastqConverterIterator(
-                    tmp_folder,
-                    spill_page_size,
-                    spill_page_size_bytes,
-                    spill_abandon_limit_bytes,
-                    read_type,
-                    files,
-                    normalizers,
-                    readLimit);
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
+  public File[] getFiles() {
+    return this.files;
+  }
 
-        return null;
-    }
+  public int getSpillPageSize() {
+    return spill_page_size;
+  }
 
-    public void
-    setFiles(File files[]) {
-        this.files = files;
-    }
+  public long getSpill_page_size_bytes() {
+    return spill_page_size_bytes;
+  }
 
-    public File[]
-    getFiles() {
-        return this.files;
-    }
+  public long getSpill_abandon_limit_bytes() {
+    return spill_abandon_limit_bytes;
+  }
 
-    public int
-    getSpillPageSize() {
-        return spill_page_size;
-    }
+  public void setSpillPageSize(int spill_page_size) {
+    this.spill_page_size = spill_page_size;
+  }
 
-    public long getSpill_page_size_bytes() {
-        return spill_page_size_bytes;
-    }
+  public File getTmpFolder() {
+    return tmp_folder;
+  }
 
-    public long getSpill_abandon_limit_bytes() {
-        return spill_abandon_limit_bytes;
-    }
+  public void setTmpFolder(File tmp_folder) {
+    this.tmp_folder = tmp_folder;
+  }
 
-    public void
-    setSpillPageSize(int spill_page_size) {
-        this.spill_page_size = spill_page_size;
-    }
+  public READ_TYPE getReadType() {
+    return read_type;
+  }
 
-    public File
-    getTmpFolder() {
-        return tmp_folder;
-    }
+  public void setReadType(READ_TYPE read_type) {
+    this.read_type = read_type;
+  }
 
-    public void
-    setTmpFolder(File tmp_folder) {
-        this.tmp_folder = tmp_folder;
-    }
+  public QualityNormalizer[] getNormalizers() {
+    return normalizers;
+  }
 
-    public READ_TYPE
-    getReadType() {
-        return read_type;
-    }
+  public void setNormalizers(QualityNormalizer[] normalizers) {
+    this.normalizers = normalizers;
+  }
 
-    public void
-    setReadType(READ_TYPE read_type) {
-        this.read_type = read_type;
-    }
+  public Long getReadLimit() {
+    return readLimit;
+  }
 
-    public QualityNormalizer[]
-    getNormalizers() {
-        return normalizers;
-    }
-
-    public void
-    setNormalizers(QualityNormalizer[] normalizers) {
-        this.normalizers = normalizers;
-    }
-
-    public Long getReadLimit() {
-        return readLimit;
-    }
-
-    public void setReadLimit(Long readLimit) {
-        this.readLimit = readLimit;
-    }
+  public void setReadLimit(Long readLimit) {
+    this.readLimit = readLimit;
+  }
 }

@@ -20,7 +20,7 @@ wrapper{
 }
 
 group = 'uk.ac.ebi.ena'
-ext.version_base = '2.4.0'
+ext.version_base = '2.5.0'
 version = version_base
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
@@ -82,7 +82,7 @@ repositories {
 }
 
 dependencies {
-    api( group: 'uk.ac.ebi.ena.webin-cli', name: 'webin-cli-validator', version: '1.8.0' )
+    api( group: 'uk.ac.ebi.ena.webin-cli', name: 'webin-cli-validator', version: '1.9.0' )
 
     implementation( group: 'org.slf4j', name: 'slf4j-api', version: '1.7.28' )
 
@@ -138,6 +138,8 @@ publishing {
 }
 
 spotless {
+    encoding 'UTF-8'
+    lineEndings 'UNIX'
     java {
         licenseHeader('''/*
 * Copyright 2010-2021 EMBL - European Bioinformatics Institute
@@ -149,8 +151,8 @@ spotless {
 * CONDITIONS OF ANY KIND, either express or implied. See the License for the
 * specific language governing permissions and limitations under the License.
 */''')
-
         importOrder 'java', 'javax', 'org', 'com', '', 'uk'
         removeUnusedImports()
+        googleJavaFormat()
     }
 }
