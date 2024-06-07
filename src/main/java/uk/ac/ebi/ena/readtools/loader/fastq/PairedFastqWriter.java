@@ -119,7 +119,7 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
     if (list.get(mappedIndex) == null) {
       list.set(mappedIndex, spot);
     } else {
-      throw new RuntimeException("Got same spot twice: " + spot);
+      throw new ReadWriterException("Got same spot twice: " + spot);
     }
 
     // Check if the list contains any nulls
@@ -128,17 +128,12 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
       try {
         list.sort(
             (read1, read2) -> {
-              try {
-                int readIndex1 = getReadIndex(read1);
-                int readIndex2 = getReadIndex(read2);
-                return Integer.compare(readIndex1, readIndex2);
-              } catch (ReadWriterException e) {
-                throw new RuntimeException("Error sorting reads", e);
-              }
+              int readIndex1 = getReadIndex(read1);
+              int readIndex2 = getReadIndex(read2);
+              return Integer.compare(readIndex1, readIndex2);
             });
       } catch (RuntimeException e) {
-        // Handle case where readIndex might not be there for sorting
-        throw new RuntimeException("Error sorting reads by read index", e);
+        throw new ReadWriterException("Error sorting reads by read index:" + e.getMessage());
       }
     }
   }

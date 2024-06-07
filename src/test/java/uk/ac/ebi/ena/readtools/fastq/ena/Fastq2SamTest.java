@@ -42,6 +42,7 @@ import org.junit.Test;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
+import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterPanicException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 
@@ -580,6 +581,96 @@ public class Fastq2SamTest {
     Assert.assertEquals(1203, fastq2Sam2.getTotalBaseCount());
     Assert.assertEquals(
         "eea6adf4e98062da666506a798902eb3", calculateFileMd5(new File(params.data_file)));
+  }
+
+  @Test
+  public void testInvalidReadPairNumber() throws IOException {
+    Path tempDir = Files.createTempDirectory("fastq_test");
+
+    Path fastqFile1 = tempDir.resolve("test_invalid_1.fastq");
+    Path fastqFile2 = tempDir.resolve("test_invalid_2.fastq");
+
+    Files.write(
+        fastqFile1,
+        Arrays.asList(
+            "@read1/1",
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@read2/3", // Invalid pair number
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+    Files.write(
+        fastqFile2,
+        Arrays.asList(
+            "@read1/2",
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@read2/4", // Invalid pair number
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+    Fastq2Sam.Params params = new Fastq2Sam.Params();
+    params.tmp_root = tempDir.toString();
+    params.sample_name = "SM-001";
+    params.data_file = Files.createTempFile(tempDir, "output", ".bam").toString();
+    params.compression = FileCompression.NONE.name();
+    params.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+
+    Fastq2Sam fastq2Sam = new Fastq2Sam();
+    try {
+      fastq2Sam.create(params);
+      fail();
+    } catch (ConverterPanicException e) {
+      Assert.assertTrue(e.getMessage().contains("Unexpected read pair number"));
+    }
+  }
+
+  @Test
+  public void testDuplicateReadSpot() throws IOException {
+    Path tempDir = Files.createTempDirectory("fastq_test");
+
+    Path fastqFile1 = tempDir.resolve("test_duplicate_1.fastq");
+    Path fastqFile2 = tempDir.resolve("test_duplicate_2.fastq");
+
+    Files.write(
+        fastqFile1,
+        Arrays.asList(
+            "@read1/1",
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+    Files.write(
+        fastqFile2,
+        Arrays.asList(
+            "@read1/1", // Duplicate spot
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@read1/2",
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+    Fastq2Sam.Params params = new Fastq2Sam.Params();
+    params.tmp_root = tempDir.toString();
+    params.sample_name = "SM-001";
+    params.data_file = Files.createTempFile(tempDir, "output", ".bam").toString();
+    params.compression = FileCompression.NONE.name();
+    params.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+
+    Fastq2Sam fastq2Sam = new Fastq2Sam();
+    try {
+      fastq2Sam.create(params);
+      fail();
+    } catch (ConverterPanicException e) {
+      Assert.assertTrue(e.getMessage().contains("Got same spot twice"));
+    }
   }
 
   private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {
