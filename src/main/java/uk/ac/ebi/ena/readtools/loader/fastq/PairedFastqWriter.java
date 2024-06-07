@@ -93,13 +93,7 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
   }
 
   public void append(List<Read> list, Read spot) throws ReadWriterException {
-    String readIndexStr;
-    try {
-      readIndexStr = getPairNumber(spot.name);
-    } catch (ReadWriterException de) {
-      readIndexStr = spot.getDefaultReadIndex();
-    }
-    int readIndex = Integer.parseInt(readIndexStr) - 1;
+    int readIndex = getReadIndex(spot);
 
     // Initialize index1 and index2 if they are not set yet
     if (index1 == null) {
@@ -130,17 +124,32 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
 
     // Check if the list contains any nulls
     if (!list.contains(null)) {
-      // Sort the list based on readIndex
-      list.sort((read1, read2) -> {
-        try {
-          int readIndex1 = Integer.parseInt(getPairNumber(read1.name));
-          int readIndex2 = Integer.parseInt(getPairNumber(read2.name));
-          return Integer.compare(readIndex1, readIndex2);
-        } catch (ReadWriterException e) {
-          throw new RuntimeException("Error sorting reads", e);
-        }
-      });
+      // Verify and sort the list based on readIndex
+      try {
+        list.sort((read1, read2) -> {
+          try {
+            int readIndex1 = getReadIndex(read1);
+            int readIndex2 = getReadIndex(read2);
+            return Integer.compare(readIndex1, readIndex2);
+          } catch (ReadWriterException e) {
+            throw new RuntimeException("Error sorting reads", e);
+          }
+        });
+      } catch (RuntimeException e) {
+        // Handle case where readIndex might not be there for sorting
+        throw new RuntimeException("Error sorting reads by read index", e);
+      }
     }
+  }
+
+  private int getReadIndex(Read spot) throws ReadWriterException {
+    String readIndexStr;
+    try {
+      readIndexStr = getPairNumber(spot.name);
+    } catch (ReadWriterException de) {
+      readIndexStr = spot.getDefaultReadIndex();
+    }
+    return Integer.parseInt(readIndexStr) - 1;
   }
 
   @Override

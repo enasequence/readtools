@@ -550,10 +550,10 @@ public class Fastq2SamTest {
   @Ignore("Only run manually if needed.")
   @Test
   public void testERR12387716() throws IOException {
-//    Path f1 = Paths.get("src/test/resources/ERR12387716/tf_1.fastq.gz");
-//    Path f2 = Paths.get("src/test/resources/ERR12387716/tf_2.fastq.gz");
-    Path f1 = Paths.get("src/test/resources/ERR12387716/MiSeq_run170224__S-TNT-WB-6-2_S211_L001_R1_001.fastq.gz");
-    Path f2 = Paths.get("src/test/resources/ERR12387716/MiSeq_run170224__S-TNT-WB-6-2_S211_L001_R2_001.fastq.gz");
+//    Path f1 = Paths.get("src/test/resources/ERR12387716/tf_2.fastq.gz");
+//    Path f2 = Paths.get("src/test/resources/ERR12387716/tf_1.fastq.gz");
+    Path f1 = Paths.get("src/test/resources/ERR12387716/MiSeq_run170224__S-TNT-WB-6-2_S211_L001_R2_001.fastq.gz");
+    Path f2 = Paths.get("src/test/resources/ERR12387716/MiSeq_run170224__S-TNT-WB-6-2_S211_L001_R1_001.fastq.gz");
 
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
