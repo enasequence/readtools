@@ -302,7 +302,7 @@ public class Fastq2SamTest {
     Assert.assertEquals(6, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(906, fastq2Sam.getTotalBaseCount());
     Assert.assertEquals(
-        "b92a2541f62f6d000cf17c17827e6b4f", calculateFileMd5(new File(params.data_file)));
+        "3584a9b877457a623438e25655789529", calculateFileMd5(new File(params.data_file)));
   }
 
   @Test
@@ -547,13 +547,10 @@ public class Fastq2SamTest {
         "9991e990fad7c39578be55e0ef12d6ac", calculateFileMd5(new File(params.data_file)));
   }
 
-  @Ignore("Only run manually if needed.")
   @Test
-  public void testERR12387716() throws IOException {
-//    Path f1 = Paths.get("src/test/resources/ERR12387716/tf_2.fastq.gz");
-//    Path f2 = Paths.get("src/test/resources/ERR12387716/tf_1.fastq.gz");
-    Path f1 = Paths.get("src/test/resources/ERR12387716/MiSeq_run170224__S-TNT-WB-6-2_S211_L001_R2_001.fastq.gz");
-    Path f2 = Paths.get("src/test/resources/ERR12387716/MiSeq_run170224__S-TNT-WB-6-2_S211_L001_R1_001.fastq.gz");
+  public void testInputFileOrderSwap() throws IOException, NoSuchAlgorithmException {
+    Path f1 = Paths.get("src/test/resources/ERR12387716/tf_1.fastq.gz");
+    Path f2 = Paths.get("src/test/resources/ERR12387716/tf_2.fastq.gz");
 
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
@@ -565,10 +562,24 @@ public class Fastq2SamTest {
     params.spill_page_size_bytes = 2L * 1024L * 1024L * 1024L;
     params.spill_abandon_limit_bytes = 10L * 1024L * 1024L * 1024L;
 
-    Fastq2Sam fastq2Sam = new Fastq2Sam();
-    fastq2Sam.create(params);
+    Fastq2Sam fastq2Sam1 = new Fastq2Sam();
+    fastq2Sam1.create(params);
 
     Assert.assertTrue(new File(params.data_file).length() > 0);
+    Assert.assertEquals(4, fastq2Sam1.getTotalReadCount());
+    Assert.assertEquals(1203, fastq2Sam1.getTotalBaseCount());
+    Assert.assertEquals(
+        "eea6adf4e98062da666506a798902eb3", calculateFileMd5(new File(params.data_file)));
+
+    params.files = Arrays.asList(f2.toString(), f1.toString());
+    Fastq2Sam fastq2Sam2 = new Fastq2Sam();
+    fastq2Sam2.create(params);
+
+    Assert.assertTrue(new File(params.data_file).length() > 0);
+    Assert.assertEquals(4, fastq2Sam2.getTotalReadCount());
+    Assert.assertEquals(1203, fastq2Sam2.getTotalBaseCount());
+    Assert.assertEquals(
+        "eea6adf4e98062da666506a798902eb3", calculateFileMd5(new File(params.data_file)));
   }
 
   private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {

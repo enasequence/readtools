@@ -105,13 +105,13 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
     // Check if the readIndex is valid
     if (readIndex != index1 && readIndex != index2) {
       throw new ReadWriterException(
-              "Unexpected read pair number: "
-                      + readIndex
-                      + "; pair numbers "
-                      + index1
-                      + " and "
-                      + index2
-                      + " were found previously in the file.");
+          "Unexpected read pair number: "
+              + readIndex
+              + "; pair numbers "
+              + index1
+              + " and "
+              + index2
+              + " were found previously in the file.");
     }
 
     int mappedIndex = (readIndex == index1) ? 0 : 1;
@@ -126,15 +126,16 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
     if (!list.contains(null)) {
       // Verify and sort the list based on readIndex
       try {
-        list.sort((read1, read2) -> {
-          try {
-            int readIndex1 = getReadIndex(read1);
-            int readIndex2 = getReadIndex(read2);
-            return Integer.compare(readIndex1, readIndex2);
-          } catch (ReadWriterException e) {
-            throw new RuntimeException("Error sorting reads", e);
-          }
-        });
+        list.sort(
+            (read1, read2) -> {
+              try {
+                int readIndex1 = getReadIndex(read1);
+                int readIndex2 = getReadIndex(read2);
+                return Integer.compare(readIndex1, readIndex2);
+              } catch (ReadWriterException e) {
+                throw new RuntimeException("Error sorting reads", e);
+              }
+            });
       } catch (RuntimeException e) {
         // Handle case where readIndex might not be there for sorting
         throw new RuntimeException("Error sorting reads by read index", e);
