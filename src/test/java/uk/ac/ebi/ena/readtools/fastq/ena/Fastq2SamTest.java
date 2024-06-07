@@ -24,6 +24,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -543,6 +545,30 @@ public class Fastq2SamTest {
     Assert.assertEquals(80, fastq2Sam.getTotalBaseCount());
     Assert.assertEquals(
         "9991e990fad7c39578be55e0ef12d6ac", calculateFileMd5(new File(params.data_file)));
+  }
+
+  @Ignore("Only run manually if needed.")
+  @Test
+  public void testERR12387716() throws IOException {
+//    Path f1 = Paths.get("src/test/resources/ERR12387716/tf_1.fastq.gz");
+//    Path f2 = Paths.get("src/test/resources/ERR12387716/tf_2.fastq.gz");
+    Path f1 = Paths.get("src/test/resources/ERR12387716/MiSeq_run170224__S-TNT-WB-6-2_S211_L001_R1_001.fastq.gz");
+    Path f2 = Paths.get("src/test/resources/ERR12387716/MiSeq_run170224__S-TNT-WB-6-2_S211_L001_R2_001.fastq.gz");
+
+    Fastq2Sam.Params params = new Fastq2Sam.Params();
+    params.tmp_root = System.getProperty("java.io.tmpdir");
+    params.sample_name = "SM-001";
+    params.data_file = Files.createTempFile(null, ".bam").toString();
+    params.compression = FileCompression.GZ.name();
+    params.files = Arrays.asList(f1.toString(), f2.toString());
+
+    params.spill_page_size_bytes = 2L * 1024L * 1024L * 1024L;
+    params.spill_abandon_limit_bytes = 10L * 1024L * 1024L * 1024L;
+
+    Fastq2Sam fastq2Sam = new Fastq2Sam();
+    fastq2Sam.create(params);
+
+    Assert.assertTrue(new File(params.data_file).length() > 0);
   }
 
   private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {

@@ -101,30 +101,45 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
     }
     int readIndex = Integer.parseInt(readIndexStr) - 1;
 
-    /** Here read pair number found in the file will be mapped to 1st and 2nd items in the list */
-    if (null == index1) {
+    // Initialize index1 and index2 if they are not set yet
+    if (index1 == null) {
       index1 = readIndex;
-    } else {
-      if (null == index2 && readIndex != index1) {
-        index2 = readIndex;
-      }
+    } else if (index2 == null && readIndex != index1) {
+      index2 = readIndex;
     }
+
+    // Check if the readIndex is valid
     if (readIndex != index1 && readIndex != index2) {
       throw new ReadWriterException(
-          "Unexpected read pair number: "
-              + readIndex
-              + "; pair numbers "
-              + index1
-              + " and "
-              + index2
-              + " were found previously in the file.");
+              "Unexpected read pair number: "
+                      + readIndex
+                      + "; pair numbers "
+                      + index1
+                      + " and "
+                      + index2
+                      + " were found previously in the file.");
     }
+
     int mappedIndex = (readIndex == index1) ? 0 : 1;
 
-    if (null == list.get(mappedIndex)) {
+    if (list.get(mappedIndex) == null) {
       list.set(mappedIndex, spot);
     } else {
       throw new RuntimeException("Got same spot twice: " + spot);
+    }
+
+    // Check if the list contains any nulls
+    if (!list.contains(null)) {
+      // Sort the list based on readIndex
+      list.sort((read1, read2) -> {
+        try {
+          int readIndex1 = Integer.parseInt(getPairNumber(read1.name));
+          int readIndex2 = Integer.parseInt(getPairNumber(read2.name));
+          return Integer.compare(readIndex1, readIndex2);
+        } catch (ReadWriterException e) {
+          throw new RuntimeException("Error sorting reads", e);
+        }
+      });
     }
   }
 
