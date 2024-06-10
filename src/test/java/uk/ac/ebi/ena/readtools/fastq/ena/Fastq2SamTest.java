@@ -673,6 +673,80 @@ public class Fastq2SamTest {
     }
   }
 
+  @Test
+  public void testCheckerboardPatternReads() throws IOException, NoSuchAlgorithmException {
+    Path tempDir = Files.createTempDirectory("fastq_test");
+
+    Path fastqFile1 = tempDir.resolve("test_1.fastq");
+    Path fastqFile2 = tempDir.resolve("test_2.fastq");
+
+    Files.write(
+        fastqFile1,
+        Arrays.asList(
+            "@read1/1",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@read2/2", // Duplicate spot
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@read3/1",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@read4/2",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+    Files.write(
+        fastqFile2,
+        Arrays.asList(
+            "@read1/2",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@read2/1",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@read3/2",
+            "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@read4/1",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+    Fastq2Sam.Params params = new Fastq2Sam.Params();
+    params.tmp_root = tempDir.toString();
+    params.sample_name = "SM-001";
+    params.data_file = Files.createTempFile(tempDir, "output", ".bam").toString();
+    params.compression = FileCompression.NONE.name();
+    params.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+
+    Fastq2Sam fastq2Sam1 = new Fastq2Sam();
+    fastq2Sam1.create(params);
+
+    Assert.assertTrue(new File(params.data_file).length() > 0);
+    Assert.assertEquals(8, fastq2Sam1.getTotalReadCount());
+    Assert.assertEquals(256, fastq2Sam1.getTotalBaseCount());
+    Assert.assertEquals(
+        "2ec1bbc086ce496fa2711a449a35bac9", calculateFileMd5(new File(params.data_file)));
+
+    params.files = Arrays.asList(fastqFile2.toString(), fastqFile1.toString());
+    Fastq2Sam fastq2Sam2 = new Fastq2Sam();
+    fastq2Sam2.create(params);
+
+    Assert.assertTrue(new File(params.data_file).length() > 0);
+    Assert.assertEquals(8, fastq2Sam2.getTotalReadCount());
+    Assert.assertEquals(256, fastq2Sam2.getTotalBaseCount());
+    Assert.assertEquals(
+        "2ec1bbc086ce496fa2711a449a35bac9", calculateFileMd5(new File(params.data_file)));
+  }
+
   private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {
     Map<String, List<FastqRecord>> fastqRecordMap = new LinkedHashMap<>();
 
