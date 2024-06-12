@@ -241,6 +241,20 @@ public class ENAReferenceSource implements CRAMReferenceSource {
     return bases;
   }
 
+  @Override
+  public byte[] getReferenceBasesByRegion(
+      SAMSequenceRecord record, int zeroBasedStart, int requestedRegionLength) {
+    byte[] bases = getReferenceBases(record, false);
+
+    int endIndex = calculateEndIndex(zeroBasedStart, requestedRegionLength, bases.length);
+    return Arrays.copyOfRange(bases, zeroBasedStart, endIndex);
+  }
+
+  private int calculateEndIndex(int start, int length, int maxLength) {
+    int endIndex = start + length;
+    return Math.min(endIndex, maxLength);
+  }
+
   private byte[] readBytesFromFile(File file, int offset, int len) throws IOException {
     long size = file.length();
     if (size < offset || len < 0) {

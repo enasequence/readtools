@@ -8,7 +8,6 @@ plugins {
 apply plugin: 'java'
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
-apply plugin: 'maven'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: "jacoco"
@@ -20,10 +19,10 @@ wrapper{
 }
 
 group = 'uk.ac.ebi.ena'
-ext.version_base = '2.7.0'
+ext.version_base = '2.8.0'
 version = version_base
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+sourceCompatibility = '1.17'
+targetCompatibility = '1.17'
 
 sourceSets {
 	main {
@@ -65,7 +64,7 @@ repositories {
     mavenLocal()
     maven { url "https://gitlab.ebi.ac.uk/api/v4/groups/enasequence/-/packages/maven" }
     mavenCentral()
-    maven { url "http://maven.imagej.net/content/repositories/public/" }
+    maven { url "https://maven.imagej.net/content/repositories/public/" }
 
     // For BioSamples client
     maven {
@@ -90,7 +89,7 @@ dependencies {
 
     implementation( group: 'com.beust', name: 'jcommander', version: '1.72' )
 
-    implementation( group: 'com.github.samtools', name: 'htsjdk', version: '2.24.1' )
+    implementation( group: 'com.github.samtools', name: 'htsjdk', version: '4.1.0' )
 
     implementation( "org.jdom:jdom:2.0.2" )
 
@@ -99,6 +98,7 @@ dependencies {
     // Needed by spring-retry.
     runtimeOnly 'org.springframework:spring-core:5.3.23'
     implementation 'org.springframework.retry:spring-retry:1.3.4'
+    implementation 'org.apache.commons:commons-compress:1.26.2'
 
     testImplementation "junit:junit:4.11"
 
