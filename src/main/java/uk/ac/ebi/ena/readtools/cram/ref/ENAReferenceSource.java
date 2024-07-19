@@ -444,7 +444,7 @@ public class ENAReferenceSource implements CRAMReferenceSource {
           long length = conn.getContentLengthLong();
           InputStream stream = conn.getInputStream();
 
-          if (stream == null || 0 == length) return null;
+          if (stream == null || 0 == length) throw new CramReferenceException("Reference file is empty or doesn't exist");
 
           try (BufferedInputStream is = new BufferedInputStream(stream)) {
             if (!cachePatterns.isEmpty()) {
@@ -468,29 +468,28 @@ public class ENAReferenceSource implements CRAMReferenceSource {
               if (Utils.isValidSequence(data, REF_BASES_TO_CHECK_FOR_SANITY)) return data;
               else {
                 // reject, it looks like garbage
-                log.warn("Downloaded sequence looks suspicous, rejected: " + url.toExternalForm());
+                log.warn("Downloaded sequence looks suspicious, rejected: " + url.toExternalForm());
                 continue;
               }
             }
           }
         } catch (IOException ioe) {
-          log.warn(ioe.getClass().getSimpleName() + ". Unable to fetch data from " + path);
-          return null;
+          throw new CramReferenceException(ioe.getClass().getSimpleName() + ". Unable to fetch data from " + path);
         }
       }
     } else {
       File file = new File(path);
       if (file.exists()) {
         if (file.length() > Integer.MAX_VALUE)
-          throw new RuntimeException("The reference sequence is too long: " + md5);
+          throw new CramReferenceException("The reference sequence is too long: " + md5);
 
         byte[] data = readBytesFromFile(file, 0, (int) file.length());
 
         if (confirmMD5(md5, data)) return data;
-        else throw new RuntimeException("MD5 mismatch for cached file: " + file.getAbsolutePath());
+        else throw new CramReferenceException("MD5 mismatch for cached file: " + file.getAbsolutePath());
       }
     }
-    return null;
+    throw new CramReferenceException("No references found");
   }
 
   private byte[] findBasesRemotelyByMD5(String md5) throws MalformedURLException, IOException {
