@@ -444,7 +444,8 @@ public class ENAReferenceSource implements CRAMReferenceSource {
           long length = conn.getContentLengthLong();
           InputStream stream = conn.getInputStream();
 
-          if (stream == null || 0 == length) throw new CramReferenceException("Reference file is empty or doesn't exist");
+          if (stream == null || 0 == length)
+            throw new CramReferenceException("Reference file is empty or doesn't exist");
 
           try (BufferedInputStream is = new BufferedInputStream(stream)) {
             if (!cachePatterns.isEmpty()) {
@@ -474,7 +475,8 @@ public class ENAReferenceSource implements CRAMReferenceSource {
             }
           }
         } catch (IOException ioe) {
-          throw new CramReferenceException(ioe.getClass().getSimpleName() + ". Unable to fetch data from " + path);
+          throw new CramReferenceException(
+              ioe.getClass().getSimpleName() + ". Unable to fetch data from " + path);
         }
       }
     } else {
@@ -486,7 +488,9 @@ public class ENAReferenceSource implements CRAMReferenceSource {
         byte[] data = readBytesFromFile(file, 0, (int) file.length());
 
         if (confirmMD5(md5, data)) return data;
-        else throw new CramReferenceException("MD5 mismatch for cached file: " + file.getAbsolutePath());
+        else
+          throw new CramReferenceException(
+              "MD5 mismatch for cached file: " + file.getAbsolutePath());
       }
     }
     throw new CramReferenceException("No references found");
