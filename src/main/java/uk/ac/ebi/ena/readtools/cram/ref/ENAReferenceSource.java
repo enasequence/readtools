@@ -453,7 +453,6 @@ public class ENAReferenceSource implements CRAMReferenceSource {
               File file = new File(localPath);
               if (file.length() > Integer.MAX_VALUE) {
                 log.warn("The reference sequence is too long: " + url.toExternalForm());
-                // throw new RuntimeException( "The reference sequence is too long: " + md5 );
                 continue;
               }
               return readBytesFromFile(file, 0, (int) file.length());
@@ -470,7 +469,6 @@ public class ENAReferenceSource implements CRAMReferenceSource {
               else {
                 // reject, it looks like garbage
                 log.warn("Downloaded sequence looks suspicious, rejected: " + url.toExternalForm());
-                continue;
               }
             }
           }
@@ -530,20 +528,20 @@ public class ENAReferenceSource implements CRAMReferenceSource {
         try {
           tmpFile = File.createTempFile(md5, ".tmp", tempDir);
         } catch (IOException e) {
-          throw new RuntimeException("Error creating temp file in directory : " + tempDir, e);
+          throw new CramReferenceException("Error creating temp file in directory : " + tempDir, e);
         }
 
         try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(tmpFile))) {
           fos.write(data);
           fos.flush();
         } catch (IOException e) {
-          throw new RuntimeException(
+          throw new CramReferenceException(
               "Error creating cached file : " + cachedFile.getAbsolutePath(), e);
         }
 
         if (!cachedFile.exists()) {
           if (!tmpFile.renameTo(cachedFile)) {
-            throw new RuntimeException(
+            throw new CramReferenceException(
                 "'"
                     + tmpFile.getAbsolutePath()
                     + "' rename to '"
@@ -569,19 +567,19 @@ public class ENAReferenceSource implements CRAMReferenceSource {
         try {
           tmpFile = File.createTempFile(md5, ".tmp", tempDir);
         } catch (IOException e) {
-          throw new RuntimeException("Error creating temp file in directory : " + tempDir, e);
+          throw new CramReferenceException("Error creating temp file in directory : " + tempDir, e);
         }
 
         try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
           IOUtil.copyStream(stream, fos);
         } catch (IOException e) {
-          throw new RuntimeException(
+          throw new CramReferenceException(
               "Error creating cached file : " + cachedFile.getAbsolutePath(), e);
         }
 
         if (!cachedFile.exists()) {
           if (!tmpFile.renameTo(cachedFile)) {
-            throw new RuntimeException(
+            throw new CramReferenceException(
                 "'"
                     + tmpFile.getAbsolutePath()
                     + "' rename to '"

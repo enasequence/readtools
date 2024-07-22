@@ -16,4 +16,8 @@ public class CramReferenceException extends RuntimeException {
   public CramReferenceException(String message) {
     super(message);
   }
+
+  public CramReferenceException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }
