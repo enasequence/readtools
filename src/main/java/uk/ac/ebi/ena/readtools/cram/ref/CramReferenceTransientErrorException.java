@@ -10,14 +10,14 @@
  */
 package uk.ac.ebi.ena.readtools.cram.ref;
 
-public class CramReferenceException extends RuntimeException {
-  public CramReferenceException() {}
+public class CramReferenceTransientErrorException extends RuntimeException {
+  public CramReferenceTransientErrorException() {}
 
-  public CramReferenceException(String message) {
+  public CramReferenceTransientErrorException(String message) {
     super(message);
   }
 
-  public CramReferenceException(String message, Throwable cause) {
+  public CramReferenceTransientErrorException(String message, Throwable cause) {
     super(message, cause);
   }
 }
