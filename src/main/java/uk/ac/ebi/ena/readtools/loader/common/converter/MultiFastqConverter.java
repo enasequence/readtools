@@ -94,11 +94,11 @@ public class MultiFastqConverter<T extends Spot> implements Converter {
       do {
         readWriter.write(convert());
       } while (!isDone());
-    } catch (ReadWriterException e) {
-      throw new ConverterPanicException(e);
     } catch (ConverterEOFException ignored) {
     } catch (Exception e) {
-      if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
+      if (e instanceof ReadWriterException
+          || e instanceof ReadWriterMemoryLimitException
+          || e instanceof ConverterException) {
         throw e;
       } else {
         throw new RuntimeException(e);
@@ -111,11 +111,11 @@ public class MultiFastqConverter<T extends Spot> implements Converter {
       if (!isDone()) {
         readWriter.write(convert());
       }
-    } catch (ReadWriterException e) {
-      throw new ConverterPanicException(e);
     } catch (ConverterEOFException ignored) {
     } catch (Exception e) {
-      if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
+      if (e instanceof ReadWriterException
+          || e instanceof ReadWriterMemoryLimitException
+          || e instanceof ConverterException) {
         throw e;
       } else {
         throw new RuntimeException(e);

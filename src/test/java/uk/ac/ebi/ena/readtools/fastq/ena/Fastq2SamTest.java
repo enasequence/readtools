@@ -42,7 +42,6 @@ import org.junit.Test;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
-import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterPanicException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 
@@ -625,7 +624,7 @@ public class Fastq2SamTest {
     try {
       fastq2Sam.create(params);
       fail();
-    } catch (ConverterPanicException e) {
+    } catch (ReadWriterException e) {
       Assert.assertTrue(e.getMessage().contains("Unexpected read pair number"));
     }
   }
@@ -668,7 +667,7 @@ public class Fastq2SamTest {
     try {
       fastq2Sam.create(params);
       fail();
-    } catch (ConverterPanicException e) {
+    } catch (ReadWriterException e) {
       Assert.assertTrue(e.getMessage().contains("Got same spot twice"));
     }
   }

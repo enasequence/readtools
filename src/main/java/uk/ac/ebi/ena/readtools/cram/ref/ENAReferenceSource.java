@@ -445,8 +445,7 @@ public class ENAReferenceSource implements CRAMReferenceSource {
           InputStream stream = conn.getInputStream();
 
           if (stream == null || 0 == length)
-            throw new CramReferenceTransientErrorException(
-                "Reference file is empty or doesn't exist");
+            throw new CramReferenceException("Reference file is empty or doesn't exist");
 
           try (BufferedInputStream is = new BufferedInputStream(stream)) {
             if (!cachePatterns.isEmpty()) {
@@ -474,7 +473,7 @@ public class ENAReferenceSource implements CRAMReferenceSource {
             }
           }
         } catch (IOException ioe) {
-          throw new CramReferenceTransientErrorException(
+          throw new CramReferenceException(
               ioe.getClass().getSimpleName() + ". Unable to fetch data from " + path);
         }
       }
@@ -482,18 +481,17 @@ public class ENAReferenceSource implements CRAMReferenceSource {
       File file = new File(path);
       if (file.exists()) {
         if (file.length() > Integer.MAX_VALUE)
-          throw new CramReferenceTransientErrorException(
-              "The reference sequence is too long: " + md5);
+          throw new CramReferenceException("The reference sequence is too long: " + md5);
 
         byte[] data = readBytesFromFile(file, 0, (int) file.length());
 
         if (confirmMD5(md5, data)) return data;
         else
-          throw new CramReferenceTransientErrorException(
+          throw new CramReferenceException(
               "MD5 mismatch for cached file: " + file.getAbsolutePath());
       }
     }
-    throw new CramReferenceTransientErrorException("No references found");
+    throw new CramReferenceException("No references found");
   }
 
   private byte[] findBasesRemotelyByMD5(String md5) throws MalformedURLException, IOException {
@@ -530,21 +528,20 @@ public class ENAReferenceSource implements CRAMReferenceSource {
         try {
           tmpFile = File.createTempFile(md5, ".tmp", tempDir);
         } catch (IOException e) {
-          throw new CramReferenceTransientErrorException(
-              "Error creating temp file in directory : " + tempDir, e);
+          throw new CramReferenceException("Error creating temp file in directory : " + tempDir, e);
         }
 
         try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(tmpFile))) {
           fos.write(data);
           fos.flush();
         } catch (IOException e) {
-          throw new CramReferenceTransientErrorException(
+          throw new CramReferenceException(
               "Error creating cached file : " + cachedFile.getAbsolutePath(), e);
         }
 
         if (!cachedFile.exists()) {
           if (!tmpFile.renameTo(cachedFile)) {
-            throw new CramReferenceTransientErrorException(
+            throw new CramReferenceException(
                 "'"
                     + tmpFile.getAbsolutePath()
                     + "' rename to '"
@@ -570,20 +567,19 @@ public class ENAReferenceSource implements CRAMReferenceSource {
         try {
           tmpFile = File.createTempFile(md5, ".tmp", tempDir);
         } catch (IOException e) {
-          throw new CramReferenceTransientErrorException(
-              "Error creating temp file in directory : " + tempDir, e);
+          throw new CramReferenceException("Error creating temp file in directory : " + tempDir, e);
         }
 
         try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
           IOUtil.copyStream(stream, fos);
         } catch (IOException e) {
-          throw new CramReferenceTransientErrorException(
+          throw new CramReferenceException(
               "Error creating cached file : " + cachedFile.getAbsolutePath(), e);
         }
 
         if (!cachedFile.exists()) {
           if (!tmpFile.renameTo(cachedFile)) {
-            throw new CramReferenceTransientErrorException(
+            throw new CramReferenceException(
                 "'"
                     + tmpFile.getAbsolutePath()
                     + "' rename to '"

@@ -67,12 +67,12 @@ public abstract class AbstractReadConverter<T extends Spot> implements Converter
       do {
         readWriter.write(getNextSpot());
       } while (!isDone());
-    } catch (ReadWriterException e) {
-      throw new ConverterPanicException(e);
     } catch (ConverterEOFException ignored) {
       isEofReached = true;
     } catch (Exception e) {
-      if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
+      if (e instanceof ReadWriterException
+          || e instanceof ReadWriterMemoryLimitException
+          || e instanceof ConverterException) {
         throw e;
       } else {
         throw new RuntimeException(e);
@@ -87,12 +87,12 @@ public abstract class AbstractReadConverter<T extends Spot> implements Converter
       if (!isDone()) {
         readWriter.write(getNextSpot());
       }
-    } catch (ReadWriterException e) {
-      throw new ConverterPanicException(e);
     } catch (ConverterEOFException ignored) {
       isEofReached = true;
     } catch (Exception e) {
-      if (e instanceof ReadWriterMemoryLimitException || e instanceof ConverterException) {
+      if (e instanceof ReadWriterException
+          || e instanceof ReadWriterMemoryLimitException
+          || e instanceof ConverterException) {
         throw e;
       } else {
         throw new RuntimeException(e);

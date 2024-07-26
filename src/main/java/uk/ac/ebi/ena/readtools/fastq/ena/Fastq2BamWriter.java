@@ -100,7 +100,7 @@ public class Fastq2BamWriter implements ReadWriter<PairedRead, Spot> {
         writer.addAlignment(rec);
       }
     } catch (Exception ex) {
-      throw new ReadWriterException(ex);
+      throw new ReadWriterException(ex, ReadWriterException.ErrorType.SAM_RECORD_ERROR);
     }
   }
 

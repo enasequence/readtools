@@ -84,7 +84,9 @@ public abstract class InsdcStandardCheckingScanner implements ReadWriter<Read, S
     //        }
 
     if (read.getBases().length() != read.getQualityScores().length()) {
-      throw new ReadWriterException("Mismatch between length of read bases and qualities");
+      throw new ReadWriterException(
+          "Mismatch between length of read bases and qualities",
+          ReadWriterException.ErrorType.BASES_QUALITIES_LENGTH_MISMATCH);
     }
 
     count++;
