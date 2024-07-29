@@ -10,6 +10,8 @@
  */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
+import static uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException.ErrorType.INVALID_READ_NAME;
+
 import java.io.File;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -82,8 +84,12 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
   public String getKey(Read spot) {
     try {
       return getReadKey(spot.name);
-    } catch (ReadWriterException de) {
-      return spot.name;
+    } catch (ReadWriterException e) {
+      if (INVALID_READ_NAME.equals(e.getErrorType())) {
+        return spot.name;
+      } else {
+        throw e;
+      }
     }
   }
 
@@ -148,8 +154,12 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
     String readIndexStr;
     try {
       readIndexStr = getPairNumber(spot.name);
-    } catch (ReadWriterException de) {
-      readIndexStr = spot.getDefaultReadIndex();
+    } catch (ReadWriterException e) {
+      if (INVALID_READ_NAME.equals(e.getErrorType())) {
+        readIndexStr = spot.getDefaultReadIndex();
+      } else {
+        throw e;
+      }
     }
     return Integer.parseInt(readIndexStr) - 1;
   }

@@ -29,6 +29,10 @@ public class ReadWriterException extends RuntimeException {
     this.errorType = errorType;
   }
 
+  public ErrorType getErrorType() {
+    return errorType;
+  }
+
   public enum ErrorType {
     UNEXPECTED_PAIR_NUMBER,
     SPOT_DUPLICATE,
