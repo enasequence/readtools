@@ -190,7 +190,17 @@ public class InsdcReadsValidatorTest {
   public void notAUTCG() {
     try {
       MockReadsProviderFactory factory =
-          new MockReadsProviderFactory(new MockRead("r1", "AWWW", "1234"));
+          new MockReadsProviderFactory(
+              new MockRead("r0", "AAAA", "1234"),
+              new MockRead("r1", "AAAA", "1234"),
+              new MockRead("r2", "AAAA", "1234"),
+              new MockRead("r3", "AAAA", "1234"),
+              new MockRead("r4", "NNNN", "1234"),
+              new MockRead("r5", "NNNN", "1234"),
+              new MockRead("r6", "NNNN", "1234"),
+              new MockRead("r7", "NNNN", "1234"),
+              new MockRead("r8", "NNNN", "1234"),
+              new MockRead("r9", "NNNN", "1234"));
       new InsdcReadsValidator(READ_COUNT_LIMIT).validate(factory);
       fail();
     } catch (ReadsValidationException e) {

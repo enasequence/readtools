@@ -109,10 +109,6 @@ public class InsdcReadsValidator extends ReadsValidator {
           }
         }
 
-        if ((basesCount - autcgCount) > (basesCount / 2)) {
-          throw new ReadsValidationException(ERROR_NOT_AUTCG, readCount);
-        }
-
         if (!qualityScores.isEmpty()) {
           int totalQuality = 0;
           for (char q : qualityScores.toCharArray()) {
@@ -122,11 +118,15 @@ public class InsdcReadsValidator extends ReadsValidator {
             highQualityReadCount++;
           }
         }
-
-        //            if ((double) highQualityReadCount / readCount < 0.5) {
-        //                throw new ReadsValidationException(ERROR_QUALITY, readCount);
-        //            }
       }
+
+      if ((basesCount - autcgCount) > (basesCount / 2)) {
+        throw new ReadsValidationException(ERROR_NOT_AUTCG, readCount);
+      }
+
+      //      if ((double) highQualityReadCount / readCount < 0.5) {
+      //        throw new ReadsValidationException(ERROR_QUALITY, readCount);
+      //      }
     } catch (ReadsValidationException rve) {
       throw rve;
     } catch (Exception e) {
