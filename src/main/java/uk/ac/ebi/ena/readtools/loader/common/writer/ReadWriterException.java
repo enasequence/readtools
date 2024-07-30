@@ -12,16 +12,33 @@ package uk.ac.ebi.ena.readtools.loader.common.writer;
 
 public class ReadWriterException extends RuntimeException {
   private static final long serialVersionUID = 1L;
+  private final ErrorType errorType;
 
-  public ReadWriterException(String value) {
+  public ReadWriterException(String value, ErrorType errorType) {
     super(value);
+    this.errorType = errorType;
   }
 
-  public ReadWriterException() {
+  public ReadWriterException(ErrorType errorType) {
     super();
+    this.errorType = errorType;
   }
 
-  public ReadWriterException(Throwable cause) {
+  public ReadWriterException(Throwable cause, ErrorType errorType) {
     super(cause);
+    this.errorType = errorType;
+  }
+
+  public ErrorType getErrorType() {
+    return errorType;
+  }
+
+  public enum ErrorType {
+    UNEXPECTED_PAIR_NUMBER,
+    SPOT_DUPLICATE,
+    SORTING_ERROR,
+    BASES_QUALITIES_LENGTH_MISMATCH,
+    SAM_RECORD_ERROR,
+    INVALID_READ_NAME
   }
 }

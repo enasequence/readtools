@@ -10,6 +10,8 @@
  */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
+import static uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException.ErrorType.INVALID_READ_NAME;
+
 import java.io.File;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -73,15 +75,21 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
         return m.group(group);
       }
     }
-    throw new ReadWriterException(String.format("Readname [%s] does not match regexp", readname));
+    throw new ReadWriterException(
+        String.format("Readname [%s] does not match regexp", readname),
+        ReadWriterException.ErrorType.INVALID_READ_NAME);
   }
 
   @Override
   public String getKey(Read spot) {
     try {
       return getReadKey(spot.name);
-    } catch (ReadWriterException de) {
-      return spot.name;
+    } catch (ReadWriterException e) {
+      if (INVALID_READ_NAME.equals(e.getErrorType())) {
+        return spot.name;
+      } else {
+        throw e;
+      }
     }
   }
 
@@ -111,7 +119,8 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
               + index1
               + " and "
               + index2
-              + " were found previously in the file.");
+              + " were found previously in the file.",
+          ReadWriterException.ErrorType.UNEXPECTED_PAIR_NUMBER);
     }
 
     int mappedIndex = (readIndex == index1) ? 0 : 1;
@@ -119,7 +128,8 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
     if (list.get(mappedIndex) == null) {
       list.set(mappedIndex, spot);
     } else {
-      throw new ReadWriterException("Got same spot twice: " + spot);
+      throw new ReadWriterException(
+          "Got same spot twice: " + spot, ReadWriterException.ErrorType.SPOT_DUPLICATE);
     }
 
     // Check if the list contains any nulls
@@ -133,7 +143,9 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
               return Integer.compare(readIndex1, readIndex2);
             });
       } catch (RuntimeException e) {
-        throw new ReadWriterException("Error sorting reads by read index:" + e.getMessage());
+        throw new ReadWriterException(
+            "Error sorting reads by read index:" + e.getMessage(),
+            ReadWriterException.ErrorType.SORTING_ERROR);
       }
     }
   }
@@ -142,8 +154,12 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
     String readIndexStr;
     try {
       readIndexStr = getPairNumber(spot.name);
-    } catch (ReadWriterException de) {
-      readIndexStr = spot.getDefaultReadIndex();
+    } catch (ReadWriterException e) {
+      if (INVALID_READ_NAME.equals(e.getErrorType())) {
+        readIndexStr = spot.getDefaultReadIndex();
+      } else {
+        throw e;
+      }
     }
     return Integer.parseInt(readIndexStr) - 1;
   }

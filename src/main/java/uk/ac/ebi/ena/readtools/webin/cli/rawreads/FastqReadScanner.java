@@ -10,6 +10,8 @@
  */
 package uk.ac.ebi.ena.readtools.webin.cli.rawreads;
 
+import static uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException.ErrorType.INVALID_READ_NAME;
+
 import java.util.Set;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.fastq.PairedFastqWriter;
@@ -52,9 +54,13 @@ public class FastqReadScanner extends InsdcStandardCheckingScanner {
     try {
       readNameWithoutPairNumber = PairedFastqWriter.getReadKey(read.getName());
       pairNumber = PairedFastqWriter.getPairNumber(read.getName());
-    } catch (ReadWriterException ignored) {
-      readNameWithoutPairNumber = read.getName();
-      pairNumber = streamName;
+    } catch (ReadWriterException e) {
+      if (INVALID_READ_NAME.equals(e.getErrorType())) {
+        readNameWithoutPairNumber = read.getName();
+        pairNumber = streamName;
+      } else {
+        throw e;
+      }
     }
 
     if (labels.size() < maxLabelSetSize) {
