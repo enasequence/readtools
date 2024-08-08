@@ -10,8 +10,13 @@
  */
 package uk.ac.ebi.ena.readtools.utils;
 
+import static uk.ac.ebi.ena.readtools.utils.Utils.openFastqInputStream;
+
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.TreeMap;
@@ -139,7 +144,12 @@ class ValidationStats {
   }
 
   private void callForEachRecord(String pathStr, Consumer<FastqRecord> consumer) {
-    FastqReader reader = new FastqReader(Paths.get(pathStr).toFile());
+    FastqReader reader =
+        new FastqReader(
+            null,
+            new BufferedReader(
+                new InputStreamReader(
+                    openFastqInputStream(Paths.get(pathStr)), StandardCharsets.UTF_8)));
     for (FastqRecord record : reader) {
       consumer.accept(record);
     }

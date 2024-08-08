@@ -11,12 +11,15 @@
 package uk.ac.ebi.ena.readtools.v2.provider;
 
 import static htsjdk.samtools.SAMUtils.phredToFastq;
+import static uk.ac.ebi.ena.readtools.utils.Utils.openFastqInputStream;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.FastqQualityFormat;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -43,7 +46,13 @@ public class FastqReadsProvider implements ReadsProvider<FastqRead> {
         qualityFormat = Utils.detectFastqQualityFormat(fastqFile.getAbsolutePath(), null);
         qualityNormalizer = Utils.getQualityNormalizer(qualityFormat);
       }
-      this.reader = new FastqReader(fastqFile, true);
+      this.reader =
+          new FastqReader(
+              null,
+              new BufferedReader(
+                  new InputStreamReader(
+                      openFastqInputStream(fastqFile.toPath()), StandardCharsets.UTF_8)),
+              true);
     } catch (SAMException e) {
       throw new ReadsValidationException(e.getMessage());
     }

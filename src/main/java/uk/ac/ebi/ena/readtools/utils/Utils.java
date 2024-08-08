@@ -53,7 +53,11 @@ public class Utils {
     FastqWriter writer =
         new AsyncFastqWriter(new BasicFastqWriter(out), AsyncFastqWriter.DEFAULT_QUEUE_SIZE);
 
-    FastqReader reader = new FastqReader(inp);
+    FastqReader reader =
+        new FastqReader(
+            null,
+            new BufferedReader(
+                new InputStreamReader(openFastqInputStream(inp.toPath()), StandardCharsets.UTF_8)));
     for (FastqRecord record : reader) {
       String result = record.getReadString();
 
