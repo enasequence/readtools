@@ -14,12 +14,12 @@ apply plugin: "jacoco"
 apply plugin: 'com.github.johnrengelman.shadow'
 
 wrapper{
-    gradleVersion = '5.2.1'
+    gradleVersion = '5.2.2'
     distributionType = Wrapper.DistributionType.BIN
 }
 
 group = 'uk.ac.ebi.ena'
-ext.version_base = '2.9.1'
+ext.version_base = '2.9.2'
 version = version_base
 sourceCompatibility = 17
 targetCompatibility = 17
@@ -65,23 +65,14 @@ repositories {
     maven { url "https://gitlab.ebi.ac.uk/api/v4/groups/enasequence/-/packages/maven" }
     mavenCentral()
     maven { url "https://maven.imagej.net/content/repositories/public/" }
-
-    // For BioSamples client
-    maven {
-        url 'https://gitlab.ebi.ac.uk/api/v4/projects/2669/packages/maven'
-
-        credentials(HttpHeaderCredentials) {
-            name = "Private-Token"
-            value = biosamples_gitlab_private_token
-        }
-        authentication {
-            header(HttpHeaderAuthentication)
-        }
-    }
 }
 
 dependencies {
-    api( group: 'uk.ac.ebi.ena.webin-cli', name: 'webin-cli-validator', version: '1.+' )
+    implementation( group: 'uk.ac.ebi.ena.webin-cli', name: 'webin-cli-validator', version: '1.+' ) {
+        exclude(group: 'uk.ac.ebi.biosamples', module: 'client')
+    }
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.1'
 
     implementation( group: 'org.slf4j', name: 'slf4j-api', version: '1.7.28' )
 
