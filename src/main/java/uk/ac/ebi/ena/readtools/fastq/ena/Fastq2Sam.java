@@ -174,13 +174,13 @@ public class Fastq2Sam {
     public int spill_page_size = 4_500_000;
 
     @Parameter(
-        names = {"-sps", "-spill-page-size-bytes"},
+        names = {"-spsb", "-spill-page-size-bytes"},
         description =
             "Spill page size in bytes, depends on maximum of available memory and size of un-assembled record pool")
     public long spill_page_size_bytes = 4L * 1024L * 1024L * 1024L;
 
     @Parameter(
-        names = {"-sps", "-spill_abandon_limit_bytes"},
+        names = {"-salb", "-spill_abandon_limit_bytes"},
         description =
             "Spill memory limit in bytes, processing fails when temp files total size reaches this limit, 0 == no limit")
     public long spill_abandon_limit_bytes = 10L * 1024L * 1024L * 1024L;

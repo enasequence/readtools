@@ -1,7 +1,7 @@
 plugins {
     id "io.github.ddimtirov.codacy" version "0.1.0"
     id 'org.hidetake.ssh' version '2.9.0'
-    id "com.github.johnrengelman.shadow" version "4.0.1"
+    id "com.github.johnrengelman.shadow" version "7.1.2"
     id "com.diffplug.gradle.spotless" version "4.5.1"
 }
 
@@ -19,7 +19,7 @@ wrapper{
 }
 
 group = 'uk.ac.ebi.ena'
-ext.version_base = '2.9.2'
+ext.version_base = '2.9.3'
 version = version_base
 sourceCompatibility = 17
 targetCompatibility = 17
