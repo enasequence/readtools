@@ -27,6 +27,7 @@ public interface Converter {
 
   /** Read and write all reads. */
   void run();
+
   /** Read and write the next read. */
   void runOnce();
 

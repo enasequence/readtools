@@ -61,7 +61,9 @@ public class BloomWrapper {
     }
   }
 
-  /** @return Number of times read names were added into this instance. */
+  /**
+   * @return Number of times read names were added into this instance.
+   */
   public long getAddCount() {
     return addCount.get();
   }

@@ -70,7 +70,8 @@ public class InsdcReadsValidatorTest {
       ReadsProviderFactory factory = new ReadsProviderFactory(f1.toFile(), FileFormat.FASTQ);
       new InsdcReadsValidator(READ_COUNT_LIMIT).validate(factory);
       fail();
-    } catch (ReadsValidationException e) {;
+    } catch (ReadsValidationException e) {
+      ;
       // todo: assertEquals(ERROR_NO_READS, e.getMessage());
     }
   }
@@ -93,7 +94,8 @@ public class InsdcReadsValidatorTest {
       ReadsProviderFactory factory = new ReadsProviderFactory(f1.toFile(), FileFormat.FASTQ);
       new InsdcReadsValidator(READ_COUNT_LIMIT).validate(factory);
       fail();
-    } catch (ReadsValidationException e) {;
+    } catch (ReadsValidationException e) {
+      ;
       // todo: assertTrue(e.getMessage().contains("Missing Sequence Line"));
     }
   }
@@ -169,7 +171,8 @@ public class InsdcReadsValidatorTest {
       ReadsProviderFactory factory = new ReadsProviderFactory(f1.toFile(), FileFormat.FASTQ);
       new InsdcReadsValidator(READ_COUNT_LIMIT).validate(factory);
       fail();
-    } catch (ReadsValidationException e) {;
+    } catch (ReadsValidationException e) {
+      ;
       // todo: assertEquals(INVALID_FILE, e.getMessage());
     }
   }

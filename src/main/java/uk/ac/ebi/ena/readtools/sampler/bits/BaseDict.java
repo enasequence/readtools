@@ -21,6 +21,7 @@ public class BaseDict implements ConstantLengthDataDictionary<Character> {
   public int getTranslatedLength() {
     return 3;
   }
+
   /*
       7   111
       a   4   010

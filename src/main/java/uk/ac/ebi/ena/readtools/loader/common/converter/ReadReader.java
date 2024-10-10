@@ -297,7 +297,8 @@ class ReadReader {
                 String.format(
                     "Found extra character(s) after expected number (%d) of quals. Extra characters : [%s]",
                     expectedQualLength, line));
-        } catch (IOException e) {;
+        } catch (IOException e) {
+          ;
         }
       }
     }

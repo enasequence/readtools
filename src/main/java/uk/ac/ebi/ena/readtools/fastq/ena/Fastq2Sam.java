@@ -119,12 +119,16 @@ public class Fastq2Sam {
     System.out.printf("READS: %d; BASES: %d%n", totalReadCount, totalBaseCount);
   }
 
-  /** @return Total number of reads that were processed. */
+  /**
+   * @return Total number of reads that were processed.
+   */
   public long getTotalReadCount() {
     return totalReadCount;
   }
 
-  /** @return Total number of bases accumulated across all reads. */
+  /**
+   * @return Total number of bases accumulated across all reads.
+   */
   public long getTotalBaseCount() {
     return totalBaseCount;
   }
