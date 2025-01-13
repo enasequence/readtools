@@ -41,7 +41,7 @@ public class PairedFastqReadsValidator extends FastqReadsValidator {
   private static final Pattern CASAVA_LIKE_EXCLUDE_REGEXP =
       Pattern.compile("^([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9_-]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)$");
   // Provided readname structure is @{readkey}{separator:1(.|/|:|_)}{index:1(0:1:2)}
-  private static final Pattern SPLIT_REGEXP = Pattern.compile("^(.*)(?:[\\.|:|/|_])([0-9]+)$");
+  private static final Pattern SPLIT_REGEXP = Pattern.compile("^(.*)(?:[\\.|:|/|_])([1234])$");
 
   private final String providerName;
   private final BloomWrapper pairingBloomWrapper;

@@ -852,6 +852,162 @@ public class FastqReadsValidatorTest {
   }
 
   @Test
+  public void testMultiFileValid4() throws IOException, ReadsValidationException {
+    File output_dir = createOutputFolder();
+    Path f1 =
+        saveRandomized(
+            "@A00950:259:HJTGLDSXY:3:1101:1434:1000\n"
+                + "CTATAGGGTACAAGTAATGACCTCTAGT\n"
+                + "+\n"
+                + "FFFFFFFFFFFFFFFFFFFFFFFFFFFF\n"
+                + "@A00950:259:HJTGLDSXY:3:1101:2248:1001\n"
+                + "TCTTAGTAGGGATCGTACATTAGGTCTA\n"
+                + "+\n"
+                + "FFFFFFFFFFFFFFFFFFFFFFFFFFFF\n"
+                + "@A00950:259:HJTGLDSXY:3:1101:2248:1002\n"
+                + "TCTTAGTAGGGATCGTACATTAGGTCTA\n"
+                + "+\n"
+                + "FFFFFFFFFFFFFFFFFFFFFFFFFFFF\n"
+                + "@A00950:259:HJTGLDSXY:3:1101:2320:1003\n"
+                + "AGGCTGCGTCATCAGTGTAAGTGCTTGG\n"
+                + "+\n"
+                + "FFFFFFFFFFFFFFFFFFFF:FFFFFFF",
+            output_dir.toPath(),
+            true,
+            "fastq-10-5-1",
+            "gz");
+    Path f2 =
+        saveRandomized(
+            "@A00950:259:HJTGLDSXY:3:1101:1434:1000\n"
+                + "NTGCCTTTTCACAGGGTTCCACCTCCCAGACTCACTCTGGGACCCAGAATCCTATATGTGGCCTTGGGGTAGGTGACAATCCCCCTTTTTG\n"
+                + "+\n"
+                + "!FFFFFFF:FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n"
+                + "@A00950:259:HJTGLDSXY:3:1101:2248:1001\n"
+                + "NTCCTGGGCAACTTGGGGTACACAGGATACTGGGGGTGCCGCTCCTCACTCAACCCCAGGCTAGGGGTACACCTGACCCAGCTGGCCTCGG\n"
+                + "+\n"
+                + "!FFFFFFFFF,:FFFFFFFFFFFFFFF,FF:FFFFFFFFFFFFFF:FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n"
+                + "@A00950:259:HJTGLDSXY:3:1101:2248:1002\n"
+                + "NTCCTGGGCAACTTGGGGTACACAGGATACTGGGGGTGCCGCTCCTCACTCAACCCCAGGCTAGGGGTACACCTGACCCAGCTGGCCTCGG\n"
+                + "+\n"
+                + "!FFFFFFFFF,:FFFFFFFFFFFFFFF,FF:FFFFFFFFFFFFFF:FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n"
+                + "@A00950:259:HJTGLDSXY:3:1101:2320:1003\n"
+                + "NGCCTCATCCCTGCACCCAGGGGCACTGGCATCGTCTCCGCACCTGTGCCTAAGAAGCTGCTCATGATGGCTGGTATCGATGACTGCTACA\n"
+                + "+\n"
+                + "!FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:FFFFFFFFFFFF:FF",
+            output_dir.toPath(),
+            true,
+            "fastq-10-5-2",
+            "gz");
+    Path f3 =
+        saveRandomized(
+            "@A00950:259:HJTGLDSXY:3:1101:1434:1000\n"
+                + "GCTTGGCT\n"
+                + "+\n"
+                + "FFFFFFFF\n"
+                + "@A00950:259:HJTGLDSXY:3:1101:2248:1001\n"
+                + "GCTTGGCT\n"
+                + "+\n"
+                + "FFFFFFFF\n"
+                + "@A00950:259:HJTGLDSXY:3:1101:2248:1002\n"
+                + "GCTTGGCT\n"
+                + "+\n"
+                + "FFFFFFFF\n"
+                + "@A00950:259:HJTGLDSXY:3:1101:2320:1003\n"
+                + "GCTTGGCT\n"
+                + "+\n"
+                + "FFFFFFFF",
+            output_dir.toPath(),
+            true,
+            "fastq-10-5-3",
+            "gz");
+
+    ValidatorWrapper vw =
+        new ValidatorWrapper(
+            Arrays.asList(f1.toFile(), f2.toFile(), f3.toFile()),
+            FileFormat.FASTQ,
+            READ_COUNT_LIMIT);
+    vw.run();
+  }
+
+  @Test
+  public void testMultiFileValid5() throws IOException, ReadsValidationException {
+    File output_dir = createOutputFolder();
+    Path f1 =
+        saveRandomized(
+            "@HF1_25801:8:1101:1306:1261\n"
+                + "AGAATAGCAGTGGGATCTANCAGTGG\n"
+                + "+\n"
+                + "AAAFFJJAFJFJJ<AFJFJ!JFJJJJ\n"
+                + "@HF1_25801:8:1101:1529:1262\n"
+                + "TGTGTTTGTGCTCTTCCTANACGCCT\n"
+                + "+\n"
+                + "AAAFFJJAFJFJJ<AFJFJ!JFJJJJ\n"
+                + "@HF1_25801:8:1101:1529:1263\n"
+                + "TGTGTTTGTGCTCTTCCTANACGCCT\n"
+                + "+\n"
+                + "AAFF7FJJJJFAJJJJJAA!-AJJFA\n"
+                + "@HF1_25801:8:1101:1976:1264\n"
+                + "TGGGCGTAGTGCGATGGCGNCGCCAT\n"
+                + "+\n"
+                + "AAFFFJJJJJJJJJJJJJJ!FFJJJJ",
+            output_dir.toPath(),
+            true,
+            "fastq-10-5-1",
+            "gz");
+    Path f2 =
+        saveRandomized(
+            "@HF1_25801:8:1101:1306:1261\n"
+                + "GGNTTTTTGTNTTGANACAAGNAGACATTGTCCAGTAGCANCAGCAATTCANGATGACTNAGAACNCNTAAACATNCACNTCNANGGATAAGGNGATA\n"
+                + "+\n"
+                + "A<!--7--77!-7-7!-AAA-!A--<FJF--77-7F-<-<!F<FJA-7-7-!7A-A77-!-----!<!-77--7-!7--!<<!-!-----7<-!<--7\n"
+                + "@HF1_25801:8:1101:1529:1262\n"
+                + "GGNGAGACAANGAGGNGGATTNTACCCCCACCCCCTGCACNTCCCTGCGATNTGGCTGGNTTGGANCNCCTTGTTNAACNCCNTNCTGACTTGNACAT\n"
+                + "+\n"
+                + "A7!<<FJ7--!FAJJ!JJ7A-!-FFJAJFJAJJJA<7AJ7!7-AA7AAF7-!--7FA-A!-7--7!<!<-<A--7!-AF!A<!-!A<F-7A<7!<<--\n"
+                + "@HF1_25801:8:1101:1529:1263\n"
+                + "GGNGAGACAANGAGGNGGATTNTACCCCCACCCCCTGCACNTCCCTGCGATNTGGCTGGNTTGGANCNCCTTGTTNAACNCCNTNCTGACTTGNACAT\n"
+                + "+\n"
+                + "A7!<<FJ7--!FAJJ!JJ7A-!-FFJAJFJAJJJA<7AJ7!7-AA7AAF7-!--7FA-A!-7--7!<!<-<A--7!-AF!A<!-!A<F-7A<7!<<--\n"
+                + "@HF1_25801:8:1101:1976:1264\n"
+                + "AGNAGTGGTANCAACNCAGAGNACATGGGGTAACNACCCTNCAAAAAAAAANAAAAAAANTATTTNANAAAACAANAACNAANTNGNAAAATANATTA\n"
+                + "+\n"
+                + "A-!7<7A-7F!JJJJ!-FFJF!JFJ<---7-A--!F---7!-AJJJJJJJJ!JJJJJJJ!-----!A!J--A--<!---!--!-!-!-<A---!-7--",
+            output_dir.toPath(),
+            true,
+            "fastq-10-5-2",
+            "gz");
+    Path f3 =
+        saveRandomized(
+            "@HF1_25801:8:1101:1306:1261\n"
+                + "GCAANANA\n"
+                + "+\n"
+                + "-A--!A!F\n"
+                + "@HF1_25801:8:1101:1529:1262\n"
+                + "GCAANANA\n"
+                + "+\n"
+                + "AAAF!F!J\n"
+                + "@HF1_25801:8:1101:1529:1263\n"
+                + "GCAANANA\n"
+                + "+\n"
+                + "AAAF!F!J\n"
+                + "@HF1_25801:8:1101:1976:1264\n"
+                + "GCAANANA\n"
+                + "+\n"
+                + "AAFF!J!J",
+            output_dir.toPath(),
+            true,
+            "fastq-10-5-3",
+            "gz");
+
+    ValidatorWrapper vw =
+        new ValidatorWrapper(
+            Arrays.asList(f1.toFile(), f2.toFile(), f3.toFile()),
+            FileFormat.FASTQ,
+            READ_COUNT_LIMIT);
+    vw.run();
+  }
+
+  @Test
   public void testMultiplePairedFastqsWithLowPairingPercentage() throws IOException {
     File output_dir = createOutputFolder();
 
