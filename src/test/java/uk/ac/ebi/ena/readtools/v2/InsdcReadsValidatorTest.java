@@ -60,10 +60,10 @@ public class InsdcReadsValidatorTest {
       assertTrue(e.getErrorMessage().contains(ERROR_EMPTY_READ));
     }
 
-    //whitespace as read
+    // whitespace as read
     try {
       MockReadsProviderFactory factory =
-              new MockReadsProviderFactory(new MockRead("r1", " ", "1234"));
+          new MockReadsProviderFactory(new MockRead("r1", " ", "1234"));
       new InsdcReadsValidator(READ_COUNT_LIMIT).validate(factory);
       fail();
     } catch (ReadsValidationException e) {

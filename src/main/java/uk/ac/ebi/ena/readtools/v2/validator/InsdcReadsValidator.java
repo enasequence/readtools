@@ -14,7 +14,6 @@ import htsjdk.samtools.SAMException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-
 import org.apache.commons.lang3.StringUtils;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
