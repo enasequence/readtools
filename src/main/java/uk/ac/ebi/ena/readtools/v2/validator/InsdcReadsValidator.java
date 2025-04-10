@@ -96,7 +96,7 @@ public class InsdcReadsValidator extends ReadsValidator {
         }
 
         if (read.getName().trim().length() > 256) {
-          throw new ReadsValidationException(ERROR_READ_NAME_LENGTH, readCount, bases);
+          throw new ReadsValidationException(ERROR_READ_NAME_LENGTH, readCount, read.getName());
         }
 
         basesCount += bases.length();
