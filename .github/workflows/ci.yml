@@ -20,5 +20,12 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: gradle
+      - name: Cache CRAM reference data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/hts-ref
+          key: hts-ref
+          restore-keys: |
+            hts-ref
       - name: Run tests
         run: ./gradlew test
