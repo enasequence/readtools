@@ -1,0 +1,37 @@
+/*
+ * Copyright 2010-2021 EMBL - European Bioinformatics Institute
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package uk.ac.ebi.ena.readtools.sam;
+
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.ref.ReferenceSource;
+import java.io.File;
+import java.nio.file.Paths;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class CramV31Test {
+  @Test
+  public void cramV31IsRejectedByCurrentHtsjdk() {
+    File file = Paths.get("src/test/resources/rawreads/18045_1#93.v3.cram").toFile();
+    SamReaderFactory factory = SamReaderFactory.make();
+    factory.validationStringency(ValidationStringency.SILENT);
+    factory.referenceSource(new ReferenceSource((File) null));
+
+    try (SamReader reader = factory.open(file)) {
+      reader.iterator().hasNext();
+      Assert.fail("Expected CRAM v3.1 to be unsupported with the current htsjdk version.");
+    } catch (Exception e) {
+      Assert.assertNotNull(e.getMessage());
+    }
+  }
+}
