@@ -21,17 +21,15 @@ import org.junit.Test;
 
 public class CramV31Test {
   @Test
-  public void cramV31IsRejectedByCurrentHtsjdk() {
+  public void cramV31IsReadableWithHtsjdk() throws Exception {
     File file = Paths.get("src/test/resources/rawreads/18045_1#93.v3.cram").toFile();
     SamReaderFactory factory = SamReaderFactory.make();
     factory.validationStringency(ValidationStringency.SILENT);
     factory.referenceSource(new ReferenceSource((File) null));
 
     try (SamReader reader = factory.open(file)) {
-      reader.iterator().hasNext();
-      Assert.fail("Expected CRAM v3.1 to be unsupported with the current htsjdk version.");
-    } catch (Exception e) {
-      Assert.assertNotNull(e.getMessage());
+      Assert.assertNotNull(reader.getFileHeader());
+      Assert.assertTrue(reader.iterator().hasNext());
     }
   }
 }
