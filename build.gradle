@@ -67,7 +67,7 @@ dependencies {
 
     implementation( group: 'com.beust', name: 'jcommander', version: '1.72' )
 
-    implementation( group: 'com.github.samtools', name: 'htsjdk', version: '4.1.0' )
+    implementation( group: 'com.github.samtools', name: 'htsjdk', version: '4.3.0' )
 
     implementation( "org.jdom:jdom:2.0.2" )
 
