@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import uk.ac.ebi.ena.readtools.common.reads.CasavaRead;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.fastq.Read;
@@ -97,9 +98,8 @@ class ReadReader {
   //    final static private Pattern p_casava_1_8_name = Pattern.compile(
   // "^@([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)
   // ([12]):[YN]:[0-9]*[02468]:[ACGTN]+$" );
-  // relaxed regular expression
-  static final Pattern p_casava_1_8_name =
-      Pattern.compile("^@(.+)( +|\\t+)([0-9]+):[YN]:[0-9]*[02468]($|:.*$)");
+  // relaxed regular expression — canonical definition in CasavaRead
+  static final Pattern p_casava_1_8_name = CasavaRead.P_CASAVA_18_RAW_LINE;
 
   // regexs
   static final Pattern p_base_name = Pattern.compile("^@(.*)"); // for name of the record
@@ -198,7 +198,7 @@ class ReadReader {
               params.line_no,
               String.format(
                   "Line [%s] does not match %s regexp", line, ReadReader.ReadStyle.CASAVA18));
-        return params.m_casava_1_8_name.group(1) + "/" + params.m_casava_1_8_name.group(3);
+        return line.substring(1); // strip leading '@', preserve full Casava 1.8 name
 
       case FASTQ:
         if (!params.m_base_name.reset(line).find())

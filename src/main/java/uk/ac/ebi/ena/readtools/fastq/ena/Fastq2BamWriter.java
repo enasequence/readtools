@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import uk.ac.ebi.ena.readtools.common.reads.CasavaRead;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
@@ -80,14 +81,22 @@ public class Fastq2BamWriter implements ReadWriter<PairedRead, Spot> {
       if (spot.isPaired()) {
         SAMRecord rec1 =
             createSamRecord(
-                true, spot.name, spot.forward.getBases(), spot.forward.getQualityScores());
+                true,
+                spot.name,
+                spot.forward.getName(),
+                spot.forward.getBases(),
+                spot.forward.getQualityScores());
         rec1.setFirstOfPairFlag(true);
         rec1.setSecondOfPairFlag(false);
         writer.addAlignment(rec1);
 
         SAMRecord rec2 =
             createSamRecord(
-                true, spot.name, spot.reverse.getBases(), spot.reverse.getQualityScores());
+                true,
+                spot.name,
+                spot.reverse.getName(),
+                spot.reverse.getBases(),
+                spot.reverse.getQualityScores());
         rec2.setFirstOfPairFlag(false);
         rec2.setSecondOfPairFlag(true);
         writer.addAlignment(rec2);
@@ -95,7 +104,12 @@ public class Fastq2BamWriter implements ReadWriter<PairedRead, Spot> {
       } else {
         Read unpaired = spot.getUnpaired();
         SAMRecord rec =
-            createSamRecord(false, spot.name, unpaired.getBases(), unpaired.getQualityScores());
+            createSamRecord(
+                false,
+                spot.name,
+                unpaired.getName(),
+                unpaired.getBases(),
+                unpaired.getQualityScores());
         rec.setReadPairedFlag(false);
         writer.addAlignment(rec);
       }
@@ -167,7 +181,7 @@ public class Fastq2BamWriter implements ReadWriter<PairedRead, Spot> {
   }
 
   private SAMRecord createSamRecord(
-      boolean paired, String baseName, String read, String qualities) {
+      boolean paired, String baseName, String readName, String read, String qualities) {
 
     final byte[] normalizedQualities = qualities.getBytes(StandardCharsets.UTF_8);
     qualityNormalizer.normalize(normalizedQualities);
@@ -178,6 +192,15 @@ public class Fastq2BamWriter implements ReadWriter<PairedRead, Spot> {
     rec.setReadName(baseName);
     rec.setReadString(modifyBases(read));
     rec.setBaseQualities(normalizedQualities);
+
+    // Store Casava 1.8 metadata in standard SAM tags
+    String barcode = CasavaRead.getBarcodeOrNull(readName);
+    if (barcode != null) {
+      rec.setAttribute("BC", barcode);
+    }
+    if (CasavaRead.isFiltered(readName)) {
+      rec.setReadFailsVendorQualityCheckFlag(true);
+    }
 
     if (paired) {
       rec.setReadPairedFlag(true);

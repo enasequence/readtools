@@ -16,6 +16,7 @@ import java.io.File;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import uk.ac.ebi.ena.readtools.common.reads.CasavaRead;
 import uk.ac.ebi.ena.readtools.loader.common.writer.AbstractPagedReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 
@@ -68,6 +69,14 @@ public class PairedFastqWriter extends AbstractPagedReadWriter<Read, PairedRead>
   }
 
   private static String getReadPart(String readname, int group) throws ReadWriterException {
+    // Try Casava 1.8 format first
+    String casavaResult =
+        group == KEY
+            ? CasavaRead.getBaseNameOrNull(readname)
+            : CasavaRead.getReadIndexOrNull(readname);
+    if (casavaResult != null) return casavaResult;
+
+    // Fall back to generic split logic for non-Casava names
     Matcher casavaLikeMatcher = CASAVA_LIKE_EXCLUDE_REGEXP.matcher(readname);
     if (!casavaLikeMatcher.find()) {
       Matcher m = SPLIT_REGEXP.matcher(readname);

@@ -14,6 +14,7 @@ import htsjdk.samtools.SAMException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import uk.ac.ebi.ena.readtools.common.reads.CasavaRead;
 import uk.ac.ebi.ena.readtools.v2.provider.FastqReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 import uk.ac.ebi.ena.readtools.v2.read.FastqRead;
@@ -55,9 +56,8 @@ public class FastqReadsValidator extends ReadsValidator {
   //    final static private Pattern p_casava_1_8_name = Pattern.compile(
   // "^@([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)
   // ([12]):[YN]:[0-9]*[02468]:[ACGTN]+$" );
-  // relaxed regular expression
-  public static final String CASAVA_18_NAME = "^(.+)( +|\\t+)([0-9]+):[YN]:[0-9]*[02468]($|:.*$)";
-  public static final Pattern P_CASAVA_18_NAME = Pattern.compile(CASAVA_18_NAME);
+  // relaxed regular expression — canonical definition in CasavaRead
+  public static final Pattern P_CASAVA_18_NAME = CasavaRead.P_CASAVA_18_NAME;
   private static final Pattern pQuals = Pattern.compile("^([!-~]*?)$"); // qualities
   private ReadStyle readStyle = null; // Field to keep track of the read style
 

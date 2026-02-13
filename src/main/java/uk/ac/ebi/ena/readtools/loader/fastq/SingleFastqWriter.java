@@ -10,6 +10,7 @@
  */
 package uk.ac.ebi.ena.readtools.loader.fastq;
 
+import uk.ac.ebi.ena.readtools.common.reads.CasavaRead;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriter;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 
@@ -25,10 +26,13 @@ public class SingleFastqWriter implements ReadWriter<Read, PairedRead> {
 
   @Override
   public void write(Read spot) throws ReadWriterException {
-    int slash_idx = spot.name.lastIndexOf('/');
+    String baseName = CasavaRead.getBaseNameOrNull(spot.name);
+    if (baseName == null) {
+      int slash_idx = spot.name.lastIndexOf('/');
+      baseName = slash_idx == -1 ? spot.name : spot.name.substring(0, slash_idx);
+    }
 
-    PairedRead pairedRead =
-        new PairedRead(slash_idx == -1 ? spot.name : spot.name.substring(0, slash_idx), spot);
+    PairedRead pairedRead = new PairedRead(baseName, spot);
 
     if (null != readWriter) readWriter.write(pairedRead);
     else System.out.println(pairedRead);

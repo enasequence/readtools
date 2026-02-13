@@ -302,7 +302,73 @@ public class Fastq2SamTest {
     Assert.assertEquals(6, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(906, fastq2Sam.getTotalBaseCount());
     Assert.assertEquals(
-        "3584a9b877457a623438e25655789529", calculateFileMd5(new File(params.data_file)));
+        "6814cd8b3592ac6dac2338ca17b64921", calculateFileMd5(new File(params.data_file)));
+  }
+
+  @Test
+  public void testCasava18BarcodePreservedInBam()
+      throws IOException, ConverterException, ReadWriterException {
+    Path tempDir = Files.createTempDirectory("fastq_casava_test");
+
+    Path fastqFile1 = tempDir.resolve("casava_1.fastq");
+    Path fastqFile2 = tempDir.resolve("casava_2.fastq");
+
+    // Read 1: filter=Y (failed), barcode=ATCACG+GCGCTA
+    // Read 2: filter=N (passed), barcode=TTAGGC
+    Files.write(
+        fastqFile1,
+        Arrays.asList(
+            "@EAS139:136:FC706VJ:2:2104:15343:197393 1:Y:18:ATCACG+GCGCTA",
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@EAS139:136:FC706VJ:2:2104:15343:197394 1:N:0:TTAGGC",
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+    Files.write(
+        fastqFile2,
+        Arrays.asList(
+            "@EAS139:136:FC706VJ:2:2104:15343:197393 2:Y:18:ATCACG+GCGCTA",
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "@EAS139:136:FC706VJ:2:2104:15343:197394 2:N:0:TTAGGC",
+            "GATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+    Fastq2Sam.Params params = new Fastq2Sam.Params();
+    params.tmp_root = tempDir.toString();
+    params.sample_name = "SM-001";
+    params.data_file = Files.createTempFile(tempDir, "output", ".bam").toString();
+    params.compression = FileCompression.NONE.name();
+    params.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+
+    Fastq2Sam fastq2Sam = new Fastq2Sam();
+    fastq2Sam.create(params);
+
+    Assert.assertEquals(4, fastq2Sam.getTotalReadCount());
+
+    try (SamReader samReader = SamReaderFactory.makeDefault().open(new File(params.data_file))) {
+      for (final SAMRecord rec : samReader) {
+        String qname = rec.getReadName();
+        String bc = (String) rec.getAttribute("BC");
+
+        if (qname.endsWith("197393")) {
+          Assert.assertEquals("ATCACG+GCGCTA", bc);
+          Assert.assertTrue(
+              "QCFAIL should be set for filter=Y", rec.getReadFailsVendorQualityCheckFlag());
+        } else if (qname.endsWith("197394")) {
+          Assert.assertEquals("TTAGGC", bc);
+          Assert.assertFalse(
+              "QCFAIL should not be set for filter=N", rec.getReadFailsVendorQualityCheckFlag());
+        } else {
+          Assert.fail("Unexpected QNAME: " + qname);
+        }
+      }
+    }
   }
 
   @Test
@@ -569,7 +635,7 @@ public class Fastq2SamTest {
     Assert.assertEquals(4, fastq2Sam1.getTotalReadCount());
     Assert.assertEquals(1203, fastq2Sam1.getTotalBaseCount());
     Assert.assertEquals(
-        "eea6adf4e98062da666506a798902eb3", calculateFileMd5(new File(params.data_file)));
+        "b82a3c90cbbf448a17be80cc2c8d3aaa", calculateFileMd5(new File(params.data_file)));
 
     params.files = Arrays.asList(f2.toString(), f1.toString());
     Fastq2Sam fastq2Sam2 = new Fastq2Sam();
@@ -579,7 +645,7 @@ public class Fastq2SamTest {
     Assert.assertEquals(4, fastq2Sam2.getTotalReadCount());
     Assert.assertEquals(1203, fastq2Sam2.getTotalBaseCount());
     Assert.assertEquals(
-        "eea6adf4e98062da666506a798902eb3", calculateFileMd5(new File(params.data_file)));
+        "b82a3c90cbbf448a17be80cc2c8d3aaa", calculateFileMd5(new File(params.data_file)));
   }
 
   @Test
