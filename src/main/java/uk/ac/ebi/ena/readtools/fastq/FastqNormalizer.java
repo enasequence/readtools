@@ -234,7 +234,7 @@ public class FastqNormalizer {
       this.spillPageSize = spillPageSize;
       this.spillPageSizeBytes = spillPageSizeBytes;
       this.spillAbandonLimitBytes = spillAbandonLimitBytes;
-      this.pairMap = new HashMap<>(spillPageSize);
+      this.pairMap = new TreeMap<>();
       this.totalBytesInMemory = 0;
       this.totalSpilledBytes = 0;
       this.spillFiles = new ArrayList<>();
@@ -287,17 +287,16 @@ public class FastqNormalizer {
         Iterator<FastqRecord> iter1 = reader1.iterator();
         Iterator<FastqRecord> iter2 = reader2.iterator();
 
-        while (iter1.hasNext() && iter2.hasNext()) {
-          FastqRecord rec1 = iter1.next();
-          FastqRecord rec2 = iter2.next();
-
-          processRecord(rec1);
-          processRecord(rec2);
-        }
-
-        // Verify both files exhausted
-        if (iter1.hasNext() || iter2.hasNext()) {
-          throw new IOException("Paired FASTQ files have mismatched lengths");
+        // Read both files round-robin, tolerating different lengths.
+        // This matches MultiFastqConverter behavior: when one file ends,
+        // continue reading the other.
+        while (iter1.hasNext() || iter2.hasNext()) {
+          if (iter1.hasNext()) {
+            processRecord(iter1.next());
+          }
+          if (iter2.hasNext()) {
+            processRecord(iter2.next());
+          }
         }
       } finally {
         reader1.close();
@@ -413,11 +412,24 @@ public class FastqNormalizer {
       long counter = 0;
 
       try {
+        // Write complete pairs
         for (Map.Entry<String, List<NormalizedRead>> entry : pairMap.entrySet()) {
           List<NormalizedRead> reads = entry.getValue();
           if (reads.get(0) != null && reads.get(1) != null) {
             counter++;
             writePair(writer1, writer2, reads, counter);
+          }
+        }
+
+        // Write orphaned reads (one mate missing) to the first output file,
+        // matching Sam2Fastq behavior where unpaired reads go to streams[0]
+        // without /1 or /2 suffix.
+        for (Map.Entry<String, List<NormalizedRead>> entry : pairMap.entrySet()) {
+          List<NormalizedRead> reads = entry.getValue();
+          if (reads.get(0) == null || reads.get(1) == null) {
+            NormalizedRead orphan = reads.get(0) != null ? reads.get(0) : reads.get(1);
+            counter++;
+            writeOrphan(writer1, orphan, counter);
           }
         }
       } finally {
@@ -464,6 +476,19 @@ public class FastqNormalizer {
 
       writer1.write(new FastqRecord(name1, read1.bases, "", read1.qualities));
       writer2.write(new FastqRecord(name2, read2.bases, "", read2.qualities));
+    }
+
+    private void writeOrphan(AsyncFastqWriter writer, NormalizedRead read, long counter) {
+      String baseName = read.readName.replaceAll("/[12]$", "");
+
+      String name;
+      if (prefix != null) {
+        name = prefix + "." + counter + " " + baseName;
+      } else {
+        name = baseName;
+      }
+
+      writer.write(new FastqRecord(name, read.bases, "", read.qualities));
     }
 
     private File createTempFile() throws IOException {

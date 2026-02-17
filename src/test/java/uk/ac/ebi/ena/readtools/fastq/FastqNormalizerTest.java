@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -270,20 +271,31 @@ public class FastqNormalizerTest {
     Path outputFile1 = tempFolder.newFile("output_1.fastq").toPath();
     Path outputFile2 = tempFolder.newFile("output_2.fastq").toPath();
 
-    // Should throw IOException for mismatched lengths
-    try {
-      FastqNormalizer.normalizePairedEnd(
-          inputFile1.toString(),
-          inputFile2.toString(),
-          outputFile1.toString(),
-          outputFile2.toString(),
-          null,
-          false,
-          tempFolder.getRoot());
-      fail("Expected IOException for mismatched file lengths");
-    } catch (IOException e) {
-      assertTrue(e.getMessage().contains("mismatched lengths"));
-    }
+    // Mismatched lengths are tolerated: READ1 pairs normally, READ2 becomes an orphan
+    long count =
+        FastqNormalizer.normalizePairedEnd(
+            inputFile1.toString(),
+            inputFile2.toString(),
+            outputFile1.toString(),
+            outputFile2.toString(),
+            null,
+            false,
+            tempFolder.getRoot());
+
+    // 1 complete pair + 1 orphan = 2 total
+    assertEquals(2, count);
+
+    List<FastqRecord> records1 = readFastq(outputFile1);
+    List<FastqRecord> records2 = readFastq(outputFile2);
+
+    // First output file: 1 paired read (/1) + 1 orphan (no /1 or /2 suffix)
+    assertEquals(2, records1.size());
+    // Second output file: 1 paired read (/2)
+    assertEquals(1, records2.size());
+
+    // Verify the orphan has no /1 or /2 suffix
+    boolean hasOrphan = records1.stream().anyMatch(r -> !r.getReadName().contains("/"));
+    assertTrue("Expected an orphan read without /1 or /2 suffix", hasOrphan);
   }
 
   @Test
@@ -428,6 +440,21 @@ public class FastqNormalizerTest {
     assertTrue(records1.get(0).getReadName().endsWith("/1"));
     assertTrue(records2.get(0).getReadName().startsWith("RUN001.1 "));
     assertTrue(records2.get(0).getReadName().endsWith("/2"));
+  }
+
+  @Ignore("Only run manually if needed.")
+  @Test
+  public void testArbitraryFile() throws IOException {
+    String input1 = "/path/input_2.fastq.gz";
+    String input2 = "/path/input_1.fastq.gz";
+    String output1 = "/path/normalised_1.fastq";
+    String output2 = "/path/normalised_2.fastq";
+
+    long count =
+        FastqNormalizer.normalizePairedEnd(
+            input1, input2, output1, output2, "ERR12631034", false, tempFolder.getRoot());
+
+    assertTrue("Expected at least one read pair", count > 0);
   }
 
   /** Helper method to read all records from a FASTQ file. */
