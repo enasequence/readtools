@@ -44,6 +44,7 @@ import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
+import uk.ac.ebi.ena.readtools.sam.Sam2Fastq;
 
 /**
  * TODO The tests in here need to compare data between source fastq(s) and generated bam file as
@@ -1155,6 +1156,196 @@ public class Fastq2SamTest {
     }
 
     return fastqRecordMap;
+  }
+
+  // ---- Pipeline read name transformation tests ----
+  // These tests document how the Fastq2Sam → Sam2Fastq pipeline transforms read names
+  // for various pair separator conventions.
+
+  @Test
+  public void testPipelineReadNameSlashSeparator() throws Exception {
+    // Input: READ/1, READ/2 — standard slash separator
+    List<FastqRecord> out1 = new ArrayList<>();
+    List<FastqRecord> out2 = new ArrayList<>();
+    runPipelineRoundTrip(
+        "@MYREAD/1\nACGTACGT\n+\nIIIIIIII\n",
+        "@MYREAD/2\nTTAATTAA\n+\nKKKKKKKK\n",
+        "ERR001",
+        out1,
+        out2);
+
+    Assert.assertEquals(1, out1.size());
+    Assert.assertEquals(1, out2.size());
+    // Pipeline output: prefix.counter originalName/pairIndex
+    Assert.assertEquals("ERR001.1 MYREAD/1", out1.get(0).getReadName());
+    Assert.assertEquals("ERR001.1 MYREAD/2", out2.get(0).getReadName());
+  }
+
+  @Test
+  public void testPipelineReadNameDotSeparator() throws Exception {
+    // Input: READ.1, READ.2 — dot separator
+    List<FastqRecord> out1 = new ArrayList<>();
+    List<FastqRecord> out2 = new ArrayList<>();
+    runPipelineRoundTrip(
+        "@MYREAD.1\nACGTACGT\n+\nIIIIIIII\n",
+        "@MYREAD.2\nTTAATTAA\n+\nKKKKKKKK\n",
+        "ERR002",
+        out1,
+        out2);
+
+    Assert.assertEquals(1, out1.size());
+    Assert.assertEquals(1, out2.size());
+    // Pipeline strips .N and re-emits as /N
+    Assert.assertEquals("ERR002.1 MYREAD/1", out1.get(0).getReadName());
+    Assert.assertEquals("ERR002.1 MYREAD/2", out2.get(0).getReadName());
+  }
+
+  @Test
+  public void testPipelineReadNameColonSeparator() throws Exception {
+    // Input: READ:1, READ:2 — colon separator
+    List<FastqRecord> out1 = new ArrayList<>();
+    List<FastqRecord> out2 = new ArrayList<>();
+    runPipelineRoundTrip(
+        "@MYREAD:1\nACGTACGT\n+\nIIIIIIII\n",
+        "@MYREAD:2\nTTAATTAA\n+\nKKKKKKKK\n",
+        "ERR003",
+        out1,
+        out2);
+
+    Assert.assertEquals(1, out1.size());
+    Assert.assertEquals(1, out2.size());
+    Assert.assertEquals("ERR003.1 MYREAD/1", out1.get(0).getReadName());
+    Assert.assertEquals("ERR003.1 MYREAD/2", out2.get(0).getReadName());
+  }
+
+  @Test
+  public void testPipelineReadNameUnderscoreSeparator() throws Exception {
+    // Input: READ_1, READ_2 — underscore separator
+    List<FastqRecord> out1 = new ArrayList<>();
+    List<FastqRecord> out2 = new ArrayList<>();
+    runPipelineRoundTrip(
+        "@MYREAD_1\nACGTACGT\n+\nIIIIIIII\n",
+        "@MYREAD_2\nTTAATTAA\n+\nKKKKKKKK\n",
+        "ERR004",
+        out1,
+        out2);
+
+    Assert.assertEquals(1, out1.size());
+    Assert.assertEquals(1, out2.size());
+    Assert.assertEquals("ERR004.1 MYREAD/1", out1.get(0).getReadName());
+    Assert.assertEquals("ERR004.1 MYREAD/2", out2.get(0).getReadName());
+  }
+
+  @Test
+  public void testPipelineReadNameCasava() throws Exception {
+    // Input: Casava 1.8 format — instrument:run:flowcell:lane:tile:x:y pairIndex:filter:0:barcode
+    List<FastqRecord> out1 = new ArrayList<>();
+    List<FastqRecord> out2 = new ArrayList<>();
+    runPipelineRoundTrip(
+        "@A00500:310:HG3JFDRXY:1:2101:1000:2000 1:N:0:ATCACG\nACGTACGT\n+\nIIIIIIII\n",
+        "@A00500:310:HG3JFDRXY:1:2101:1000:2000 2:N:0:ATCACG\nTTAATTAA\n+\nKKKKKKKK\n",
+        "ERR005",
+        out1,
+        out2);
+
+    Assert.assertEquals(1, out1.size());
+    Assert.assertEquals(1, out2.size());
+    // Pipeline strips the Casava metadata tail (barcode/filter) through BAM round-trip,
+    // keeping only the instrument part as the read name
+    Assert.assertEquals(
+        "ERR005.1 A00500:310:HG3JFDRXY:1:2101:1000:2000/1", out1.get(0).getReadName());
+    Assert.assertEquals(
+        "ERR005.1 A00500:310:HG3JFDRXY:1:2101:1000:2000/2", out2.get(0).getReadName());
+  }
+
+  @Test
+  public void testPipelineReadNameNoPrefix() throws Exception {
+    // No prefix — read names should just be originalName/pairIndex
+    List<FastqRecord> out1 = new ArrayList<>();
+    List<FastqRecord> out2 = new ArrayList<>();
+    runPipelineRoundTrip(
+        "@MYREAD/1\nACGTACGT\n+\nIIIIIIII\n",
+        "@MYREAD/2\nTTAATTAA\n+\nKKKKKKKK\n",
+        null,
+        out1,
+        out2);
+
+    Assert.assertEquals(1, out1.size());
+    Assert.assertEquals(1, out2.size());
+    Assert.assertEquals("MYREAD/1", out1.get(0).getReadName());
+    Assert.assertEquals("MYREAD/2", out2.get(0).getReadName());
+  }
+
+  @Test
+  public void testPipelineReadNameMultiDigitIndex() throws Exception {
+    // Input: READ.10, READ.20 — multi-digit pair index (non-standard but parseable)
+    List<FastqRecord> out1 = new ArrayList<>();
+    List<FastqRecord> out2 = new ArrayList<>();
+    runPipelineRoundTrip(
+        "@MYREAD.10\nACGTACGT\n+\nIIIIIIII\n",
+        "@MYREAD.20\nTTAATTAA\n+\nKKKKKKKK\n",
+        "ERR006",
+        out1,
+        out2);
+
+    // Multi-digit indices: the pipeline parses 10 and 20 as pair numbers.
+    // Sam2Fastq normalizes them to /1 and /2 based on the BAM first/second-of-pair flag.
+    Assert.assertEquals(1, out1.size());
+    Assert.assertEquals(1, out2.size());
+    Assert.assertEquals("ERR006.1 MYREAD/1", out1.get(0).getReadName());
+    Assert.assertEquals("ERR006.1 MYREAD/2", out2.get(0).getReadName());
+  }
+
+  /** Helper: runs Fastq2Sam → Sam2Fastq and collects output records. */
+  private void runPipelineRoundTrip(
+      String fastq1Content,
+      String fastq2Content,
+      String prefix,
+      List<FastqRecord> outRecords1,
+      List<FastqRecord> outRecords2)
+      throws Exception {
+
+    Path tempDir = Files.createTempDirectory("pipeline_name_test");
+    Path inputFile1 = tempDir.resolve("input_1.fastq");
+    Path inputFile2 = tempDir.resolve("input_2.fastq");
+
+    Files.write(inputFile1, fastq1Content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    Files.write(inputFile2, fastq2Content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+    // Fastq2Sam
+    Fastq2Sam.Params f2sParams = new Fastq2Sam.Params();
+    f2sParams.tmp_root = tempDir.toString();
+    f2sParams.sample_name = "SM-001";
+    f2sParams.data_file = tempDir.resolve("output.bam").toString();
+    f2sParams.compression = FileCompression.NONE.name();
+    f2sParams.files = Arrays.asList(inputFile1.toString(), inputFile2.toString());
+
+    Fastq2Sam f2s = new Fastq2Sam();
+    f2s.create(f2sParams);
+
+    // Sam2Fastq
+    Sam2Fastq.Params s2fParams = new Sam2Fastq.Params();
+    s2fParams.samFile = new File(f2sParams.data_file);
+    s2fParams.fastqBaseName = tempDir.resolve("result").toString();
+    s2fParams.prefix = prefix;
+    s2fParams.nofStreams = 3;
+
+    Sam2Fastq s2f = new Sam2Fastq();
+    s2f.create(s2fParams);
+
+    File outFile1 = new File(s2fParams.fastqBaseName + "_1.fastq");
+    File outFile2 = new File(s2fParams.fastqBaseName + "_2.fastq");
+
+    if (outFile1.exists()) {
+      try (FastqReader reader = new FastqReader(outFile1)) {
+        for (FastqRecord rec : reader) outRecords1.add(rec);
+      }
+    }
+    if (outFile2.exists()) {
+      try (FastqReader reader = new FastqReader(outFile2)) {
+        for (FastqRecord rec : reader) outRecords2.add(rec);
+      }
+    }
   }
 
   public static String calculateFileMd5(File file) throws IOException, NoSuchAlgorithmException {

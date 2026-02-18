@@ -150,7 +150,7 @@ public class FastqNormalizerTest {
     assertEquals(2, records.size());
 
     assertEquals("ATGCT", records.get(0).getReadString());
-    assertEquals("gacggaTCTaTagcaaaacT", records.get(1).getReadString());
+    assertEquals("gacggaTCtatagcaaaact", records.get(1).getReadString());
   }
 
   /** Test with an actual uracil-bases test resource file. */
@@ -215,10 +215,11 @@ public class FastqNormalizerTest {
     assertEquals(2, records1.size());
     assertEquals(2, records2.size());
 
-    assertTrue(records1.get(0).getReadName().endsWith("/1"));
-    assertTrue(records2.get(0).getReadName().endsWith("/2"));
-    assertTrue(records1.get(1).getReadName().endsWith("/1"));
-    assertTrue(records2.get(1).getReadName().endsWith("/2"));
+    // Slash separator preserved, no prefix
+    assertEquals("READ1/1", records1.get(0).getReadName());
+    assertEquals("READ1/2", records2.get(0).getReadName());
+    assertEquals("READ2/1", records1.get(1).getReadName());
+    assertEquals("READ2/2", records2.get(1).getReadName());
   }
 
   /** Paired-end with prefix: read names should be "{prefix}.{counter} {baseName}/1". */
@@ -521,8 +522,11 @@ public class FastqNormalizerTest {
     assertEquals(2, records1.size());
     assertEquals(2, records2.size());
 
-    assertTrue(records1.get(0).getReadName().endsWith("/1"));
-    assertTrue(records2.get(0).getReadName().endsWith("/2"));
+    // Dot separator stripped, normalized to /1 /2 — matches pipeline behavior
+    assertEquals("RUN.1 READX/1", records1.get(0).getReadName());
+    assertEquals("RUN.1 READX/2", records2.get(0).getReadName());
+    assertEquals("RUN.2 READY/1", records1.get(1).getReadName());
+    assertEquals("RUN.2 READY/2", records2.get(1).getReadName());
   }
 
   /** Colon-separated pair index: READ:1 / READ:2 (non-Casava-like name so SPLIT_REGEXP fires). */
@@ -561,8 +565,9 @@ public class FastqNormalizerTest {
     assertEquals(1, records1.size());
     assertEquals(1, records2.size());
 
-    assertTrue(records1.get(0).getReadName().endsWith("/1"));
-    assertTrue(records2.get(0).getReadName().endsWith("/2"));
+    // Colon separator stripped, normalized to /1 /2 — matches pipeline behavior
+    assertEquals("SOLEXA_READ/1", records1.get(0).getReadName());
+    assertEquals("SOLEXA_READ/2", records2.get(0).getReadName());
   }
 
   /** Underscore-separated pair index: READ_1 / READ_2 */
@@ -600,8 +605,47 @@ public class FastqNormalizerTest {
     assertEquals(1, records1.size());
     assertEquals(1, records2.size());
 
-    assertTrue(records1.get(0).getReadName().endsWith("/1"));
-    assertTrue(records2.get(0).getReadName().endsWith("/2"));
+    // Underscore separator stripped, normalized to /1 /2 — matches pipeline behavior
+    assertEquals("PREFIX.1 MYREAD/1", records1.get(0).getReadName());
+    assertEquals("PREFIX.1 MYREAD/2", records2.get(0).getReadName());
+  }
+
+  /** Multi-digit pair index: READ.10 / READ.20 — normalized to /1 /2, matches pipeline. */
+  @Test
+  public void testPairedEndMultiDigitIndex() throws IOException {
+    Path inputFile1 = tempFolder.newFile("input_1.fastq").toPath();
+    Path inputFile2 = tempFolder.newFile("input_2.fastq").toPath();
+
+    Files.write(
+        inputFile1, ("@MYREAD.10\nACGTACGT\n+\nIIIIIIII\n").getBytes(StandardCharsets.UTF_8));
+    Files.write(
+        inputFile2, ("@MYREAD.20\nTTAATTAA\n+\nKKKKKKKK\n").getBytes(StandardCharsets.UTF_8));
+
+    Path outputFile1 = tempFolder.newFile("output_1.fastq").toPath();
+    Path outputFile2 = tempFolder.newFile("output_2.fastq").toPath();
+
+    FastqNormalizer.PairedNormalizationResult result =
+        FastqNormalizer.normalizePairedEnd(
+            inputFile1.toString(),
+            inputFile2.toString(),
+            outputFile1.toString(),
+            outputFile2.toString(),
+            "ERR006",
+            false,
+            tempFolder.getRoot());
+
+    assertEquals(1, result.getPairCount());
+    assertEquals(0, result.getOrphanCount());
+
+    List<FastqRecord> records1 = readFastq(outputFile1);
+    List<FastqRecord> records2 = readFastq(outputFile2);
+
+    assertEquals(1, records1.size());
+    assertEquals(1, records2.size());
+
+    // Multi-digit indices stripped, normalized to /1 /2 — matches pipeline behavior
+    assertEquals("ERR006.1 MYREAD/1", records1.get(0).getReadName());
+    assertEquals("ERR006.1 MYREAD/2", records2.get(0).getReadName());
   }
 
   // ---- Read count accuracy tests ----
@@ -758,6 +802,94 @@ public class FastqNormalizerTest {
     assertTrue(records1.get(0).getReadName().startsWith("RUN.1 "));
     assertTrue(records1.get(1).getReadName().startsWith("RUN.2 "));
     assertTrue(records1.get(2).getReadName().startsWith("RUN.3 "));
+  }
+
+  // ---- Base count tracking tests ----
+
+  @Test
+  public void testBaseCountSingleEnd() throws IOException {
+    Path inputFile = tempFolder.newFile("input.fastq").toPath();
+    // 3 reads: 8 + 5 + 4 = 17 bases
+    Files.write(
+        inputFile,
+        ("@READ1\nACGTACGT\n+\nIIIIIIII\n"
+                + "@READ2\nGGCCG\n+\nJJJJJ\n"
+                + "@READ3\nTTAA\n+\nKKKK\n")
+            .getBytes(StandardCharsets.UTF_8));
+
+    Path outputFile = tempFolder.newFile("output.fastq").toPath();
+    FastqNormalizer.SingleNormalizationResult result =
+        FastqNormalizer.normalizeSingleEndWithStats(
+            inputFile.toString(), outputFile.toString(), null, false);
+
+    assertEquals(3, result.getReadCount());
+    assertEquals(17, result.getBaseCount());
+  }
+
+  @Test
+  public void testBaseCountPairedEnd() throws IOException {
+    Path inputFile1 = tempFolder.newFile("input_1.fastq").toPath();
+    Path inputFile2 = tempFolder.newFile("input_2.fastq").toPath();
+
+    // 2 pairs: (8+8) + (5+5) = 26 bases
+    Files.write(
+        inputFile1,
+        ("@READA/1\nACGTACGT\n+\nIIIIIIII\n" + "@READB/1\nGGCCG\n+\nJJJJJ\n")
+            .getBytes(StandardCharsets.UTF_8));
+    Files.write(
+        inputFile2,
+        ("@READA/2\nTTAATTAA\n+\nKKKKKKKK\n" + "@READB/2\nCCGGC\n+\nLLLLL\n")
+            .getBytes(StandardCharsets.UTF_8));
+
+    Path outputFile1 = tempFolder.newFile("output_1.fastq").toPath();
+    Path outputFile2 = tempFolder.newFile("output_2.fastq").toPath();
+
+    FastqNormalizer.PairedNormalizationResult result =
+        FastqNormalizer.normalizePairedEnd(
+            inputFile1.toString(),
+            inputFile2.toString(),
+            outputFile1.toString(),
+            outputFile2.toString(),
+            null,
+            false,
+            tempFolder.getRoot());
+
+    assertEquals(2, result.getPairCount());
+    assertEquals(0, result.getOrphanCount());
+    assertEquals(26, result.getBaseCount());
+  }
+
+  @Test
+  public void testBaseCountWithOrphans() throws IOException {
+    Path inputFile1 = tempFolder.newFile("input_1.fastq").toPath();
+    Path inputFile2 = tempFolder.newFile("input_2.fastq").toPath();
+
+    // READA pairs (8+8=16), READB is orphan (5), READC is orphan (4) = 25 total
+    Files.write(
+        inputFile1,
+        ("@READA/1\nACGTACGT\n+\nIIIIIIII\n" + "@READB/1\nGGCCG\n+\nJJJJJ\n")
+            .getBytes(StandardCharsets.UTF_8));
+    Files.write(
+        inputFile2,
+        ("@READA/2\nTTAATTAA\n+\nKKKKKKKK\n" + "@READC/2\nCCGG\n+\nLLLL\n")
+            .getBytes(StandardCharsets.UTF_8));
+
+    Path outputFile1 = tempFolder.newFile("output_1.fastq").toPath();
+    Path outputFile2 = tempFolder.newFile("output_2.fastq").toPath();
+
+    FastqNormalizer.PairedNormalizationResult result =
+        FastqNormalizer.normalizePairedEnd(
+            inputFile1.toString(),
+            inputFile2.toString(),
+            outputFile1.toString(),
+            outputFile2.toString(),
+            null,
+            false,
+            tempFolder.getRoot());
+
+    assertEquals(1, result.getPairCount());
+    assertEquals(2, result.getOrphanCount());
+    assertEquals(25, result.getBaseCount());
   }
 
   // ---- Spill file reassembly tests ----
@@ -1065,15 +1197,15 @@ public class FastqNormalizerTest {
   }
 
   /** Manual test with arbitrary local files. Ignored by default. */
-  //  @org.junit.Ignore("Only run manually if needed.")
+//  @org.junit.Ignore("Only run manually if needed.")
   @Test
   public void testArbitraryFile() throws IOException {
     String input1 =
-        "/Users/eugene/IdeaProjects/readtools/tmp/NG-34612_V3V5b_5_lib735143_cleaned_2.fastq.gz";
+        "tmp/NG-34612_V3V5b_5_lib735143_cleaned_2.fastq.gz";
     String input2 =
-        "/Users/eugene/IdeaProjects/readtools/tmp/NG-34612_V3V5b_5_lib735143_cleaned_1.fastq.gz";
-    String output1 = "/Users/eugene/IdeaProjects/readtools/tmp/normalised_1.fastq";
-    String output2 = "/Users/eugene/IdeaProjects/readtools/tmp/normalised_2.fastq";
+        "tmp/NG-34612_V3V5b_5_lib735143_cleaned_1.fastq.gz";
+    String output1 = "tmp/normalised_1.fastq";
+    String output2 = "tmp/normalised_2.fastq";
 
     FastqNormalizer.PairedNormalizationResult result =
         FastqNormalizer.normalizePairedEnd(

@@ -62,9 +62,13 @@ public class Utils {
       String result = record.getReadString();
 
       if (matcher.reset(result).find()) {
-        String replacement = matcher.group().equals("U") ? "T" : "t";
-
-        result = matcher.replaceAll(replacement);
+        StringBuilder sb = new StringBuilder();
+        matcher.reset();
+        while (matcher.find()) {
+          matcher.appendReplacement(sb, matcher.group().equals("U") ? "T" : "t");
+        }
+        matcher.appendTail(sb);
+        result = sb.toString();
       }
 
       writer.write(
@@ -89,9 +93,13 @@ public class Utils {
   public static String replaceUracilBases(String bases) {
     Matcher matcher = URACIL_PATTERN.matcher(bases);
     if (matcher.find()) {
-      String replacement = matcher.group().equals("U") ? "T" : "t";
-
-      return matcher.replaceAll(replacement);
+      StringBuilder sb = new StringBuilder();
+      matcher.reset();
+      while (matcher.find()) {
+        matcher.appendReplacement(sb, matcher.group().equals("U") ? "T" : "t");
+      }
+      matcher.appendTail(sb);
+      return sb.toString();
     }
 
     return bases;

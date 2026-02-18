@@ -47,10 +47,12 @@ public class FastqNormalizer {
   public static class PairedNormalizationResult {
     private final long pairCount;
     private final long orphanCount;
+    private final long baseCount;
 
-    public PairedNormalizationResult(long pairCount, long orphanCount) {
+    public PairedNormalizationResult(long pairCount, long orphanCount, long baseCount) {
       this.pairCount = pairCount;
       this.orphanCount = orphanCount;
+      this.baseCount = baseCount;
     }
 
     /** Number of complete pairs written. */
@@ -67,6 +69,32 @@ public class FastqNormalizer {
     public long getTotalReadCount() {
       return pairCount * 2 + orphanCount;
     }
+
+    /** Total number of bases across all written reads. */
+    public long getBaseCount() {
+      return baseCount;
+    }
+  }
+
+  /** Result of a single-end normalization, providing detailed counts. */
+  public static class SingleNormalizationResult {
+    private final long readCount;
+    private final long baseCount;
+
+    public SingleNormalizationResult(long readCount, long baseCount) {
+      this.readCount = readCount;
+      this.baseCount = baseCount;
+    }
+
+    /** Number of reads written. */
+    public long getReadCount() {
+      return readCount;
+    }
+
+    /** Total number of bases across all written reads. */
+    public long getBaseCount() {
+      return baseCount;
+    }
   }
 
   /**
@@ -81,6 +109,23 @@ public class FastqNormalizer {
    * @throws IOException If file I/O fails
    */
   public static long normalizeSingleEnd(
+      String inputFastq, String outputFastq, String prefix, boolean convertUracil)
+      throws IOException {
+    return normalizeSingleEndWithStats(inputFastq, outputFastq, prefix, convertUracil)
+        .getReadCount();
+  }
+
+  /**
+   * Normalizes a single-end FASTQ file, returning detailed statistics.
+   *
+   * @param inputFastq Path to input FASTQ file (gz/bz2/plain auto-detected)
+   * @param outputFastq Path to output FASTQ file (extension determines compression)
+   * @param prefix Optional run ID prefix for read names (nullable)
+   * @param convertUracil If true, converts U bases to T
+   * @return Result containing read count and base count
+   * @throws IOException If file I/O fails
+   */
+  public static SingleNormalizationResult normalizeSingleEndWithStats(
       String inputFastq, String outputFastq, String prefix, boolean convertUracil)
       throws IOException {
 
@@ -102,6 +147,7 @@ public class FastqNormalizer {
             new BasicFastqWriter(new File(outputFastq)), AsyncFastqWriter.DEFAULT_QUEUE_SIZE);
 
     long counter = 0;
+    long baseCount = 0;
 
     try {
       for (FastqRecord record : reader) {
@@ -112,6 +158,7 @@ public class FastqNormalizer {
         if (convertUracil) {
           bases = Utils.replaceUracilBases(bases);
         }
+        baseCount += bases.length();
 
         // Normalize quality scores
         byte[] qualityBytes = record.getBaseQualityString().getBytes(StandardCharsets.UTF_8);
@@ -128,7 +175,6 @@ public class FastqNormalizer {
         }
 
         // Write record
-        // Note: quality header should be empty string or original header, not "+"
         writer.write(new FastqRecord(readName, bases, "", normalizedQuality));
       }
     } finally {
@@ -136,7 +182,7 @@ public class FastqNormalizer {
       writer.close();
     }
 
-    return counter;
+    return new SingleNormalizationResult(counter, baseCount);
   }
 
   /**
@@ -288,22 +334,25 @@ public class FastqNormalizer {
       long counter = 0;
       long pairCount = 0;
       long orphanCount = 0;
+      long baseCount = 0;
 
       try {
         if (spillFiles.isEmpty()) {
           // No spilling occurred — write everything from memory
-          long[] counts = writeFromMemory(writer1, writer2, counter);
-          counter = counts[0];
-          pairCount += counts[1];
-          orphanCount += counts[2];
+          WriteCounts counts = writeFromMemory(writer1, writer2, counter);
+          counter = counts.counter;
+          pairCount += counts.pairCount;
+          orphanCount += counts.orphanCount;
+          baseCount += counts.baseCount;
         } else {
           // Spilling occurred — the residual in-memory data is the base for reassembly.
           // processSpillFiles() will use pairMap as the starting point, matching the
           // pattern in AbstractPagedReadWriter.cascadeErrors().
-          long[] spillCounts = processSpillFiles(writer1, writer2, counter);
-          counter = spillCounts[0];
-          pairCount += spillCounts[1];
-          orphanCount += spillCounts[2];
+          WriteCounts spillCounts = processSpillFiles(writer1, writer2, counter);
+          counter = spillCounts.counter;
+          pairCount += spillCounts.pairCount;
+          orphanCount += spillCounts.orphanCount;
+          baseCount += spillCounts.baseCount;
         }
       } finally {
         writer1.close();
@@ -315,7 +364,7 @@ public class FastqNormalizer {
         }
       }
 
-      return new PairedNormalizationResult(pairCount, orphanCount);
+      return new PairedNormalizationResult(pairCount, orphanCount, baseCount);
     }
 
     private void processInputFiles() throws IOException {
@@ -453,12 +502,8 @@ public class FastqNormalizer {
       totalBytesInMemory = 0;
     }
 
-    /**
-     * Writes pairs and orphans from the in-memory pairMap, then clears it.
-     *
-     * @return long[] { counter, pairCount, orphanCount }
-     */
-    private long[] writeFromMemory(
+    /** Writes pairs and orphans from the in-memory pairMap, then clears it. */
+    private WriteCounts writeFromMemory(
         AsyncFastqWriter writer1, AsyncFastqWriter writer2, long counter) {
       // Sort keys lexicographically to match BAM queryname sort order
       List<String> sortedKeys = new ArrayList<>(pairMap.keySet());
@@ -466,6 +511,7 @@ public class FastqNormalizer {
 
       long pairCount = 0;
       long orphanCount = 0;
+      long baseCount = 0;
 
       for (String key : sortedKeys) {
         List<NormalizedRead> reads = pairMap.get(key);
@@ -473,10 +519,12 @@ public class FastqNormalizer {
 
         if (reads.get(0) != null && reads.get(1) != null) {
           writePair(writer1, writer2, reads, counter);
+          baseCount += reads.get(0).bases.length() + reads.get(1).bases.length();
           pairCount++;
         } else {
           NormalizedRead orphan = reads.get(0) != null ? reads.get(0) : reads.get(1);
           writeOrphan(writer1, orphan, counter);
+          baseCount += orphan.bases.length();
           orphanCount++;
         }
       }
@@ -484,7 +532,7 @@ public class FastqNormalizer {
       pairMap.clear();
       totalBytesInMemory = 0;
 
-      return new long[] {counter, pairCount, orphanCount};
+      return new WriteCounts(counter, pairCount, orphanCount, baseCount);
     }
 
     /**
@@ -497,12 +545,13 @@ public class FastqNormalizer {
      * processed, write completed pairs and orphans from pairMap, then repeat with any new
      * generation files.
      *
-     * @return long[] { counter, pairCount, orphanCount }
+     * @return WriteCounts with accumulated counter, pairCount, orphanCount, baseCount
      */
-    private long[] processSpillFiles(
+    private WriteCounts processSpillFiles(
         AsyncFastqWriter writer1, AsyncFastqWriter writer2, long counter) throws IOException {
       long pairCount = 0;
       long orphanCount = 0;
+      long baseCount = 0;
 
       int i = 0;
       do {
@@ -562,16 +611,17 @@ public class FastqNormalizer {
         }
 
         // Write completed pairs and remaining orphans from this generation
-        long[] counts = writeFromMemory(writer1, writer2, counter);
-        counter = counts[0];
-        pairCount += counts[1];
-        orphanCount += counts[2];
+        WriteCounts counts = writeFromMemory(writer1, writer2, counter);
+        counter = counts.counter;
+        pairCount += counts.pairCount;
+        orphanCount += counts.orphanCount;
+        baseCount += counts.baseCount;
 
         // Advance to next generation
         i = generation;
       } while (i < spillFiles.size());
 
-      return new long[] {counter, pairCount, orphanCount};
+      return new WriteCounts(counter, pairCount, orphanCount, baseCount);
     }
 
     /** Loads a spill file into pairMap. */
@@ -656,10 +706,12 @@ public class FastqNormalizer {
     }
 
     private static String stripPairSuffix(String readName) {
-      if (readName.endsWith("/1") || readName.endsWith("/2")) {
-        return readName.substring(0, readName.length() - 2);
+      try {
+        return PairedFastqWriter.getReadKey(readName);
+      } catch (ReadWriterException e) {
+        // If the name doesn't match any known pattern, return as-is.
+        return readName;
       }
-      return readName;
     }
 
     private File createTempFile() throws IOException {
@@ -688,6 +740,21 @@ public class FastqNormalizer {
       return new ObjectInputStream(
           new BufferedInputStream(
               new GZIPInputStream(new BufferedInputStream(new FileInputStream(file)))));
+    }
+  }
+
+  /** Accumulated counts from a batch of writes. */
+  private static class WriteCounts {
+    final long counter;
+    final long pairCount;
+    final long orphanCount;
+    final long baseCount;
+
+    WriteCounts(long counter, long pairCount, long orphanCount, long baseCount) {
+      this.counter = counter;
+      this.pairCount = pairCount;
+      this.orphanCount = orphanCount;
+      this.baseCount = baseCount;
     }
   }
 

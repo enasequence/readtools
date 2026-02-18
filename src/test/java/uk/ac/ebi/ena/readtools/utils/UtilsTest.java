@@ -26,8 +26,8 @@ import org.junit.Test;
 public class UtilsTest {
   @Test
   public void testSingleFastqTest() throws IOException {
-    String expectedUpper = "GACGGATCTATAGCAAAACT";
-    String expectedLower = "gacggatctatagcaaaact";
+    String expectedUpper = "GACGGATCtATAGCAAAACt";
+    String expectedLower = "gacggatcTatagcaaaacT";
 
     File output = File.createTempFile("FASTQ", "FASTQ");
     output.delete();
