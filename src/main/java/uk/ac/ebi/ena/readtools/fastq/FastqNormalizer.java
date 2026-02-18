@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import uk.ac.ebi.ena.readtools.common.reads.CasavaRead;
 import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.Pair;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
@@ -41,6 +42,32 @@ import uk.ac.ebi.ena.readtools.utils.Utils;
 public class FastqNormalizer {
 
   private static final int OUTPUT_BUFFER_SIZE = 8192;
+
+  /** Result of a paired-end normalization, providing detailed counts. */
+  public static class PairedNormalizationResult {
+    private final long pairCount;
+    private final long orphanCount;
+
+    public PairedNormalizationResult(long pairCount, long orphanCount) {
+      this.pairCount = pairCount;
+      this.orphanCount = orphanCount;
+    }
+
+    /** Number of complete pairs written. */
+    public long getPairCount() {
+      return pairCount;
+    }
+
+    /** Number of orphaned reads (missing mate) written. */
+    public long getOrphanCount() {
+      return orphanCount;
+    }
+
+    /** Total number of individual reads written (pairs * 2 + orphans). */
+    public long getTotalReadCount() {
+      return pairCount * 2 + orphanCount;
+    }
+  }
 
   /**
    * Normalizes a single-end FASTQ file.
@@ -122,10 +149,10 @@ public class FastqNormalizer {
    * @param prefix Optional run ID prefix (nullable)
    * @param convertUracil If true, converts U bases to T
    * @param tempDir Directory for temporary spill files
-   * @return Number of pairs written
+   * @return Result containing pair count, orphan count, and total read count
    * @throws IOException If file I/O fails
    */
-  public static long normalizePairedEnd(
+  public static PairedNormalizationResult normalizePairedEnd(
       String inputFastq1,
       String inputFastq2,
       String outputFastq1,
@@ -160,10 +187,10 @@ public class FastqNormalizer {
    * @param spillPageSize Maximum number of reads to keep in memory before spilling
    * @param spillPageSizeBytes Maximum memory usage in bytes before spilling
    * @param spillAbandonLimitBytes Maximum total spilled bytes before aborting
-   * @return Number of pairs written
+   * @return Result containing pair count, orphan count, and total read count
    * @throws IOException If file I/O fails
    */
-  public static long normalizePairedEnd(
+  public static PairedNormalizationResult normalizePairedEnd(
       String inputFastq1,
       String inputFastq2,
       String outputFastq1,
@@ -234,7 +261,7 @@ public class FastqNormalizer {
       this.spillPageSize = spillPageSize;
       this.spillPageSizeBytes = spillPageSizeBytes;
       this.spillAbandonLimitBytes = spillAbandonLimitBytes;
-      this.pairMap = new TreeMap<>();
+      this.pairMap = new HashMap<>(spillPageSize);
       this.totalBytesInMemory = 0;
       this.totalSpilledBytes = 0;
       this.spillFiles = new ArrayList<>();
@@ -242,7 +269,7 @@ public class FastqNormalizer {
       this.index2 = null;
     }
 
-    public long normalize() throws IOException {
+    public PairedNormalizationResult normalize() throws IOException {
       // Detect quality format
       FastqQualityFormat format = Utils.detectFastqQualityFormat(inputFastq1, inputFastq2);
       qualityNormalizer = Utils.getQualityNormalizer(format);
@@ -250,20 +277,45 @@ public class FastqNormalizer {
       // Process both input files
       processInputFiles();
 
-      // Write complete pairs from memory
-      long pairsWritten = writePairsFromMemory();
+      // Open output writers shared across in-memory write and spill processing
+      AsyncFastqWriter writer1 =
+          new AsyncFastqWriter(
+              new BasicFastqWriter(new File(outputFastq1)), AsyncFastqWriter.DEFAULT_QUEUE_SIZE);
+      AsyncFastqWriter writer2 =
+          new AsyncFastqWriter(
+              new BasicFastqWriter(new File(outputFastq2)), AsyncFastqWriter.DEFAULT_QUEUE_SIZE);
 
-      // Process spill files if any
-      if (!spillFiles.isEmpty()) {
-        pairsWritten += processSpillFiles();
+      long counter = 0;
+      long pairCount = 0;
+      long orphanCount = 0;
+
+      try {
+        if (spillFiles.isEmpty()) {
+          // No spilling occurred — write everything from memory
+          long[] counts = writeFromMemory(writer1, writer2, counter);
+          counter = counts[0];
+          pairCount += counts[1];
+          orphanCount += counts[2];
+        } else {
+          // Spilling occurred — the residual in-memory data is the base for reassembly.
+          // processSpillFiles() will use pairMap as the starting point, matching the
+          // pattern in AbstractPagedReadWriter.cascadeErrors().
+          long[] spillCounts = processSpillFiles(writer1, writer2, counter);
+          counter = spillCounts[0];
+          pairCount += spillCounts[1];
+          orphanCount += spillCounts[2];
+        }
+      } finally {
+        writer1.close();
+        writer2.close();
+
+        // Clean up spill files
+        for (File spillFile : spillFiles) {
+          spillFile.delete();
+        }
       }
 
-      // Clean up
-      for (File spillFile : spillFiles) {
-        spillFile.delete();
-      }
-
-      return pairsWritten;
+      return new PairedNormalizationResult(pairCount, orphanCount);
     }
 
     private void processInputFiles() throws IOException {
@@ -361,7 +413,11 @@ public class FastqNormalizer {
         readList.set(mappedIndex, normRead);
 
         // Update memory tracking
-        totalBytesInMemory += estimateReadSize(normRead);
+        totalBytesInMemory +=
+            normRead.readName.length()
+                + normRead.bases.length()
+                + normRead.qualities.length()
+                + 100;
 
         // Check if we need to spill
         if (pairMap.size() >= spillPageSize || totalBytesInMemory >= spillPageSizeBytes) {
@@ -371,10 +427,6 @@ public class FastqNormalizer {
       } catch (ReadWriterException e) {
         throw new IOException("Failed to extract read key/pair number: " + e.getMessage(), e);
       }
-    }
-
-    private long estimateReadSize(NormalizedRead read) {
-      return read.readName.length() + read.bases.length() + read.qualities.length() + 100;
     }
 
     private void spillToDisk() throws IOException {
@@ -401,58 +453,157 @@ public class FastqNormalizer {
       totalBytesInMemory = 0;
     }
 
-    private long writePairsFromMemory() throws IOException {
-      AsyncFastqWriter writer1 =
-          new AsyncFastqWriter(
-              new BasicFastqWriter(new File(outputFastq1)), AsyncFastqWriter.DEFAULT_QUEUE_SIZE);
-      AsyncFastqWriter writer2 =
-          new AsyncFastqWriter(
-              new BasicFastqWriter(new File(outputFastq2)), AsyncFastqWriter.DEFAULT_QUEUE_SIZE);
+    /**
+     * Writes pairs and orphans from the in-memory pairMap, then clears it.
+     *
+     * @return long[] { counter, pairCount, orphanCount }
+     */
+    private long[] writeFromMemory(
+        AsyncFastqWriter writer1, AsyncFastqWriter writer2, long counter) {
+      // Sort keys lexicographically to match BAM queryname sort order
+      List<String> sortedKeys = new ArrayList<>(pairMap.keySet());
+      Collections.sort(sortedKeys);
 
-      long counter = 0;
+      long pairCount = 0;
+      long orphanCount = 0;
 
-      try {
-        // Write complete pairs
-        for (Map.Entry<String, List<NormalizedRead>> entry : pairMap.entrySet()) {
-          List<NormalizedRead> reads = entry.getValue();
-          if (reads.get(0) != null && reads.get(1) != null) {
-            counter++;
-            writePair(writer1, writer2, reads, counter);
-          }
+      for (String key : sortedKeys) {
+        List<NormalizedRead> reads = pairMap.get(key);
+        counter++;
+
+        if (reads.get(0) != null && reads.get(1) != null) {
+          writePair(writer1, writer2, reads, counter);
+          pairCount++;
+        } else {
+          NormalizedRead orphan = reads.get(0) != null ? reads.get(0) : reads.get(1);
+          writeOrphan(writer1, orphan, counter);
+          orphanCount++;
         }
-
-        // Write orphaned reads (one mate missing) to the first output file,
-        // matching Sam2Fastq behavior where unpaired reads go to streams[0]
-        // without /1 or /2 suffix.
-        for (Map.Entry<String, List<NormalizedRead>> entry : pairMap.entrySet()) {
-          List<NormalizedRead> reads = entry.getValue();
-          if (reads.get(0) == null || reads.get(1) == null) {
-            NormalizedRead orphan = reads.get(0) != null ? reads.get(0) : reads.get(1);
-            counter++;
-            writeOrphan(writer1, orphan, counter);
-          }
-        }
-      } finally {
-        writer1.close();
-        writer2.close();
       }
 
-      return counter;
+      pairMap.clear();
+      totalBytesInMemory = 0;
+
+      return new long[] {counter, pairCount, orphanCount};
     }
 
-    private long processSpillFiles() throws IOException {
-      // TODO: Implement multi-pass spill file processing
-      // For now, throw exception if spilling occurred
-      throw new IOException(
-          "Spill file processing not yet implemented. Input files may be too large or out of order.");
+    /**
+     * Multi-generation spill file reassembly, following the pattern from
+     * AbstractPagedReadWriter.cascadeErrors().
+     *
+     * <p>Algorithm: load one spill file into pairMap as the base. Stream each remaining spill file
+     * entry-by-entry: if the key exists in pairMap, merge the reads (completing a pair or adding to
+     * the slot); if not, re-spill to a new generation file. After all files in one generation are
+     * processed, write completed pairs and orphans from pairMap, then repeat with any new
+     * generation files.
+     *
+     * @return long[] { counter, pairCount, orphanCount }
+     */
+    private long[] processSpillFiles(
+        AsyncFastqWriter writer1, AsyncFastqWriter writer2, long counter) throws IOException {
+      long pairCount = 0;
+      long orphanCount = 0;
+
+      int i = 0;
+      do {
+        // If pairMap is empty, load the first unprocessed spill file as base
+        if (pairMap.isEmpty()) {
+          loadSpillFile(spillFiles.get(i++));
+        }
+
+        // Snapshot current file count — files added during this loop are next generation
+        int generation = spillFiles.size();
+
+        // Stream remaining files in this generation against the in-memory base
+        for (int j = i; j < generation; j++) {
+          ObjectInputStream ois = null;
+          ObjectOutputStream oos = null;
+
+          try {
+            ois = openInputStream(spillFiles.get(j));
+
+            for (; ; ) {
+              @SuppressWarnings("unchecked")
+              Pair<String, List<NormalizedRead>> entry =
+                  (Pair<String, List<NormalizedRead>>) ois.readObject();
+
+              if (pairMap.containsKey(entry.key)) {
+                // Merge: fill in the missing slot(s)
+                List<NormalizedRead> existing = pairMap.get(entry.key);
+                for (int k = 0; k < entry.value.size(); k++) {
+                  if (entry.value.get(k) != null && existing.get(k) == null) {
+                    existing.set(k, entry.value.get(k));
+                  }
+                }
+              } else {
+                // No match in memory — re-spill to next generation
+                if (oos == null) {
+                  File nextGenFile = createTempFile();
+                  spillFiles.add(nextGenFile);
+                  oos = openOutputStream(nextGenFile);
+                }
+                oos.writeObject(entry);
+                entry.value = null;
+                oos.reset();
+              }
+            }
+          } catch (EOFException eof) {
+            // Normal end of spill file
+            if (ois != null) {
+              ois.close();
+            }
+          } catch (ClassNotFoundException e) {
+            throw new IOException("Failed to deserialize spill file entry", e);
+          }
+
+          if (oos != null) {
+            oos.close();
+          }
+        }
+
+        // Write completed pairs and remaining orphans from this generation
+        long[] counts = writeFromMemory(writer1, writer2, counter);
+        counter = counts[0];
+        pairCount += counts[1];
+        orphanCount += counts[2];
+
+        // Advance to next generation
+        i = generation;
+      } while (i < spillFiles.size());
+
+      return new long[] {counter, pairCount, orphanCount};
+    }
+
+    /** Loads a spill file into pairMap. */
+    @SuppressWarnings("unchecked")
+    private void loadSpillFile(File file) throws IOException {
+      pairMap.clear();
+      totalBytesInMemory = 0;
+
+      try (ObjectInputStream ois = openInputStream(file)) {
+        for (; ; ) {
+          Pair<String, List<NormalizedRead>> entry =
+              (Pair<String, List<NormalizedRead>>) ois.readObject();
+          pairMap.put(entry.key, entry.value);
+          for (NormalizedRead read : entry.value) {
+            if (read != null) {
+              totalBytesInMemory +=
+                  read.readName.length() + read.bases.length() + read.qualities.length() + 100;
+            }
+          }
+        }
+      } catch (EOFException eof) {
+        // Normal end of file
+      } catch (ClassNotFoundException e) {
+        throw new IOException("Failed to deserialize spill file", e);
+      }
     }
 
     private void writePair(
         AsyncFastqWriter writer1,
         AsyncFastqWriter writer2,
         List<NormalizedRead> reads,
-        long counter)
-        throws IOException {
+        long counter) {
 
       // Sort by pair number
       reads.sort(Comparator.comparingInt(r -> r.pairNumber));
@@ -460,18 +611,29 @@ public class FastqNormalizer {
       NormalizedRead read1 = reads.get(0);
       NormalizedRead read2 = reads.get(1);
 
-      // Build read names with prefix and /1 /2 suffixes
-      // Strip any existing /1 or /2 suffix from read names
-      String baseName1 = read1.readName.replaceAll("/[12]$", "");
-      String baseName2 = read2.readName.replaceAll("/[12]$", "");
+      // Casava 1.8 read names already contain the pair number in the metadata
+      // (e.g. "inst:run:fc:lane:tile:x:y 1:N:0:barcode"), so don't append /1 /2.
+      boolean casava = CasavaRead.getBaseNameOrNull(read1.readName) != null;
 
       String name1, name2;
-      if (prefix != null) {
-        name1 = prefix + "." + counter + " " + baseName1 + "/1";
-        name2 = prefix + "." + counter + " " + baseName2 + "/2";
+      if (casava) {
+        if (prefix != null) {
+          name1 = prefix + "." + counter + " " + read1.readName;
+          name2 = prefix + "." + counter + " " + read2.readName;
+        } else {
+          name1 = read1.readName;
+          name2 = read2.readName;
+        }
       } else {
-        name1 = baseName1 + "/1";
-        name2 = baseName2 + "/2";
+        String baseName1 = stripPairSuffix(read1.readName);
+        String baseName2 = stripPairSuffix(read2.readName);
+        if (prefix != null) {
+          name1 = prefix + "." + counter + " " + baseName1 + "/1";
+          name2 = prefix + "." + counter + " " + baseName2 + "/2";
+        } else {
+          name1 = baseName1 + "/1";
+          name2 = baseName2 + "/2";
+        }
       }
 
       writer1.write(new FastqRecord(name1, read1.bases, "", read1.qualities));
@@ -479,7 +641,9 @@ public class FastqNormalizer {
     }
 
     private void writeOrphan(AsyncFastqWriter writer, NormalizedRead read, long counter) {
-      String baseName = read.readName.replaceAll("/[12]$", "");
+      // Casava read names are kept as-is; non-Casava get pair suffix stripped.
+      boolean casava = CasavaRead.getBaseNameOrNull(read.readName) != null;
+      String baseName = casava ? read.readName : stripPairSuffix(read.readName);
 
       String name;
       if (prefix != null) {
@@ -489,6 +653,13 @@ public class FastqNormalizer {
       }
 
       writer.write(new FastqRecord(name, read.bases, "", read.qualities));
+    }
+
+    private static String stripPairSuffix(String readName) {
+      if (readName.endsWith("/1") || readName.endsWith("/2")) {
+        return readName.substring(0, readName.length() - 2);
+      }
+      return readName;
     }
 
     private File createTempFile() throws IOException {

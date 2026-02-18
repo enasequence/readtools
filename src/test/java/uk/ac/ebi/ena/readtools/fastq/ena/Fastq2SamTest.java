@@ -812,6 +812,321 @@ public class Fastq2SamTest {
         "2ec1bbc086ce496fa2711a449a35bac9", calculateFileMd5(new File(params.data_file)));
   }
 
+  // ---- Spill reassembly tests ----
+  // These tests generate paired FASTQ files and use tiny spill_page_size values to force
+  // disk spilling. They verify that multi-generation reassembly produces identical BAM output
+  // to the no-spill case.
+
+  /**
+   * In-order pairs with spill_page_size=2. Mates arrive round-robin and land in the same map entry,
+   * so pairs are complete before spilling. Verifies basic spill+reassembly produces identical BAM
+   * to no-spill run.
+   */
+  @Test
+  public void testSpillReassemblyInOrder()
+      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+    Path tempDir = Files.createTempDirectory("fastq_spill_test");
+
+    Path fastqFile1 = tempDir.resolve("input_1.fastq");
+    Path fastqFile2 = tempDir.resolve("input_2.fastq");
+
+    // 6 pairs, in order
+    List<String> lines1 = new ArrayList<>();
+    List<String> lines2 = new ArrayList<>();
+    for (int i = 0; i < 6; i++) {
+      String name = String.format("READ%03d", i);
+      lines1.addAll(
+          Arrays.asList(
+              "@" + name + "/1",
+              "ACGTACGTACGTACGTACGTACGTACGTACGT",
+              "+",
+              "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+      lines2.addAll(
+          Arrays.asList(
+              "@" + name + "/2",
+              "TTAATTAATTAATTAATTAATTAATTAATTAA",
+              "+",
+              "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+    }
+    Files.write(fastqFile1, lines1);
+    Files.write(fastqFile2, lines2);
+
+    // Run without spilling (default thresholds)
+    String noSpillBam = Files.createTempFile(tempDir, "nospill", ".bam").toString();
+    Fastq2Sam.Params noSpillParams = new Fastq2Sam.Params();
+    noSpillParams.tmp_root = tempDir.toString();
+    noSpillParams.sample_name = "SM-001";
+    noSpillParams.data_file = noSpillBam;
+    noSpillParams.compression = FileCompression.NONE.name();
+    noSpillParams.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+
+    Fastq2Sam noSpillF2s = new Fastq2Sam();
+    noSpillF2s.create(noSpillParams);
+
+    Assert.assertEquals(12, noSpillF2s.getTotalReadCount());
+    String noSpillMd5 = calculateFileMd5(new File(noSpillBam));
+
+    // Run with spill_page_size=2
+    String spillBam = Files.createTempFile(tempDir, "spill", ".bam").toString();
+    Fastq2Sam.Params spillParams = new Fastq2Sam.Params();
+    spillParams.tmp_root = tempDir.toString();
+    spillParams.sample_name = "SM-001";
+    spillParams.data_file = spillBam;
+    spillParams.compression = FileCompression.NONE.name();
+    spillParams.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+    spillParams.spill_page_size = 2;
+    spillParams.spill_page_size_bytes = Long.MAX_VALUE;
+    spillParams.spill_abandon_limit_bytes = Long.MAX_VALUE;
+
+    Fastq2Sam spillF2s = new Fastq2Sam();
+    spillF2s.create(spillParams);
+
+    Assert.assertEquals(12, spillF2s.getTotalReadCount());
+    String spillMd5 = calculateFileMd5(new File(spillBam));
+
+    Assert.assertEquals("Spill BAM should be identical to no-spill BAM", noSpillMd5, spillMd5);
+  }
+
+  /**
+   * Cross-page mates: with spill_page_size=1, mates from the same pair can end up in different
+   * spill pages, requiring multi-generation reassembly. Verifies all reads are still correctly
+   * paired and the BAM is identical to the no-spill baseline.
+   */
+  @Test
+  public void testSpillReassemblyCrossPage()
+      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+    Path tempDir = Files.createTempDirectory("fastq_spill_test");
+
+    Path fastqFile1 = tempDir.resolve("input_1.fastq");
+    Path fastqFile2 = tempDir.resolve("input_2.fastq");
+
+    // 4 pairs
+    List<String> lines1 = new ArrayList<>();
+    List<String> lines2 = new ArrayList<>();
+    for (int i = 0; i < 4; i++) {
+      String name = String.format("READ%03d", i);
+      lines1.addAll(
+          Arrays.asList(
+              "@" + name + "/1",
+              "ACGTACGTACGTACGTACGTACGTACGTACGT",
+              "+",
+              "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+      lines2.addAll(
+          Arrays.asList(
+              "@" + name + "/2",
+              "TTAATTAATTAATTAATTAATTAATTAATTAA",
+              "+",
+              "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+    }
+    Files.write(fastqFile1, lines1);
+    Files.write(fastqFile2, lines2);
+
+    // No-spill baseline
+    String noSpillBam = Files.createTempFile(tempDir, "nospill", ".bam").toString();
+    Fastq2Sam.Params noSpillParams = new Fastq2Sam.Params();
+    noSpillParams.tmp_root = tempDir.toString();
+    noSpillParams.sample_name = "SM-001";
+    noSpillParams.data_file = noSpillBam;
+    noSpillParams.compression = FileCompression.NONE.name();
+    noSpillParams.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+
+    Fastq2Sam noSpillF2s = new Fastq2Sam();
+    noSpillF2s.create(noSpillParams);
+
+    Assert.assertEquals(8, noSpillF2s.getTotalReadCount());
+    String noSpillMd5 = calculateFileMd5(new File(noSpillBam));
+
+    // Spill with page_size=1 — forces spill after every single entry
+    String spillBam = Files.createTempFile(tempDir, "spill", ".bam").toString();
+    Fastq2Sam.Params spillParams = new Fastq2Sam.Params();
+    spillParams.tmp_root = tempDir.toString();
+    spillParams.sample_name = "SM-001";
+    spillParams.data_file = spillBam;
+    spillParams.compression = FileCompression.NONE.name();
+    spillParams.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+    spillParams.spill_page_size = 1;
+    spillParams.spill_page_size_bytes = Long.MAX_VALUE;
+    spillParams.spill_abandon_limit_bytes = Long.MAX_VALUE;
+
+    Fastq2Sam spillF2s = new Fastq2Sam();
+    spillF2s.create(spillParams);
+
+    Assert.assertEquals(8, spillF2s.getTotalReadCount());
+    String spillMd5 = calculateFileMd5(new File(spillBam));
+
+    Assert.assertEquals(
+        "Cross-page spill BAM should be identical to no-spill BAM", noSpillMd5, spillMd5);
+  }
+
+  /**
+   * Spill with orphans: equal-length files where some reads lack mates, combined with tiny spill
+   * threshold. Verifies orphaned reads survive the spill reassembly process and the BAM is
+   * identical to no-spill.
+   */
+  @Test
+  public void testSpillReassemblyWithOrphans()
+      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+    Path tempDir = Files.createTempDirectory("fastq_spill_test");
+
+    Path fastqFile1 = tempDir.resolve("input_1.fastq");
+    Path fastqFile2 = tempDir.resolve("input_2.fastq");
+
+    // Both files have 5 reads. A, C, E pair normally.
+    // B and D have /1 in file1 but /2 with different keys in file2 → orphans.
+    List<String> lines1 = new ArrayList<>();
+    List<String> lines2 = new ArrayList<>();
+    String[] names = {"READA", "READB", "READC", "READD", "READE"};
+    for (String name : names) {
+      lines1.addAll(
+          Arrays.asList(
+              "@" + name + "/1",
+              "ACGTACGTACGTACGTACGTACGTACGTACGT",
+              "+",
+              "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+    }
+    // File 2: A, C, E have matching mates; XORPHAN1 and XORPHAN2 are unmatched
+    lines2.addAll(
+        Arrays.asList(
+            "@READA/2",
+            "TTAATTAATTAATTAATTAATTAATTAATTAA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+    lines2.addAll(
+        Arrays.asList(
+            "@XORPHAN1/2",
+            "TTAATTAATTAATTAATTAATTAATTAATTAA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+    lines2.addAll(
+        Arrays.asList(
+            "@READC/2",
+            "TTAATTAATTAATTAATTAATTAATTAATTAA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+    lines2.addAll(
+        Arrays.asList(
+            "@XORPHAN2/2",
+            "TTAATTAATTAATTAATTAATTAATTAATTAA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+    lines2.addAll(
+        Arrays.asList(
+            "@READE/2",
+            "TTAATTAATTAATTAATTAATTAATTAATTAA",
+            "+",
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+
+    Files.write(fastqFile1, lines1);
+    Files.write(fastqFile2, lines2);
+
+    // No-spill baseline
+    // 3 pairs (A, C, E) + 4 orphans (B/1, D/1, XORPHAN1/2, XORPHAN2/2) = 10 reads
+    String noSpillBam = Files.createTempFile(tempDir, "nospill", ".bam").toString();
+    Fastq2Sam.Params noSpillParams = new Fastq2Sam.Params();
+    noSpillParams.tmp_root = tempDir.toString();
+    noSpillParams.sample_name = "SM-001";
+    noSpillParams.data_file = noSpillBam;
+    noSpillParams.compression = FileCompression.NONE.name();
+    noSpillParams.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+
+    Fastq2Sam noSpillF2s = new Fastq2Sam();
+    noSpillF2s.create(noSpillParams);
+
+    Assert.assertEquals(10, noSpillF2s.getTotalReadCount());
+    String noSpillMd5 = calculateFileMd5(new File(noSpillBam));
+
+    // Spill with page_size=2
+    String spillBam = Files.createTempFile(tempDir, "spill", ".bam").toString();
+    Fastq2Sam.Params spillParams = new Fastq2Sam.Params();
+    spillParams.tmp_root = tempDir.toString();
+    spillParams.sample_name = "SM-001";
+    spillParams.data_file = spillBam;
+    spillParams.compression = FileCompression.NONE.name();
+    spillParams.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+    spillParams.spill_page_size = 2;
+    spillParams.spill_page_size_bytes = Long.MAX_VALUE;
+    spillParams.spill_abandon_limit_bytes = Long.MAX_VALUE;
+
+    Fastq2Sam spillF2s = new Fastq2Sam();
+    spillF2s.create(spillParams);
+
+    Assert.assertEquals(10, spillF2s.getTotalReadCount());
+    String spillMd5 = calculateFileMd5(new File(spillBam));
+
+    Assert.assertEquals(
+        "Spill with orphans BAM should be identical to no-spill BAM", noSpillMd5, spillMd5);
+  }
+
+  /**
+   * Large-scale spill: 20 pairs with spill_page_size=3, forcing many spill/reassembly generations.
+   * Verifies all reads survive and the BAM is identical to the no-spill baseline.
+   */
+  @Test
+  public void testSpillReassemblyManyReads()
+      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+    Path tempDir = Files.createTempDirectory("fastq_spill_test");
+
+    Path fastqFile1 = tempDir.resolve("input_1.fastq");
+    Path fastqFile2 = tempDir.resolve("input_2.fastq");
+
+    int numPairs = 20;
+    List<String> lines1 = new ArrayList<>();
+    List<String> lines2 = new ArrayList<>();
+    for (int i = 0; i < numPairs; i++) {
+      String name = String.format("READ%03d", i);
+      lines1.addAll(
+          Arrays.asList(
+              "@" + name + "/1",
+              "ACGTACGTACGTACGTACGTACGTACGTACGT",
+              "+",
+              "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+      lines2.addAll(
+          Arrays.asList(
+              "@" + name + "/2",
+              "TTAATTAATTAATTAATTAATTAATTAATTAA",
+              "+",
+              "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"));
+    }
+    Files.write(fastqFile1, lines1);
+    Files.write(fastqFile2, lines2);
+
+    // No-spill baseline
+    String noSpillBam = Files.createTempFile(tempDir, "nospill", ".bam").toString();
+    Fastq2Sam.Params noSpillParams = new Fastq2Sam.Params();
+    noSpillParams.tmp_root = tempDir.toString();
+    noSpillParams.sample_name = "SM-001";
+    noSpillParams.data_file = noSpillBam;
+    noSpillParams.compression = FileCompression.NONE.name();
+    noSpillParams.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+
+    Fastq2Sam noSpillF2s = new Fastq2Sam();
+    noSpillF2s.create(noSpillParams);
+
+    Assert.assertEquals(numPairs * 2, noSpillF2s.getTotalReadCount());
+    String noSpillMd5 = calculateFileMd5(new File(noSpillBam));
+
+    // Spill with page_size=3
+    String spillBam = Files.createTempFile(tempDir, "spill", ".bam").toString();
+    Fastq2Sam.Params spillParams = new Fastq2Sam.Params();
+    spillParams.tmp_root = tempDir.toString();
+    spillParams.sample_name = "SM-001";
+    spillParams.data_file = spillBam;
+    spillParams.compression = FileCompression.NONE.name();
+    spillParams.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+    spillParams.spill_page_size = 3;
+    spillParams.spill_page_size_bytes = Long.MAX_VALUE;
+    spillParams.spill_abandon_limit_bytes = Long.MAX_VALUE;
+
+    Fastq2Sam spillF2s = new Fastq2Sam();
+    spillF2s.create(spillParams);
+
+    Assert.assertEquals(numPairs * 2, spillF2s.getTotalReadCount());
+    String spillMd5 = calculateFileMd5(new File(spillBam));
+
+    Assert.assertEquals(
+        "Many-reads spill BAM should be identical to no-spill BAM", noSpillMd5, spillMd5);
+  }
+
   private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {
     Map<String, List<FastqRecord>> fastqRecordMap = new LinkedHashMap<>();
 
