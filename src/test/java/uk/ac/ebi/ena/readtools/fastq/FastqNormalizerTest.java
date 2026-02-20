@@ -1197,7 +1197,7 @@ public class FastqNormalizerTest {
   }
 
   /** Manual test with arbitrary local files. Ignored by default. */
-//  @org.junit.Ignore("Only run manually if needed.")
+  @org.junit.Ignore("Only run manually if needed.")
   @Test
   public void testArbitraryFile() throws IOException {
     String input1 =
