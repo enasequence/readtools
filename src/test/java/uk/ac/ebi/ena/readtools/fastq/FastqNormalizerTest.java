@@ -1200,10 +1200,8 @@ public class FastqNormalizerTest {
   @org.junit.Ignore("Only run manually if needed.")
   @Test
   public void testArbitraryFile() throws IOException {
-    String input1 =
-        "tmp/NG-34612_V3V5b_5_lib735143_cleaned_2.fastq.gz";
-    String input2 =
-        "tmp/NG-34612_V3V5b_5_lib735143_cleaned_1.fastq.gz";
+    String input1 = "tmp/NG-34612_V3V5b_5_lib735143_cleaned_2.fastq.gz";
+    String input2 = "tmp/NG-34612_V3V5b_5_lib735143_cleaned_1.fastq.gz";
     String output1 = "tmp/normalised_1.fastq";
     String output2 = "tmp/normalised_2.fastq";
 
