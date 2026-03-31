@@ -188,6 +188,9 @@ public class FastqNormalizer {
   /**
    * Normalizes paired-end FASTQ files with default thresholds.
    *
+   * <p>The orphan output path is derived from the paired output names when possible (for example,
+   * `sample_1.fastq` + `sample_2.fastq` -> `sample.fastq`).
+   *
    * @param inputFastq1 Path to first mate FASTQ file
    * @param inputFastq2 Path to second mate FASTQ file
    * @param outputFastq1 Path to output first mate FASTQ file
@@ -212,6 +215,42 @@ public class FastqNormalizer {
         inputFastq2,
         outputFastq1,
         outputFastq2,
+        deriveOrphanOutputPath(outputFastq1, outputFastq2),
+        prefix,
+        convertUracil,
+        tempDir);
+  }
+
+  /**
+   * Normalizes paired-end FASTQ files with default thresholds.
+   *
+   * @param inputFastq1 Path to first mate FASTQ file
+   * @param inputFastq2 Path to second mate FASTQ file
+   * @param outputFastq1 Path to output first mate FASTQ file
+   * @param outputFastq2 Path to output second mate FASTQ file
+   * @param outputFastqOrphans Path to output orphan FASTQ file
+   * @param prefix Optional run ID prefix (nullable)
+   * @param convertUracil If true, converts U bases to T
+   * @param tempDir Directory for temporary spill files
+   * @return Result containing pair count, orphan count, and total read count
+   * @throws IOException If file I/O fails
+   */
+  public static PairedNormalizationResult normalizePairedEnd(
+      String inputFastq1,
+      String inputFastq2,
+      String outputFastq1,
+      String outputFastq2,
+      String outputFastqOrphans,
+      String prefix,
+      boolean convertUracil,
+      File tempDir)
+      throws IOException {
+    return normalizePairedEnd(
+        inputFastq1,
+        inputFastq2,
+        outputFastq1,
+        outputFastq2,
+        outputFastqOrphans,
         prefix,
         convertUracil,
         tempDir,
@@ -222,6 +261,9 @@ public class FastqNormalizer {
 
   /**
    * Normalizes paired-end FASTQ files with full pairing/sorting/spilling support.
+   *
+   * <p>The orphan output path is derived from the paired output names when possible (for example,
+   * `sample_1.fastq` + `sample_2.fastq` -> `sample.fastq`).
    *
    * @param inputFastq1 Path to first mate FASTQ file
    * @param inputFastq2 Path to second mate FASTQ file
@@ -248,6 +290,50 @@ public class FastqNormalizer {
       long spillPageSizeBytes,
       long spillAbandonLimitBytes)
       throws IOException {
+    return normalizePairedEnd(
+        inputFastq1,
+        inputFastq2,
+        outputFastq1,
+        outputFastq2,
+        deriveOrphanOutputPath(outputFastq1, outputFastq2),
+        prefix,
+        convertUracil,
+        tempDir,
+        spillPageSize,
+        spillPageSizeBytes,
+        spillAbandonLimitBytes);
+  }
+
+  /**
+   * Normalizes paired-end FASTQ files with full pairing/sorting/spilling support.
+   *
+   * @param inputFastq1 Path to first mate FASTQ file
+   * @param inputFastq2 Path to second mate FASTQ file
+   * @param outputFastq1 Path to output first mate FASTQ file
+   * @param outputFastq2 Path to output second mate FASTQ file
+   * @param outputFastqOrphans Path to output orphan FASTQ file
+   * @param prefix Optional run ID prefix (nullable)
+   * @param convertUracil If true, converts U bases to T
+   * @param tempDir Directory for temporary spill files
+   * @param spillPageSize Maximum number of reads to keep in memory before spilling
+   * @param spillPageSizeBytes Maximum memory usage in bytes before spilling
+   * @param spillAbandonLimitBytes Maximum total spilled bytes before aborting
+   * @return Result containing pair count, orphan count, and total read count
+   * @throws IOException If file I/O fails
+   */
+  public static PairedNormalizationResult normalizePairedEnd(
+      String inputFastq1,
+      String inputFastq2,
+      String outputFastq1,
+      String outputFastq2,
+      String outputFastqOrphans,
+      String prefix,
+      boolean convertUracil,
+      File tempDir,
+      int spillPageSize,
+      long spillPageSizeBytes,
+      long spillAbandonLimitBytes)
+      throws IOException {
 
     PairedNormalizer normalizer =
         new PairedNormalizer(
@@ -255,6 +341,7 @@ public class FastqNormalizer {
             inputFastq2,
             outputFastq1,
             outputFastq2,
+            outputFastqOrphans,
             prefix,
             convertUracil,
             tempDir,
@@ -265,12 +352,39 @@ public class FastqNormalizer {
     return normalizer.normalize();
   }
 
+  /** Best-effort compatibility mapping from paired output names to a singleton/orphan output. */
+  private static String deriveOrphanOutputPath(String outputFastq1, String outputFastq2) {
+    String[][] suffixPairs = {
+      {"_1.fastq.gz", "_2.fastq.gz"},
+      {"_1.fq.gz", "_2.fq.gz"},
+      {"_1.fastq", "_2.fastq"},
+      {"_1.fq", "_2.fq"},
+    };
+
+    for (String[] suffixPair : suffixPairs) {
+      String suffix1 = suffixPair[0];
+      String suffix2 = suffixPair[1];
+      if (!outputFastq1.endsWith(suffix1) || !outputFastq2.endsWith(suffix2)) {
+        continue;
+      }
+
+      String base1 = outputFastq1.substring(0, outputFastq1.length() - suffix1.length());
+      String base2 = outputFastq2.substring(0, outputFastq2.length() - suffix2.length());
+      if (base1.equals(base2)) {
+        return base1 + suffix1.substring(2);
+      }
+    }
+
+    return outputFastq1 + ".orphans";
+  }
+
   /** Helper class for paired-end normalization with buffering and spilling. */
   private static class PairedNormalizer {
     private final String inputFastq1;
     private final String inputFastq2;
     private final String outputFastq1;
     private final String outputFastq2;
+    private final String outputFastqOrphans;
     private final String prefix;
     private final boolean convertUracil;
     private final File tempDir;
@@ -291,6 +405,7 @@ public class FastqNormalizer {
         String inputFastq2,
         String outputFastq1,
         String outputFastq2,
+        String outputFastqOrphans,
         String prefix,
         boolean convertUracil,
         File tempDir,
@@ -301,6 +416,7 @@ public class FastqNormalizer {
       this.inputFastq2 = inputFastq2;
       this.outputFastq1 = outputFastq1;
       this.outputFastq2 = outputFastq2;
+      this.outputFastqOrphans = outputFastqOrphans;
       this.prefix = prefix;
       this.convertUracil = convertUracil;
       this.tempDir = tempDir;
@@ -330,6 +446,10 @@ public class FastqNormalizer {
       AsyncFastqWriter writer2 =
           new AsyncFastqWriter(
               new BasicFastqWriter(new File(outputFastq2)), AsyncFastqWriter.DEFAULT_QUEUE_SIZE);
+      AsyncFastqWriter writerOrphans =
+          new AsyncFastqWriter(
+              new BasicFastqWriter(new File(outputFastqOrphans)),
+              AsyncFastqWriter.DEFAULT_QUEUE_SIZE);
 
       long counter = 0;
       long pairCount = 0;
@@ -339,7 +459,7 @@ public class FastqNormalizer {
       try {
         if (spillFiles.isEmpty()) {
           // No spilling occurred — write everything from memory
-          WriteCounts counts = writeFromMemory(writer1, writer2, counter);
+          WriteCounts counts = writeFromMemory(writer1, writer2, writerOrphans, counter);
           counter = counts.counter;
           pairCount += counts.pairCount;
           orphanCount += counts.orphanCount;
@@ -348,7 +468,7 @@ public class FastqNormalizer {
           // Spilling occurred — the residual in-memory data is the base for reassembly.
           // processSpillFiles() will use pairMap as the starting point, matching the
           // pattern in AbstractPagedReadWriter.cascadeErrors().
-          WriteCounts spillCounts = processSpillFiles(writer1, writer2, counter);
+          WriteCounts spillCounts = processSpillFiles(writer1, writer2, writerOrphans, counter);
           counter = spillCounts.counter;
           pairCount += spillCounts.pairCount;
           orphanCount += spillCounts.orphanCount;
@@ -357,6 +477,7 @@ public class FastqNormalizer {
       } finally {
         writer1.close();
         writer2.close();
+        writerOrphans.close();
 
         // Clean up spill files
         for (File spillFile : spillFiles) {
@@ -504,7 +625,10 @@ public class FastqNormalizer {
 
     /** Writes pairs and orphans from the in-memory pairMap, then clears it. */
     private WriteCounts writeFromMemory(
-        AsyncFastqWriter writer1, AsyncFastqWriter writer2, long counter) {
+        AsyncFastqWriter writer1,
+        AsyncFastqWriter writer2,
+        AsyncFastqWriter writerOrphans,
+        long counter) {
       // Sort keys lexicographically to match BAM queryname sort order
       List<String> sortedKeys = new ArrayList<>(pairMap.keySet());
       Collections.sort(sortedKeys);
@@ -523,7 +647,7 @@ public class FastqNormalizer {
           pairCount++;
         } else {
           NormalizedRead orphan = reads.get(0) != null ? reads.get(0) : reads.get(1);
-          writeOrphan(writer1, orphan, counter);
+          writeOrphan(writerOrphans, orphan, counter);
           baseCount += orphan.bases.length();
           orphanCount++;
         }
@@ -548,7 +672,11 @@ public class FastqNormalizer {
      * @return WriteCounts with accumulated counter, pairCount, orphanCount, baseCount
      */
     private WriteCounts processSpillFiles(
-        AsyncFastqWriter writer1, AsyncFastqWriter writer2, long counter) throws IOException {
+        AsyncFastqWriter writer1,
+        AsyncFastqWriter writer2,
+        AsyncFastqWriter writerOrphans,
+        long counter)
+        throws IOException {
       long pairCount = 0;
       long orphanCount = 0;
       long baseCount = 0;
@@ -611,7 +739,7 @@ public class FastqNormalizer {
         }
 
         // Write completed pairs and remaining orphans from this generation
-        WriteCounts counts = writeFromMemory(writer1, writer2, counter);
+        WriteCounts counts = writeFromMemory(writer1, writer2, writerOrphans, counter);
         counter = counts.counter;
         pairCount += counts.pairCount;
         orphanCount += counts.orphanCount;
@@ -691,15 +819,23 @@ public class FastqNormalizer {
     }
 
     private void writeOrphan(AsyncFastqWriter writer, NormalizedRead read, long counter) {
-      // Casava read names are kept as-is; non-Casava get pair suffix stripped.
       boolean casava = CasavaRead.getBaseNameOrNull(read.readName) != null;
-      String baseName = casava ? read.readName : stripPairSuffix(read.readName);
 
       String name;
-      if (prefix != null) {
-        name = prefix + "." + counter + " " + baseName;
+      if (casava) {
+        if (prefix != null) {
+          name = prefix + "." + counter + " " + read.readName;
+        } else {
+          name = read.readName;
+        }
       } else {
-        name = baseName;
+        String baseName = stripPairSuffix(read.readName);
+        String suffixedName = baseName + "/" + read.pairNumber;
+        if (prefix != null) {
+          name = prefix + "." + counter + " " + suffixedName;
+        } else {
+          name = suffixedName;
+        }
       }
 
       writer.write(new FastqRecord(name, read.bases, "", read.qualities));

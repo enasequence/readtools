@@ -317,17 +317,39 @@ long getCount()
 ```
 
 ### `FastqNormalizer`
-Direct FASTQ-to-FASTQ normalizer. Quality normalization, read pairing, pair separator canonicalization (`/N`, `.N`, `:N`, `_N` -> `/1`, `/2`), uracil conversion, spill-to-disk for large datasets.
+Direct FASTQ-to-FASTQ normalizer. Quality normalization, read pairing, pair separator canonicalization (`/N`, `.N`, `:N`, `_N` -> `/1`, `/2` for complete pairs), orphan routing to a dedicated third FASTQ, uracil conversion, spill-to-disk for large datasets.
 
 ```java
 // Paired-end
 static PairedNormalizationResult normalizePairedEnd(
-    String[] inputFiles, String outputPair1, String outputPair2, String outputSingleton,
-    long memLimitBytes, File tmpDir)
+    String inputFastq1,
+    String inputFastq2,
+    String outputFastq1,
+    String outputFastq2,
+    String outputFastqOrphans,
+    String prefix,
+    boolean convertUracil,
+    File tempDir)
+
+static PairedNormalizationResult normalizePairedEnd(
+    String inputFastq1,
+    String inputFastq2,
+    String outputFastq1,
+    String outputFastq2,
+    String outputFastqOrphans,
+    String prefix,
+    boolean convertUracil,
+    File tempDir,
+    int spillPageSize,
+    long spillPageSizeBytes,
+    long spillAbandonLimitBytes)
 
 // Single-end
-static long normalizeSingleEnd(String inputFile, String outputFile)
-static SingleNormalizationResult normalizeSingleEndWithStats(String inputFile, String outputFile)
+static long normalizeSingleEnd(
+    String inputFastq, String outputFastq, String prefix, boolean convertUracil)
+
+static SingleNormalizationResult normalizeSingleEndWithStats(
+    String inputFastq, String outputFastq, String prefix, boolean convertUracil)
 ```
 
 **Result classes:**

@@ -20,7 +20,8 @@ Direct path (new):
 
   input_1.fastq ─┐                        ┌─> output_1.fastq
                  ├─> FastqNormalizer ─────┤
-  input_2.fastq ─┘                        └─> output_2.fastq (pairs + orphans)
+  input_2.fastq ─┘                        ├─> output_2.fastq
+                                          └─> output.fastq (orphans)
 ```
 
 Both paths perform the same core operations:
@@ -219,7 +220,8 @@ Entry point (single-end): `FastqNormalizer.normalizeSingleEnd(...)`.
 ```
 FastqNormalizer.normalizePairedEnd params:
   inputFastq1, inputFastq2   -- input FASTQ paths
-  outputFastq1, outputFastq2 -- output FASTQ paths
+  outputFastq1, outputFastq2 -- paired output FASTQ paths
+  outputFastqOrphans         -- orphan output FASTQ path
   prefix                     -- read name prefix (nullable)
   convertUracil              -- U/u -> T/t conversion
   tempDir                    -- temp directory for spill files
@@ -236,11 +238,11 @@ Returns `PairedNormalizationResult` with `pairCount`, `orphanCount`,
 ```
 input_1.fastq ─┐
                ├─> processInputFiles() -> pairMap (in memory)
-input_2.fastq ─┘         |
+input_2.fastq ─┘          |
                           ├─ if fits in memory -> writeFromMemory()
                           └─ if spilled -> processSpillFiles() -> writeFromMemory()
                                                     |
-                                           output_1.fastq, output_2.fastq
+                                  output_1.fastq, output_2.fastq, output.fastq
 ```
 
 The `PairedNormalizer` inner class manages the process:
@@ -258,7 +260,8 @@ The `PairedNormalizer` inner class manages the process:
 2. **writeFromMemory()**: Sorts keys lexicographically (matching BAM
    queryname sort order). For each key:
    - Both slots filled -> `writePair()` to output_1 and output_2
-   - One slot null -> `writeOrphan()` to output_1
+   - One slot null -> `writeOrphan()` to output.fastq
+     using the original read pair number as the suffix for non-Casava names
 
 3. **processSpillFiles()** (if spilling occurred): Multi-generation
    merge following the `AbstractPagedReadWriter.cascadeErrors()` pattern:
@@ -283,7 +286,7 @@ Spill files are gzipped Java `ObjectOutputStream` streams containing
 | Casava names | Tail stripped by BAM | Preserved in full |
 | EOF handling | Stops when shorter file ends | Reads both files to completion |
 | Default spill page size | 4,500,000 entries | 100,000 entries |
-| Output files | 3 files (paired_1, paired_2, unpaired) | 2 files (orphans go to file 1) |
+| Output files | 3 files (paired_1, paired_2, unpaired) | 3 files (paired_1, paired_2, orphans) |
 | Performance | BAM encode + decode overhead | Direct FASTQ-to-FASTQ, no BAM |
 
 
@@ -350,12 +353,12 @@ result.getBaseCount();
 
 // Paired-end (default thresholds)
 PairedNormalizationResult result = FastqNormalizer.normalizePairedEnd(
-    inputFastq1, inputFastq2, outputFastq1, outputFastq2,
+    inputFastq1, inputFastq2, outputFastq1, outputFastq2, outputFastqOrphans,
     prefix, convertUracil, tempDir);
 
 // Paired-end (custom thresholds)
 PairedNormalizationResult result = FastqNormalizer.normalizePairedEnd(
-    inputFastq1, inputFastq2, outputFastq1, outputFastq2,
+    inputFastq1, inputFastq2, outputFastq1, outputFastq2, outputFastqOrphans,
     prefix, convertUracil, tempDir,
     spillPageSize, spillPageSizeBytes, spillAbandonLimitBytes);
 

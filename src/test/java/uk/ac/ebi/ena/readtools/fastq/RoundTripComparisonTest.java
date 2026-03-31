@@ -170,7 +170,8 @@ public class RoundTripComparisonTest {
     // Run pipeline
     List<FastqRecord> pipelineOut1 = new ArrayList<>();
     List<FastqRecord> pipelineOut2 = new ArrayList<>();
-    runPipeline(inputFile1, inputFile2, prefix, false, pipelineOut1, pipelineOut2);
+    List<FastqRecord> pipelineOrphans = new ArrayList<>();
+    runPipeline(inputFile1, inputFile2, prefix, false, pipelineOut1, pipelineOut2, pipelineOrphans);
 
     // Run normalizer
     Path normOut1 = tempFolder.newFile("norm_1.fastq").toPath();
@@ -256,36 +257,42 @@ public class RoundTripComparisonTest {
     // Run pipeline
     List<FastqRecord> pipelineOut1 = new ArrayList<>();
     List<FastqRecord> pipelineOut2 = new ArrayList<>();
-    runPipeline(inputFile1, inputFile2, prefix, false, pipelineOut1, pipelineOut2);
+    List<FastqRecord> pipelineOrphans = new ArrayList<>();
+    runPipeline(inputFile1, inputFile2, prefix, false, pipelineOut1, pipelineOut2, pipelineOrphans);
 
     // Run normalizer
     Path normOut1 = tempFolder.newFile("norm_1.fastq").toPath();
     Path normOut2 = tempFolder.newFile("norm_2.fastq").toPath();
+    Path normOutOrphans = tempFolder.newFile("norm.fastq").toPath();
     FastqNormalizer.normalizePairedEnd(
         inputFile1.toString(),
         inputFile2.toString(),
         normOut1.toString(),
         normOut2.toString(),
+        normOutOrphans.toString(),
         prefix,
         false,
         tempFolder.getRoot());
 
     List<FastqRecord> normRecords1 = readFastq(normOut1);
     List<FastqRecord> normRecords2 = readFastq(normOut2);
+    List<FastqRecord> normOrphans = readFastq(normOutOrphans);
 
     // Both should have the same total read count
-    int pipelineTotal = pipelineOut1.size() + pipelineOut2.size();
-    int normTotal = normRecords1.size() + normRecords2.size();
+    int pipelineTotal = pipelineOut1.size() + pipelineOut2.size() + pipelineOrphans.size();
+    int normTotal = normRecords1.size() + normRecords2.size() + normOrphans.size();
     assertEquals("Total read count mismatch", pipelineTotal, normTotal);
 
     // Collect all bases from both paths and compare as sets
     Set<String> pipelineBases = new HashSet<>();
     for (FastqRecord r : pipelineOut1) pipelineBases.add(r.getReadString());
     for (FastqRecord r : pipelineOut2) pipelineBases.add(r.getReadString());
+    for (FastqRecord r : pipelineOrphans) pipelineBases.add(r.getReadString());
 
     Set<String> normBases = new HashSet<>();
     for (FastqRecord r : normRecords1) normBases.add(r.getReadString());
     for (FastqRecord r : normRecords2) normBases.add(r.getReadString());
+    for (FastqRecord r : normOrphans) normBases.add(r.getReadString());
 
     assertEquals("Base content should match across both paths", pipelineBases, normBases);
   }
@@ -303,26 +310,31 @@ public class RoundTripComparisonTest {
     // Run pipeline
     List<FastqRecord> pipelineOut1 = new ArrayList<>();
     List<FastqRecord> pipelineOut2 = new ArrayList<>();
-    runPipeline(inputFile1, inputFile2, prefix, false, pipelineOut1, pipelineOut2);
+    List<FastqRecord> pipelineOrphans = new ArrayList<>();
+    runPipeline(inputFile1, inputFile2, prefix, false, pipelineOut1, pipelineOut2, pipelineOrphans);
 
     // Run normalizer
     Path normOut1 = tempFolder.newFile("norm_1.fastq").toPath();
     Path normOut2 = tempFolder.newFile("norm_2.fastq").toPath();
+    Path normOutOrphans = tempFolder.newFile("norm.fastq").toPath();
     FastqNormalizer.normalizePairedEnd(
         inputFile1.toString(),
         inputFile2.toString(),
         normOut1.toString(),
         normOut2.toString(),
+        normOutOrphans.toString(),
         prefix,
         false,
         tempFolder.getRoot());
 
     List<FastqRecord> normRecords1 = readFastq(normOut1);
     List<FastqRecord> normRecords2 = readFastq(normOut2);
+    List<FastqRecord> normOrphans = readFastq(normOutOrphans);
 
     assertTrue("Expected reads in pipeline output", pipelineOut1.size() > 0);
     assertEquals("Pair count mismatch /1", pipelineOut1.size(), normRecords1.size());
     assertEquals("Pair count mismatch /2", pipelineOut2.size(), normRecords2.size());
+    assertEquals("Orphan count mismatch", pipelineOrphans.size(), normOrphans.size());
 
     // Build maps keyed by bases for comparison (ordering may differ slightly)
     Map<String, String> pipelineBasesToQual1 = new HashMap<>();
@@ -418,7 +430,8 @@ public class RoundTripComparisonTest {
       String prefix,
       boolean convertUracil,
       List<FastqRecord> outRecords1,
-      List<FastqRecord> outRecords2)
+      List<FastqRecord> outRecords2,
+      List<FastqRecord> outOrphanRecords)
       throws Exception {
 
     Path pipelineDir = tempFolder.newFolder("pipeline").toPath();
@@ -456,9 +469,8 @@ public class RoundTripComparisonTest {
     if (pipelineOutFile2.exists()) {
       outRecords2.addAll(readFastq(pipelineOutFile2.toPath()));
     }
-    // Append unpaired reads to outRecords1 (same as FastqNormalizer orphan behavior)
     if (pipelineOutUnpaired.exists()) {
-      outRecords1.addAll(readFastq(pipelineOutUnpaired.toPath()));
+      outOrphanRecords.addAll(readFastq(pipelineOutUnpaired.toPath()));
     }
   }
 
@@ -485,22 +497,29 @@ public class RoundTripComparisonTest {
     // Run pipeline
     List<FastqRecord> pipelineOut1 = new ArrayList<>();
     List<FastqRecord> pipelineOut2 = new ArrayList<>();
-    runPipeline(inputFile1, inputFile2, prefix, convertUracil, pipelineOut1, pipelineOut2);
+    List<FastqRecord> pipelineOrphans = new ArrayList<>();
+    runPipeline(
+        inputFile1, inputFile2, prefix, convertUracil, pipelineOut1, pipelineOut2, pipelineOrphans);
 
     // Run normalizer
     Path normOut1 = tempFolder.newFile("norm_1.fastq").toPath();
     Path normOut2 = tempFolder.newFile("norm_2.fastq").toPath();
+    Path normOutOrphans = tempFolder.newFile("norm.fastq").toPath();
     FastqNormalizer.normalizePairedEnd(
         inputFile1.toString(),
         inputFile2.toString(),
         normOut1.toString(),
         normOut2.toString(),
+        normOutOrphans.toString(),
         prefix,
         convertUracil,
         tempFolder.getRoot());
 
     List<FastqRecord> normRecords1 = readFastq(normOut1);
     List<FastqRecord> normRecords2 = readFastq(normOut2);
+    List<FastqRecord> normOrphans = readFastq(normOutOrphans);
+    assertTrue("Expected no orphan reads in pipeline output", pipelineOrphans.isEmpty());
+    assertTrue("Expected no orphan reads in normalizer output", normOrphans.isEmpty());
 
     // Build keyed maps by extracting the read base name from the output.
     // Both paths output: PREFIX.N BASENAME/1 — extract BASENAME as key.

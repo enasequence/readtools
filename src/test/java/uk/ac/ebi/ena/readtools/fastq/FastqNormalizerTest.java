@@ -91,16 +91,16 @@ public class FastqNormalizerTest {
 
     long count =
         FastqNormalizer.normalizeSingleEnd(
-            inputFile.toString(), outputFile.toString(), "ERR123456", false);
+            inputFile.toString(), outputFile.toString(), "ERR1234567", false);
 
     assertEquals(3, count);
 
     List<FastqRecord> records = readFastq(outputFile);
     assertEquals(3, records.size());
 
-    assertEquals("ERR123456.1 READ1", records.get(0).getReadName());
-    assertEquals("ERR123456.2 READ2", records.get(1).getReadName());
-    assertEquals("ERR123456.3 READ3", records.get(2).getReadName());
+    assertEquals("ERR1234567.1 READ1", records.get(0).getReadName());
+    assertEquals("ERR1234567.2 READ2", records.get(1).getReadName());
+    assertEquals("ERR1234567.3 READ3", records.get(2).getReadName());
   }
 
   /** Without a prefix, read names should be preserved as-is. */
@@ -260,7 +260,7 @@ public class FastqNormalizerTest {
 
   /**
    * Mismatched file lengths should be tolerated: paired reads pair normally, extras become orphans
-   * written to the first output file without /1 or /2 suffix.
+   * written to a dedicated orphan output file with the original mate suffix preserved.
    */
   @Test
   public void testPairedEndMismatchedLengths() throws IOException {
@@ -278,6 +278,7 @@ public class FastqNormalizerTest {
 
     Path outputFile1 = tempFolder.newFile("output_1.fastq").toPath();
     Path outputFile2 = tempFolder.newFile("output_2.fastq").toPath();
+    Path outputFileOrphans = tempFolder.newFile("output.fastq").toPath();
 
     FastqNormalizer.PairedNormalizationResult result =
         FastqNormalizer.normalizePairedEnd(
@@ -285,6 +286,7 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
+            outputFileOrphans.toString(),
             null,
             false,
             tempFolder.getRoot());
@@ -295,15 +297,13 @@ public class FastqNormalizerTest {
 
     List<FastqRecord> records1 = readFastq(outputFile1);
     List<FastqRecord> records2 = readFastq(outputFile2);
+    List<FastqRecord> orphanRecords = readFastq(outputFileOrphans);
 
-    // First output file: 1 paired read (/1) + 1 orphan (no /1 or /2 suffix)
-    assertEquals(2, records1.size());
-    // Second output file: 1 paired read (/2)
+    // Paired outputs contain only complete pairs.
+    assertEquals(1, records1.size());
     assertEquals(1, records2.size());
-
-    // Verify the orphan has no /1 or /2 suffix
-    boolean hasOrphan = records1.stream().anyMatch(r -> !r.getReadName().contains("/"));
-    assertTrue("Expected an orphan read without /1 or /2 suffix", hasOrphan);
+    assertEquals(1, orphanRecords.size());
+    assertEquals("READ2/1", orphanRecords.get(0).getReadName());
   }
 
   /** Casava 1.8 format reads (space-separated instrument + read metadata) should pair correctly. */
@@ -359,6 +359,60 @@ public class FastqNormalizerTest {
         records2.get(0).getReadName());
   }
 
+  /** Orphan suffixes should preserve the original extracted read number when available. */
+  @Test
+  public void testPairedEndOrphanKeepsOriginalPairNumberSuffix() throws IOException {
+    Path inputFile1 = tempFolder.newFile("input_1.fastq").toPath();
+    Path inputFile2 = tempFolder.newFile("input_2.fastq").toPath();
+
+    Files.write(
+        inputFile1,
+        ("@PAIR.10\n"
+                + "ACGT\n"
+                + "+\n"
+                + "IIII\n"
+                + "@LEFT_ONLY.10\n"
+                + "GGCC\n"
+                + "+\n"
+                + "JJJJ\n")
+            .getBytes(StandardCharsets.UTF_8));
+
+    Files.write(
+        inputFile2,
+        ("@PAIR.20\n"
+                + "TTAA\n"
+                + "+\n"
+                + "KKKK\n"
+                + "@RIGHT_ONLY.20\n"
+                + "CCGG\n"
+                + "+\n"
+                + "LLLL\n")
+            .getBytes(StandardCharsets.UTF_8));
+
+    Path outputFile1 = tempFolder.newFile("output_1.fastq").toPath();
+    Path outputFile2 = tempFolder.newFile("output_2.fastq").toPath();
+    Path outputFileOrphans = tempFolder.newFile("output.fastq").toPath();
+
+    FastqNormalizer.PairedNormalizationResult result =
+        FastqNormalizer.normalizePairedEnd(
+            inputFile1.toString(),
+            inputFile2.toString(),
+            outputFile1.toString(),
+            outputFile2.toString(),
+            outputFileOrphans.toString(),
+            "ERR1234567",
+            false,
+            tempFolder.getRoot());
+
+    assertEquals(1, result.getPairCount());
+    assertEquals(2, result.getOrphanCount());
+
+    List<FastqRecord> orphanRecords = readFastq(outputFileOrphans);
+    assertEquals(2, orphanRecords.size());
+    assertEquals("ERR1234567.1 LEFT_ONLY/10", orphanRecords.get(0).getReadName());
+    assertEquals("ERR1234567.3 RIGHT_ONLY/20", orphanRecords.get(1).getReadName());
+  }
+
   /**
    * Casava 1.8 format with prefix: read names should be "{prefix}.{counter} {originalCasavaName}"
    * without /1 or /2 appended, since the Casava tail already has the pair number.
@@ -393,7 +447,7 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
-            "ERR999",
+            "ERR1234567",
             false,
             tempFolder.getRoot());
 
@@ -403,10 +457,10 @@ public class FastqNormalizerTest {
     List<FastqRecord> records2 = readFastq(outputFile2);
 
     assertEquals(
-        "ERR999.1 A00500:310:HG3JFDRXY:1:2101:23963:1000 1:N:0:CTTCGTTC+GAGAAGGT",
+        "ERR1234567.1 A00500:310:HG3JFDRXY:1:2101:23963:1000 1:N:0:CTTCGTTC+GAGAAGGT",
         records1.get(0).getReadName());
     assertEquals(
-        "ERR999.1 A00500:310:HG3JFDRXY:1:2101:23963:1000 2:N:0:CTTCGTTC+GAGAAGGT",
+        "ERR1234567.1 A00500:310:HG3JFDRXY:1:2101:23963:1000 2:N:0:CTTCGTTC+GAGAAGGT",
         records2.get(0).getReadName());
   }
 
@@ -460,7 +514,7 @@ public class FastqNormalizerTest {
             inputFile2,
             outputFile1.toString(),
             outputFile2.toString(),
-            "RUN001",
+            "ERR1234567",
             false,
             tempFolder.getRoot());
 
@@ -473,9 +527,9 @@ public class FastqNormalizerTest {
     assertEquals(result.getPairCount(), records1.size());
     assertEquals(result.getPairCount(), records2.size());
 
-    assertTrue(records1.get(0).getReadName().startsWith("RUN001.1 "));
+    assertTrue(records1.get(0).getReadName().startsWith("ERR1234567.1 "));
     assertTrue(records1.get(0).getReadName().endsWith("/1"));
-    assertTrue(records2.get(0).getReadName().startsWith("RUN001.1 "));
+    assertTrue(records2.get(0).getReadName().startsWith("ERR1234567.1 "));
     assertTrue(records2.get(0).getReadName().endsWith("/2"));
   }
 
@@ -508,7 +562,7 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
-            "RUN",
+            "ERR1234567",
             false,
             tempFolder.getRoot());
 
@@ -523,10 +577,10 @@ public class FastqNormalizerTest {
     assertEquals(2, records2.size());
 
     // Dot separator stripped, normalized to /1 /2 — matches pipeline behavior
-    assertEquals("RUN.1 READX/1", records1.get(0).getReadName());
-    assertEquals("RUN.1 READX/2", records2.get(0).getReadName());
-    assertEquals("RUN.2 READY/1", records1.get(1).getReadName());
-    assertEquals("RUN.2 READY/2", records2.get(1).getReadName());
+    assertEquals("ERR1234567.1 READX/1", records1.get(0).getReadName());
+    assertEquals("ERR1234567.1 READX/2", records2.get(0).getReadName());
+    assertEquals("ERR1234567.2 READY/1", records1.get(1).getReadName());
+    assertEquals("ERR1234567.2 READY/2", records2.get(1).getReadName());
   }
 
   /** Colon-separated pair index: READ:1 / READ:2 (non-Casava-like name so SPLIT_REGEXP fires). */
@@ -591,7 +645,7 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
-            "PREFIX",
+            "ERR1234567",
             false,
             tempFolder.getRoot());
 
@@ -606,8 +660,8 @@ public class FastqNormalizerTest {
     assertEquals(1, records2.size());
 
     // Underscore separator stripped, normalized to /1 /2 — matches pipeline behavior
-    assertEquals("PREFIX.1 MYREAD/1", records1.get(0).getReadName());
-    assertEquals("PREFIX.1 MYREAD/2", records2.get(0).getReadName());
+    assertEquals("ERR1234567.1 MYREAD/1", records1.get(0).getReadName());
+    assertEquals("ERR1234567.1 MYREAD/2", records2.get(0).getReadName());
   }
 
   /** Multi-digit pair index: READ.10 / READ.20 — normalized to /1 /2, matches pipeline. */
@@ -630,7 +684,7 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
-            "ERR006",
+            "ERR1234567",
             false,
             tempFolder.getRoot());
 
@@ -644,8 +698,8 @@ public class FastqNormalizerTest {
     assertEquals(1, records2.size());
 
     // Multi-digit indices stripped, normalized to /1 /2 — matches pipeline behavior
-    assertEquals("ERR006.1 MYREAD/1", records1.get(0).getReadName());
-    assertEquals("ERR006.1 MYREAD/2", records2.get(0).getReadName());
+    assertEquals("ERR1234567.1 MYREAD/1", records1.get(0).getReadName());
+    assertEquals("ERR1234567.1 MYREAD/2", records2.get(0).getReadName());
   }
 
   // ---- Read count accuracy tests ----
@@ -688,7 +742,7 @@ public class FastqNormalizerTest {
 
   /**
    * Mixed pairs and orphans: 3 reads in file 1, 1 in file 2. A pairs, B and C become orphans.
-   * Orphans go to the first output file without /1 or /2 suffix.
+   * Orphans go to the dedicated orphan file with /1 preserved from the input names.
    */
   @Test
   public void testReadCountWithOrphans() throws IOException {
@@ -706,6 +760,7 @@ public class FastqNormalizerTest {
 
     Path outputFile1 = tempFolder.newFile("output_1.fastq").toPath();
     Path outputFile2 = tempFolder.newFile("output_2.fastq").toPath();
+    Path outputFileOrphans = tempFolder.newFile("output.fastq").toPath();
 
     FastqNormalizer.PairedNormalizationResult result =
         FastqNormalizer.normalizePairedEnd(
@@ -713,7 +768,8 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
-            "RUN",
+            outputFileOrphans.toString(),
+            "ERR1234567",
             false,
             tempFolder.getRoot());
 
@@ -723,15 +779,13 @@ public class FastqNormalizerTest {
 
     List<FastqRecord> records1 = readFastq(outputFile1);
     List<FastqRecord> records2 = readFastq(outputFile2);
+    List<FastqRecord> orphanRecords = readFastq(outputFileOrphans);
 
-    // Output file 1: 1 paired + 2 orphans = 3
-    assertEquals(3, records1.size());
-    // Output file 2: 1 paired
+    assertEquals(1, records1.size());
     assertEquals(1, records2.size());
-
-    // Verify orphans have no /1 or /2 suffix
-    long orphansInFile1 = records1.stream().filter(r -> !r.getReadName().contains("/")).count();
-    assertEquals(2, orphansInFile1);
+    assertEquals(2, orphanRecords.size());
+    assertEquals("ERR1234567.2 B/1", orphanRecords.get(0).getReadName());
+    assertEquals("ERR1234567.3 C/1", orphanRecords.get(1).getReadName());
   }
 
   /**
@@ -785,7 +839,7 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
-            "RUN",
+            "ERR1234567",
             false,
             tempFolder.getRoot());
 
@@ -799,9 +853,9 @@ public class FastqNormalizerTest {
     assertTrue(records1.get(2).getReadName().contains("C_READ"));
 
     // Counter should follow sort order
-    assertTrue(records1.get(0).getReadName().startsWith("RUN.1 "));
-    assertTrue(records1.get(1).getReadName().startsWith("RUN.2 "));
-    assertTrue(records1.get(2).getReadName().startsWith("RUN.3 "));
+    assertTrue(records1.get(0).getReadName().startsWith("ERR1234567.1 "));
+    assertTrue(records1.get(1).getReadName().startsWith("ERR1234567.2 "));
+    assertTrue(records1.get(2).getReadName().startsWith("ERR1234567.3 "));
   }
 
   // ---- Base count tracking tests ----
@@ -876,6 +930,7 @@ public class FastqNormalizerTest {
 
     Path outputFile1 = tempFolder.newFile("output_1.fastq").toPath();
     Path outputFile2 = tempFolder.newFile("output_2.fastq").toPath();
+    Path outputFileOrphans = tempFolder.newFile("output.fastq").toPath();
 
     FastqNormalizer.PairedNormalizationResult result =
         FastqNormalizer.normalizePairedEnd(
@@ -883,6 +938,7 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
+            outputFileOrphans.toString(),
             null,
             false,
             tempFolder.getRoot());
@@ -933,7 +989,7 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
-            "RUN",
+            "ERR1234567",
             false,
             tempFolder.getRoot(),
             2, // spillPageSize: spill after 2 entries
@@ -1050,6 +1106,7 @@ public class FastqNormalizerTest {
 
     Path outputFile1 = tempFolder.newFile("output_1.fastq").toPath();
     Path outputFile2 = tempFolder.newFile("output_2.fastq").toPath();
+    Path outputFileOrphans = tempFolder.newFile("output.fastq").toPath();
 
     FastqNormalizer.PairedNormalizationResult result =
         FastqNormalizer.normalizePairedEnd(
@@ -1057,7 +1114,8 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
-            "RUN",
+            outputFileOrphans.toString(),
+            "ERR1234567",
             false,
             tempFolder.getRoot(),
             2,
@@ -1070,15 +1128,13 @@ public class FastqNormalizerTest {
 
     List<FastqRecord> records1 = readFastq(outputFile1);
     List<FastqRecord> records2 = readFastq(outputFile2);
+    List<FastqRecord> orphanRecords = readFastq(outputFileOrphans);
 
-    // Output file 1: 2 paired (/1) + 2 orphans (no suffix) = 4
-    assertEquals(4, records1.size());
-    // Output file 2: 2 paired (/2)
+    assertEquals(2, records1.size());
     assertEquals(2, records2.size());
-
-    // Verify orphans
-    long orphansInFile1 = records1.stream().filter(r -> !r.getReadName().contains("/")).count();
-    assertEquals(2, orphansInFile1);
+    assertEquals(2, orphanRecords.size());
+    assertEquals("ERR1234567.2 B/1", orphanRecords.get(0).getReadName());
+    assertEquals("ERR1234567.4 D/1", orphanRecords.get(1).getReadName());
   }
 
   /**
@@ -1112,7 +1168,7 @@ public class FastqNormalizerTest {
             inputFile2.toString(),
             outputFile1.toString(),
             outputFile2.toString(),
-            "RUN",
+            "ERR1234567",
             false,
             tempFolder.getRoot(),
             3, // spillPageSize=3: forces many spill/reassembly cycles
@@ -1204,10 +1260,18 @@ public class FastqNormalizerTest {
     String input2 = "tmp/NG-34612_V3V5b_5_lib735143_cleaned_1.fastq.gz";
     String output1 = "tmp/normalised_1.fastq";
     String output2 = "tmp/normalised_2.fastq";
+    String outputOrphans = "tmp/normalised.fastq";
 
     FastqNormalizer.PairedNormalizationResult result =
         FastqNormalizer.normalizePairedEnd(
-            input1, input2, output1, output2, "ERR12631034", false, tempFolder.getRoot());
+            input1,
+            input2,
+            output1,
+            output2,
+            outputOrphans,
+            "ERR12631034",
+            false,
+            tempFolder.getRoot());
 
     assertTrue("Expected at least one read pair", result.getPairCount() > 0);
   }
