@@ -77,12 +77,13 @@ public class Fastq2Sam {
     FastqQualityFormat qualityFormat =
         Utils.detectFastqQualityFormat(p.files.get(0), p.files.size() == 2 ? p.files.get(1) : null);
     QualityNormalizer normalizer = Utils.getQualityNormalizer(qualityFormat);
+    File tempDir = resolveTempDir(p.data_file, p.tmp_root);
     Fastq2BamWriter fastqToBamWriter =
         new Fastq2BamWriter(
             normalizer,
             p.sample_name,
             p.data_file,
-            p.tmp_root,
+            tempDir.getAbsolutePath(),
             p.convertUracil,
             p.files.size() == 1 ? false : true);
 
@@ -101,10 +102,7 @@ public class Fastq2Sam {
 
       readWriter =
           new PairedFastqWriter(
-              new File(p.tmp_root),
-              p.spill_page_size,
-              p.spill_page_size_bytes,
-              p.spill_abandon_limit_bytes);
+              tempDir, p.spill_page_size, p.spill_page_size_bytes, p.spill_abandon_limit_bytes);
       readWriter.setWriter(fastqToBamWriter);
     }
 
@@ -117,6 +115,18 @@ public class Fastq2Sam {
     readWriter.cascadeErrors();
     fastqToBamWriter.unwind();
     System.out.printf("READS: %d; BASES: %d%n", totalReadCount, totalBaseCount);
+  }
+
+  static File resolveTempDir(String dataFilePath, String tmpRoot) {
+    if (dataFilePath != null) {
+      File outputFile = new File(dataFilePath).getAbsoluteFile();
+      File parent = outputFile.getParentFile();
+      if (parent != null) {
+        return parent;
+      }
+    }
+
+    return tmpRoot == null ? new File(".") : new File(tmpRoot);
   }
 
   /**

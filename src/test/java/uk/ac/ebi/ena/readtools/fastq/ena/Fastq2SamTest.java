@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -1126,6 +1127,54 @@ public class Fastq2SamTest {
 
     Assert.assertEquals(
         "Many-reads spill BAM should be identical to no-spill BAM", noSpillMd5, spillMd5);
+  }
+
+  @Test
+  public void testSpillFilesUseOutputDirectoryInsteadOfTmpRoot()
+      throws IOException, ConverterException, ReadWriterException {
+    Path tempDir = Files.createTempDirectory("fastq_spill_location_test");
+    Path spillRoot = Files.createDirectory(tempDir.resolve("spill-root"));
+    Path outputDir = Files.createDirectory(tempDir.resolve("output-dir"));
+
+    Path fastqFile1 = tempDir.resolve("input_1.fastq");
+    Path fastqFile2 = tempDir.resolve("input_2.fastq");
+
+    List<String> lines1 = new ArrayList<>();
+    List<String> lines2 = new ArrayList<>();
+    for (int i = 0; i < 4; i++) {
+      String name = String.format("READ%03d", i);
+      lines1.addAll(Arrays.asList("@" + name + "/1", "ACGTACGTACGTACGT", "+", "FFFFFFFFFFFFFFFF"));
+    }
+    for (int i = 3; i >= 0; i--) {
+      String name = String.format("READ%03d", i);
+      lines2.addAll(Arrays.asList("@" + name + "/2", "TTAATTAATTAATTAA", "+", "FFFFFFFFFFFFFFFF"));
+    }
+    Files.write(fastqFile1, lines1);
+    Files.write(fastqFile2, lines2);
+
+    Fastq2Sam.Params params = new Fastq2Sam.Params();
+    params.tmp_root = spillRoot.toString();
+    params.sample_name = "SM-001";
+    params.data_file = outputDir.resolve("output.bam").toString();
+    params.compression = FileCompression.NONE.name();
+    params.files = Arrays.asList(fastqFile1.toString(), fastqFile2.toString());
+    params.spill_page_size = 1;
+    params.spill_page_size_bytes = Long.MAX_VALUE;
+    params.spill_abandon_limit_bytes = Long.MAX_VALUE;
+
+    new Fastq2Sam().create(params);
+
+    try (Stream<Path> outputFiles = Files.list(outputDir);
+        Stream<Path> spillFiles = Files.list(spillRoot)) {
+      Assert.assertTrue(
+          outputFiles
+              .map(path -> path.getFileName().toString())
+              .anyMatch(name -> name.startsWith("THREAD_") && name.contains("_PAGE_")));
+      Assert.assertFalse(
+          spillFiles
+              .map(path -> path.getFileName().toString())
+              .anyMatch(name -> name.startsWith("THREAD_") && name.contains("_PAGE_")));
+    }
   }
 
   private Map<String, List<FastqRecord>> createFastqRecordMap(File file1, File file2) {

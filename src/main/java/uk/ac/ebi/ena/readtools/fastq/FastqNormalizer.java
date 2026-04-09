@@ -352,6 +352,32 @@ public class FastqNormalizer {
     return normalizer.normalize();
   }
 
+  static File resolveTempDir(
+      String outputFastq1, String outputFastq2, String outputFastqOrphans, File fallbackTempDir) {
+    File outputDir = resolveParentDir(outputFastq1);
+    if (outputDir != null
+        && hasSameParentDir(outputDir, outputFastq2)
+        && hasSameParentDir(outputDir, outputFastqOrphans)) {
+      return outputDir;
+    }
+
+    return fallbackTempDir;
+  }
+
+  private static File resolveParentDir(String outputPath) {
+    if (outputPath == null) {
+      return null;
+    }
+
+    File outputFile = new File(outputPath).getAbsoluteFile();
+    return outputFile.getParentFile();
+  }
+
+  private static boolean hasSameParentDir(File expectedParent, String outputPath) {
+    File outputParent = resolveParentDir(outputPath);
+    return outputParent != null && expectedParent.equals(outputParent);
+  }
+
   /** Best-effort compatibility mapping from paired output names to a singleton/orphan output. */
   private static String deriveOrphanOutputPath(String outputFastq1, String outputFastq2) {
     String[][] suffixPairs = {
@@ -419,7 +445,7 @@ public class FastqNormalizer {
       this.outputFastqOrphans = outputFastqOrphans;
       this.prefix = prefix;
       this.convertUracil = convertUracil;
-      this.tempDir = tempDir;
+      this.tempDir = resolveTempDir(outputFastq1, outputFastq2, outputFastqOrphans, tempDir);
       this.spillPageSize = spillPageSize;
       this.spillPageSizeBytes = spillPageSizeBytes;
       this.spillAbandonLimitBytes = spillAbandonLimitBytes;

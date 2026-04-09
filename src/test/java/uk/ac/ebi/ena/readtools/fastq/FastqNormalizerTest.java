@@ -14,6 +14,7 @@ import static org.junit.Assert.*;
 
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -951,6 +952,100 @@ public class FastqNormalizerTest {
   // ---- Spill file reassembly tests ----
   // These tests use tiny spillPageSize values to force disk spilling and verify
   // that multi-generation reassembly correctly pairs reads.
+
+  @Test
+  public void testPairedEndSpillUsesOutputDirInsteadOfConfiguredTempDir() throws Exception {
+    Path tempDir = tempFolder.newFolder("fastq_normalizer_spill_location_test").toPath();
+    Path spillRoot = Files.createDirectory(tempDir.resolve("spill-root"));
+    Path outputDir = Files.createDirectory(tempDir.resolve("output-dir"));
+
+    Path inputFile1 = tempDir.resolve("input_1.fastq");
+    Path inputFile2 = tempDir.resolve("input_2.fastq");
+
+    Files.write(
+        inputFile1,
+        ("@A/1\nACGT\n+\nIIII\n"
+                + "@B/1\nGGCC\n+\nJJJJ\n"
+                + "@C/1\nTTAA\n+\nKKKK\n"
+                + "@D/1\nCCGG\n+\nLLLL\n")
+            .getBytes(StandardCharsets.UTF_8));
+
+    Files.write(
+        inputFile2,
+        ("@A/2\nAAAA\n+\nIIII\n"
+                + "@B/2\nCCCC\n+\nJJJJ\n"
+                + "@C/2\nGGGG\n+\nKKKK\n"
+                + "@D/2\nTTTT\n+\nLLLL\n")
+            .getBytes(StandardCharsets.UTF_8));
+
+    Path outputFile1 = outputDir.resolve("output_1.fastq");
+    Path outputFile2 = outputDir.resolve("output_2.fastq");
+    Path outputFileOrphans = outputDir.resolve("output.fastq");
+
+    Class<?> pairedNormalizerClass =
+        Class.forName("uk.ac.ebi.ena.readtools.fastq.FastqNormalizer$PairedNormalizer");
+    java.lang.reflect.Constructor<?> constructor =
+        pairedNormalizerClass.getDeclaredConstructor(
+            String.class,
+            String.class,
+            String.class,
+            String.class,
+            String.class,
+            String.class,
+            boolean.class,
+            File.class,
+            int.class,
+            long.class,
+            long.class);
+    constructor.setAccessible(true);
+
+    Object normalizer =
+        constructor.newInstance(
+            inputFile1.toString(),
+            inputFile2.toString(),
+            outputFile1.toString(),
+            outputFile2.toString(),
+            outputFileOrphans.toString(),
+            null,
+            false,
+            spillRoot.toFile(),
+            1,
+            Long.MAX_VALUE,
+            Long.MAX_VALUE);
+
+    java.lang.reflect.Field qualityNormalizerField =
+        pairedNormalizerClass.getDeclaredField("qualityNormalizer");
+    qualityNormalizerField.setAccessible(true);
+    qualityNormalizerField.set(
+        normalizer,
+        Utils.getQualityNormalizer(
+            Utils.detectFastqQualityFormat(inputFile1.toString(), inputFile2.toString())));
+
+    java.lang.reflect.Method processInputFiles =
+        pairedNormalizerClass.getDeclaredMethod("processInputFiles");
+    processInputFiles.setAccessible(true);
+    processInputFiles.invoke(normalizer);
+
+    java.lang.reflect.Field spillFilesField = pairedNormalizerClass.getDeclaredField("spillFiles");
+    spillFilesField.setAccessible(true);
+
+    @SuppressWarnings("unchecked")
+    List<File> spillFiles = (List<File>) spillFilesField.get(normalizer);
+
+    assertFalse(spillFiles.isEmpty());
+    for (File spillFile : spillFiles) {
+      assertEquals(
+          outputDir.toFile().getCanonicalFile(), spillFile.getParentFile().getCanonicalFile());
+      assertTrue(spillFile.exists());
+    }
+
+    String[] spillRootFiles =
+        spillRoot
+            .toFile()
+            .list((dir, name) -> name.startsWith("FASTQ_NORM_THREAD_") && name.contains("_PAGE_"));
+    assertNotNull(spillRootFiles);
+    assertEquals(0, spillRootFiles.length);
+  }
 
   /**
    * In-order pairs with spillPageSize=2: after 2 entries in the map, a spill is triggered. Since
