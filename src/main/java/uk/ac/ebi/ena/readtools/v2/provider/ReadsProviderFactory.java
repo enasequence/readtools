@@ -30,6 +30,10 @@ public class ReadsProviderFactory {
     this.normaliseFastqQualityScores = normaliseFastqQualityScores;
   }
 
+  public FileFormat getFormat() {
+    return format;
+  }
+
   public ReadsProvider<? extends IRead> makeReadsProvider() throws ReadsValidationException {
     switch (format) {
       case FASTQ:

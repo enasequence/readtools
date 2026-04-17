@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import uk.ac.ebi.ena.readtools.v2.FileFormat;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProvider;
 import uk.ac.ebi.ena.readtools.v2.provider.ReadsProviderFactory;
 import uk.ac.ebi.ena.readtools.v2.read.IRead;
@@ -32,6 +33,10 @@ public class InsdcReadsValidator extends ReadsValidator {
   public static String ERROR_NOT_AUTCG =
       "Reads must contain only valid IUPAC codes, "
           + "with no more than 50% of bases being non-AUTCG";
+  public static String ERROR_EMPTY_QUALITY =
+      "Submitted files must not contain any empty quality score lines";
+  public static String ERROR_BASES_QUALITIES_LENGTH_MISMATCH =
+      "Mismatch between length of read bases and qualities";
   public static String ERROR_QUALITY =
       "When submitted file contains base quality scores "
           + "then >= 50% of reads must have average quality >= 30";
@@ -62,6 +67,8 @@ public class InsdcReadsValidator extends ReadsValidator {
       throws ReadsValidationException {
     long autcgCount = 0;
     long basesCount = 0;
+    FileFormat inputFormat = readsProviderFactory.getFormat();
+    boolean samLikeFormat = inputFormat == FileFormat.BAM || inputFormat == FileFormat.CRAM;
 
     try (ReadsProvider<? extends IRead> provider = readsProviderFactory.makeReadsProvider()) {
 
@@ -91,33 +98,51 @@ public class InsdcReadsValidator extends ReadsValidator {
 
         readCount++;
 
-        if (bases == null || StringUtils.isBlank(bases)) {
+        String effectiveBases = bases;
+        // In SAM/BAM/CRAM, "*" means sequence is absent (length 0), not a literal base character.
+        if (samLikeFormat && "*".equals(bases)) {
+          effectiveBases = "";
+        }
+
+        if (StringUtils.isBlank(effectiveBases)) {
           throw new ReadsValidationException(ERROR_EMPTY_READ, readCount);
+        }
+        if (qualityScores == null || StringUtils.isBlank(qualityScores)) {
+          throw new ReadsValidationException(ERROR_EMPTY_QUALITY, readCount, read.getName());
+        }
+
+        String effectiveQualityScores = qualityScores;
+        // In SAM/BAM/CRAM, "*" means quality is absent (length 0), not a literal quality character.
+        if (samLikeFormat && "*".equals(qualityScores)) {
+          effectiveQualityScores = "";
+        }
+
+        if (effectiveBases.length() != effectiveQualityScores.length()) {
+          throw new ReadsValidationException(
+              ERROR_BASES_QUALITIES_LENGTH_MISMATCH, readCount, read.getName());
         }
 
         if (read.getName().trim().length() > 256) {
           throw new ReadsValidationException(ERROR_READ_NAME_LENGTH, readCount, read.getName());
         }
 
-        basesCount += bases.length();
-        for (char base : bases.toUpperCase().toCharArray()) {
+        basesCount += effectiveBases.length();
+        for (char base : effectiveBases.toUpperCase().toCharArray()) {
           if (iupacSet.contains(base)) {
             if (base == 'A' || base == 'U' || base == 'T' || base == 'C' || base == 'G') {
               autcgCount++;
             }
           } else {
-            throw new ReadsValidationException(ERROR_NOT_IUPAC, readCount, bases);
+            throw new ReadsValidationException(ERROR_NOT_IUPAC, readCount, effectiveBases);
           }
         }
 
-        if (!qualityScores.isEmpty()) {
-          int totalQuality = 0;
-          for (char q : qualityScores.toCharArray()) {
-            totalQuality += q - '!'; // Phred+33 0 at !
-          }
-          if ((double) totalQuality / qualityScores.length() >= MIN_QUALITY_SCORE) {
-            highQualityReadCount++;
-          }
+        int totalQuality = 0;
+        for (char q : effectiveQualityScores.toCharArray()) {
+          totalQuality += q - '!'; // Phred+33 0 at !
+        }
+        if ((double) totalQuality / effectiveQualityScores.length() >= MIN_QUALITY_SCORE) {
+          highQualityReadCount++;
         }
       }
 
