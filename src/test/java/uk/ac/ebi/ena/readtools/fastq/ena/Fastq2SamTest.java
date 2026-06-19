@@ -18,21 +18,22 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
-import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.math.BigInteger;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,12 +41,14 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import uk.ac.ebi.ena.readtools.common.reads.QualityNormalizer;
 import uk.ac.ebi.ena.readtools.loader.common.FileCompression;
 import uk.ac.ebi.ena.readtools.loader.common.InvalidBaseCharacterException;
 import uk.ac.ebi.ena.readtools.loader.common.converter.ConverterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterException;
 import uk.ac.ebi.ena.readtools.loader.common.writer.ReadWriterMemoryLimitException;
 import uk.ac.ebi.ena.readtools.sam.Sam2Fastq;
+import uk.ac.ebi.ena.readtools.utils.Utils;
 
 /**
  * TODO The tests in here need to compare data between source fastq(s) and generated bam file as
@@ -54,7 +57,7 @@ import uk.ac.ebi.ena.readtools.sam.Sam2Fastq;
 public class Fastq2SamTest {
   @Test
   public void singleFastqReadAndBaseCount()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+      throws IOException, ConverterException, ReadWriterException {
 
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
@@ -76,13 +79,12 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(4, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(404, fastq2Sam.getTotalBaseCount());
-    Assert.assertEquals(
-        "9017afbcef3ff94d0281dc847aebb067", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
   }
 
   @Test
   public void pairedFastqReadAndBaseCount()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+      throws IOException, ConverterException, ReadWriterException {
 
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
@@ -110,13 +112,12 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
-    Assert.assertEquals(
-        "01ce849441f1d3ac174ce6c2bb435849", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
   }
 
   @Test
   public void pairedFastqCasavaLikeNoPairNum()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+      throws IOException, ConverterException, ReadWriterException {
 
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
@@ -144,13 +145,12 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(6, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(906, fastq2Sam.getTotalBaseCount());
-    Assert.assertEquals(
-        "5309b2a5e8f0a76a836ce2ad7a5ae89d", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
   }
 
   @Test
   public void pairedFastqCasavaLikeNoPairNumFlowcellDash()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+      throws IOException, ConverterException, ReadWriterException {
 
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
@@ -178,13 +178,12 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(6, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(906, fastq2Sam.getTotalBaseCount());
-    Assert.assertEquals(
-        "123c28d7c0123afa83e273bd766804c5", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
   }
 
   @Test
   public void pairedFastqCasavaLikeSingleDigitYNoPairNum()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+      throws IOException, ConverterException, ReadWriterException {
 
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
@@ -212,8 +211,7 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(6, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(906, fastq2Sam.getTotalBaseCount());
-    Assert.assertEquals(
-        "68b8ec81589146481e64d9c275f85aa8", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
   }
 
   @Ignore("Only run manually if needed.")
@@ -274,8 +272,7 @@ public class Fastq2SamTest {
   }
 
   @Test
-  public void pairedFastqPairNumber3()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+  public void pairedFastqPairNumber3() throws IOException, ConverterException, ReadWriterException {
 
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
@@ -303,8 +300,7 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(6, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(906, fastq2Sam.getTotalBaseCount());
-    Assert.assertEquals(
-        "6814cd8b3592ac6dac2338ca17b64921", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
   }
 
   @Test
@@ -374,8 +370,7 @@ public class Fastq2SamTest {
   }
 
   @Test
-  public void testMemoryPaging()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+  public void testMemoryPaging() throws IOException, ConverterException, ReadWriterException {
 
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
@@ -406,8 +401,7 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(8, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(808, fastq2Sam.getTotalBaseCount());
-    Assert.assertEquals(
-        "01ce849441f1d3ac174ce6c2bb435849", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
   }
 
   @Test
@@ -514,7 +508,7 @@ public class Fastq2SamTest {
   }
 
   @Test
-  public void testUracilFastqSingle() throws IOException, NoSuchAlgorithmException {
+  public void testUracilFastqSingle() throws IOException {
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
     params.sample_name = "SM-001";
@@ -557,12 +551,11 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(2, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(40, fastq2Sam.getTotalBaseCount());
-    Assert.assertEquals(
-        "fdc0986ec2ef619fa382b1d06566ba73", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
   }
 
   @Test
-  public void testUracilFastqPaired() throws IOException, NoSuchAlgorithmException {
+  public void testUracilFastqPaired() throws IOException {
     Fastq2Sam.Params params = new Fastq2Sam.Params();
     params.tmp_root = System.getProperty("java.io.tmpdir");
     params.sample_name = "SM-001";
@@ -611,12 +604,11 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(4, fastq2Sam.getTotalReadCount());
     Assert.assertEquals(80, fastq2Sam.getTotalBaseCount());
-    Assert.assertEquals(
-        "9991e990fad7c39578be55e0ef12d6ac", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
   }
 
   @Test
-  public void testInputFileOrderSwap() throws IOException, NoSuchAlgorithmException {
+  public void testInputFileOrderSwap() throws IOException {
     Path f1 = Paths.get("src/test/resources/ERR12387716/tf_1.fastq.gz");
     Path f2 = Paths.get("src/test/resources/ERR12387716/tf_2.fastq.gz");
 
@@ -636,8 +628,8 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(4, fastq2Sam1.getTotalReadCount());
     Assert.assertEquals(1203, fastq2Sam1.getTotalBaseCount());
-    Assert.assertEquals(
-        "b82a3c90cbbf448a17be80cc2c8d3aaa", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
+    List<String> firstRunRecords = canonicalBamRecords(new File(params.data_file), params);
 
     params.files = Arrays.asList(f2.toString(), f1.toString());
     Fastq2Sam fastq2Sam2 = new Fastq2Sam();
@@ -646,8 +638,11 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(4, fastq2Sam2.getTotalReadCount());
     Assert.assertEquals(1203, fastq2Sam2.getTotalBaseCount());
+    assertBamMatchesFastqInputs(params);
     Assert.assertEquals(
-        "b82a3c90cbbf448a17be80cc2c8d3aaa", calculateFileMd5(new File(params.data_file)));
+        "Swapping input file order should not change logical BAM records",
+        firstRunRecords,
+        canonicalBamRecords(new File(params.data_file), params));
   }
 
   @Test
@@ -741,7 +736,7 @@ public class Fastq2SamTest {
   }
 
   @Test
-  public void testCheckerboardPatternReads() throws IOException, NoSuchAlgorithmException {
+  public void testCheckerboardPatternReads() throws IOException {
     Path tempDir = Files.createTempDirectory("fastq_test");
 
     Path fastqFile1 = tempDir.resolve("test_1.fastq");
@@ -800,8 +795,8 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(8, fastq2Sam1.getTotalReadCount());
     Assert.assertEquals(256, fastq2Sam1.getTotalBaseCount());
-    Assert.assertEquals(
-        "2ec1bbc086ce496fa2711a449a35bac9", calculateFileMd5(new File(params.data_file)));
+    assertBamMatchesFastqInputs(params);
+    List<String> firstRunRecords = canonicalBamRecords(new File(params.data_file), params);
 
     params.files = Arrays.asList(fastqFile2.toString(), fastqFile1.toString());
     Fastq2Sam fastq2Sam2 = new Fastq2Sam();
@@ -810,8 +805,11 @@ public class Fastq2SamTest {
     Assert.assertTrue(new File(params.data_file).length() > 0);
     Assert.assertEquals(8, fastq2Sam2.getTotalReadCount());
     Assert.assertEquals(256, fastq2Sam2.getTotalBaseCount());
+    assertBamMatchesFastqInputs(params);
     Assert.assertEquals(
-        "2ec1bbc086ce496fa2711a449a35bac9", calculateFileMd5(new File(params.data_file)));
+        "Swapping checkerboard input files should not change logical BAM records",
+        firstRunRecords,
+        canonicalBamRecords(new File(params.data_file), params));
   }
 
   // ---- Spill reassembly tests ----
@@ -826,7 +824,7 @@ public class Fastq2SamTest {
    */
   @Test
   public void testSpillReassemblyInOrder()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+      throws IOException, ConverterException, ReadWriterException {
     Path tempDir = Files.createTempDirectory("fastq_spill_test");
 
     Path fastqFile1 = tempDir.resolve("input_1.fastq");
@@ -866,7 +864,8 @@ public class Fastq2SamTest {
     noSpillF2s.create(noSpillParams);
 
     Assert.assertEquals(12, noSpillF2s.getTotalReadCount());
-    String noSpillMd5 = calculateFileMd5(new File(noSpillBam));
+    assertBamMatchesFastqInputs(noSpillParams);
+    List<String> noSpillRecords = canonicalBamRecords(new File(noSpillBam), noSpillParams);
 
     // Run with spill_page_size=2
     String spillBam = Files.createTempFile(tempDir, "spill", ".bam").toString();
@@ -884,9 +883,12 @@ public class Fastq2SamTest {
     spillF2s.create(spillParams);
 
     Assert.assertEquals(12, spillF2s.getTotalReadCount());
-    String spillMd5 = calculateFileMd5(new File(spillBam));
+    assertBamMatchesFastqInputs(spillParams);
 
-    Assert.assertEquals("Spill BAM should be identical to no-spill BAM", noSpillMd5, spillMd5);
+    Assert.assertEquals(
+        "Spill BAM should contain the same logical records as no-spill BAM",
+        noSpillRecords,
+        canonicalBamRecords(new File(spillBam), spillParams));
   }
 
   /**
@@ -896,7 +898,7 @@ public class Fastq2SamTest {
    */
   @Test
   public void testSpillReassemblyCrossPage()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+      throws IOException, ConverterException, ReadWriterException {
     Path tempDir = Files.createTempDirectory("fastq_spill_test");
 
     Path fastqFile1 = tempDir.resolve("input_1.fastq");
@@ -936,7 +938,8 @@ public class Fastq2SamTest {
     noSpillF2s.create(noSpillParams);
 
     Assert.assertEquals(8, noSpillF2s.getTotalReadCount());
-    String noSpillMd5 = calculateFileMd5(new File(noSpillBam));
+    assertBamMatchesFastqInputs(noSpillParams);
+    List<String> noSpillRecords = canonicalBamRecords(new File(noSpillBam), noSpillParams);
 
     // Spill with page_size=1 — forces spill after every single entry
     String spillBam = Files.createTempFile(tempDir, "spill", ".bam").toString();
@@ -954,10 +957,12 @@ public class Fastq2SamTest {
     spillF2s.create(spillParams);
 
     Assert.assertEquals(8, spillF2s.getTotalReadCount());
-    String spillMd5 = calculateFileMd5(new File(spillBam));
+    assertBamMatchesFastqInputs(spillParams);
 
     Assert.assertEquals(
-        "Cross-page spill BAM should be identical to no-spill BAM", noSpillMd5, spillMd5);
+        "Cross-page spill BAM should contain the same logical records as no-spill BAM",
+        noSpillRecords,
+        canonicalBamRecords(new File(spillBam), spillParams));
   }
 
   /**
@@ -967,7 +972,7 @@ public class Fastq2SamTest {
    */
   @Test
   public void testSpillReassemblyWithOrphans()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+      throws IOException, ConverterException, ReadWriterException {
     Path tempDir = Files.createTempDirectory("fastq_spill_test");
 
     Path fastqFile1 = tempDir.resolve("input_1.fastq");
@@ -1035,7 +1040,8 @@ public class Fastq2SamTest {
     noSpillF2s.create(noSpillParams);
 
     Assert.assertEquals(10, noSpillF2s.getTotalReadCount());
-    String noSpillMd5 = calculateFileMd5(new File(noSpillBam));
+    assertBamMatchesFastqInputs(noSpillParams);
+    List<String> noSpillRecords = canonicalBamRecords(new File(noSpillBam), noSpillParams);
 
     // Spill with page_size=2
     String spillBam = Files.createTempFile(tempDir, "spill", ".bam").toString();
@@ -1053,10 +1059,12 @@ public class Fastq2SamTest {
     spillF2s.create(spillParams);
 
     Assert.assertEquals(10, spillF2s.getTotalReadCount());
-    String spillMd5 = calculateFileMd5(new File(spillBam));
+    assertBamMatchesFastqInputs(spillParams);
 
     Assert.assertEquals(
-        "Spill with orphans BAM should be identical to no-spill BAM", noSpillMd5, spillMd5);
+        "Spill with orphans BAM should contain the same logical records as no-spill BAM",
+        noSpillRecords,
+        canonicalBamRecords(new File(spillBam), spillParams));
   }
 
   /**
@@ -1065,7 +1073,7 @@ public class Fastq2SamTest {
    */
   @Test
   public void testSpillReassemblyManyReads()
-      throws IOException, ConverterException, ReadWriterException, NoSuchAlgorithmException {
+      throws IOException, ConverterException, ReadWriterException {
     Path tempDir = Files.createTempDirectory("fastq_spill_test");
 
     Path fastqFile1 = tempDir.resolve("input_1.fastq");
@@ -1105,7 +1113,8 @@ public class Fastq2SamTest {
     noSpillF2s.create(noSpillParams);
 
     Assert.assertEquals(numPairs * 2, noSpillF2s.getTotalReadCount());
-    String noSpillMd5 = calculateFileMd5(new File(noSpillBam));
+    assertBamMatchesFastqInputs(noSpillParams);
+    List<String> noSpillRecords = canonicalBamRecords(new File(noSpillBam), noSpillParams);
 
     // Spill with page_size=3
     String spillBam = Files.createTempFile(tempDir, "spill", ".bam").toString();
@@ -1123,10 +1132,12 @@ public class Fastq2SamTest {
     spillF2s.create(spillParams);
 
     Assert.assertEquals(numPairs * 2, spillF2s.getTotalReadCount());
-    String spillMd5 = calculateFileMd5(new File(spillBam));
+    assertBamMatchesFastqInputs(spillParams);
 
     Assert.assertEquals(
-        "Many-reads spill BAM should be identical to no-spill BAM", noSpillMd5, spillMd5);
+        "Many-reads spill BAM should contain the same logical records as no-spill BAM",
+        noSpillRecords,
+        canonicalBamRecords(new File(spillBam), spillParams));
   }
 
   @Test
@@ -1397,16 +1408,323 @@ public class Fastq2SamTest {
     }
   }
 
-  public static String calculateFileMd5(File file) throws IOException, NoSuchAlgorithmException {
-    MessageDigest digest = MessageDigest.getInstance("MD5");
-    byte[] buf = new byte[4096];
-    int read = 0;
-    try (BufferedInputStream is = new BufferedInputStream(new FileInputStream(file))) {
-      while ((read = is.read(buf)) > 0) digest.update(buf, 0, read);
+  private static final String DEFAULT_READ_GROUP_NAME = "A";
+  private static final Pattern PAIR_SUFFIX = Pattern.compile("^(.*)[.:/_]([0-9]+)$");
+  private static final Pattern CASAVA_LIKE_NAME_WITHOUT_READ_INDEX =
+      Pattern.compile("^([a-zA-Z0-9_-]+:[0-9]+:[a-zA-Z0-9_-]+:[0-9]+:[0-9]+:[0-9-]+:[0-9-]+)$");
+  private static final Pattern CASAVA_18_NAME =
+      Pattern.compile("^(.+)( +|\\t+)([0-9]+):([YN]):([0-9]*[02468])($|:.*$)");
 
-      byte[] message_digest = digest.digest();
-      BigInteger value = new BigInteger(1, message_digest);
-      return String.format(String.format("%%0%dx", message_digest.length << 1), value);
+  private static void assertBamMatchesFastqInputs(Fastq2Sam.Params params) throws IOException {
+    Assert.assertEquals(
+        expectedBamRecords(params), canonicalBamRecords(new File(params.data_file), params));
+  }
+
+  private static List<String> canonicalBamRecords(File bamFile, Fastq2Sam.Params params)
+      throws IOException {
+    List<String> records = new ArrayList<>();
+
+    try (SamReader samReader = SamReaderFactory.makeDefault().open(bamFile)) {
+      Assert.assertNotNull(samReader.getFileHeader().getReadGroup(DEFAULT_READ_GROUP_NAME));
+      Assert.assertEquals(
+          params.sample_name,
+          samReader.getFileHeader().getReadGroup(DEFAULT_READ_GROUP_NAME).getSample());
+
+      for (SAMRecord rec : samReader) {
+        records.add(canonicalRecord(rec));
+      }
+    }
+
+    Collections.sort(records);
+    return records;
+  }
+
+  private static List<String> expectedBamRecords(Fastq2Sam.Params params) throws IOException {
+    QualityNormalizer qualityNormalizer =
+        Utils.getQualityNormalizer(
+            Utils.detectFastqQualityFormat(
+                params.files.get(0), params.files.size() == 2 ? params.files.get(1) : null));
+
+    List<String> records =
+        params.files.size() == 1
+            ? expectedSingleEndRecords(params, qualityNormalizer)
+            : expectedPairedEndRecords(params, qualityNormalizer);
+
+    Collections.sort(records);
+    return records;
+  }
+
+  private static List<String> expectedSingleEndRecords(
+      Fastq2Sam.Params params, QualityNormalizer qualityNormalizer) throws IOException {
+    List<String> records = new ArrayList<>();
+    for (FastqInputRecord read :
+        readFastqRecords(
+            params.files.get(0), FileCompression.valueOf(params.compression), 1, false)) {
+      records.add(
+          canonicalRecord(
+              read.samReadName,
+              outputBases(read.bases, params.convertUracil),
+              normalizedQualities(read.qualityScores, qualityNormalizer),
+              false,
+              false,
+              false,
+              true,
+              false,
+              read.filtered,
+              DEFAULT_READ_GROUP_NAME,
+              read.barcode));
+    }
+    return records;
+  }
+
+  private static List<String> expectedPairedEndRecords(
+      Fastq2Sam.Params params, QualityNormalizer qualityNormalizer) throws IOException {
+    Map<String, List<FastqInputRecord>> readsByKey = new LinkedHashMap<>();
+    FileCompression compression = FileCompression.valueOf(params.compression);
+
+    for (int fileIndex = 0; fileIndex < params.files.size(); fileIndex++) {
+      for (FastqInputRecord read :
+          readFastqRecords(params.files.get(fileIndex), compression, fileIndex + 1, true)) {
+        readsByKey.computeIfAbsent(read.samReadName, key -> new ArrayList<>()).add(read);
+      }
+    }
+
+    List<String> records = new ArrayList<>();
+    for (List<FastqInputRecord> reads : readsByKey.values()) {
+      Assert.assertTrue("Unexpected number of reads for spot: " + reads, reads.size() <= 2);
+
+      if (reads.size() == 1) {
+        FastqInputRecord read = reads.get(0);
+        records.add(
+            canonicalRecord(
+                read.samReadName,
+                outputBases(read.bases, params.convertUracil),
+                normalizedQualities(read.qualityScores, qualityNormalizer),
+                false,
+                false,
+                false,
+                true,
+                false,
+                read.filtered,
+                DEFAULT_READ_GROUP_NAME,
+                read.barcode));
+      } else {
+        List<FastqInputRecord> sortedReads = new ArrayList<>(reads);
+        sortedReads.sort((left, right) -> Integer.compare(left.pairNumber, right.pairNumber));
+
+        FastqInputRecord first = sortedReads.get(0);
+        records.add(
+            canonicalRecord(
+                first.samReadName,
+                outputBases(first.bases, params.convertUracil),
+                normalizedQualities(first.qualityScores, qualityNormalizer),
+                true,
+                true,
+                false,
+                true,
+                true,
+                first.filtered,
+                DEFAULT_READ_GROUP_NAME,
+                first.barcode));
+
+        FastqInputRecord second = sortedReads.get(1);
+        records.add(
+            canonicalRecord(
+                second.samReadName,
+                outputBases(second.bases, params.convertUracil),
+                normalizedQualities(second.qualityScores, qualityNormalizer),
+                true,
+                false,
+                true,
+                true,
+                true,
+                second.filtered,
+                DEFAULT_READ_GROUP_NAME,
+                second.barcode));
+      }
+    }
+    return records;
+  }
+
+  private static List<FastqInputRecord> readFastqRecords(
+      String fastqFile, FileCompression compression, int defaultReadIndex, boolean paired)
+      throws IOException {
+    List<FastqInputRecord> records = new ArrayList<>();
+
+    try (InputStream is = compression.open(fastqFile, false);
+        BufferedReader reader =
+            new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+      String nameLine;
+      while ((nameLine = readNextNonBlankLine(reader)) != null) {
+        String bases = reader.readLine();
+        String separator = reader.readLine();
+        String qualityScores = reader.readLine();
+
+        Assert.assertTrue(
+            "FASTQ read name line should start with @: " + nameLine, nameLine.startsWith("@"));
+        Assert.assertNotNull("Missing FASTQ bases line after: " + nameLine, bases);
+        Assert.assertNotNull("Missing FASTQ separator line after: " + nameLine, separator);
+        Assert.assertNotNull("Missing FASTQ quality line after: " + nameLine, qualityScores);
+        Assert.assertTrue(
+            "FASTQ separator line should start with +: " + separator, separator.startsWith("+"));
+
+        String readName = nameLine.substring(1);
+        ReadNameInfo readNameInfo = readNameInfo(readName, defaultReadIndex, paired);
+        records.add(
+            new FastqInputRecord(
+                readName,
+                readNameInfo.samReadName,
+                readNameInfo.pairNumber,
+                bases,
+                qualityScores,
+                readNameInfo.filtered,
+                readNameInfo.barcode));
+      }
+    }
+
+    return records;
+  }
+
+  private static String readNextNonBlankLine(BufferedReader reader) throws IOException {
+    String line;
+    while ((line = reader.readLine()) != null) {
+      if (!line.trim().isEmpty()) {
+        return line;
+      }
+    }
+    return null;
+  }
+
+  private static ReadNameInfo readNameInfo(String readName, int defaultReadIndex, boolean paired) {
+    Matcher casava18Matcher = CASAVA_18_NAME.matcher(readName);
+    if (casava18Matcher.matches()) {
+      String barcode =
+          casava18Matcher.group(6).isEmpty() ? null : casava18Matcher.group(6).substring(1);
+      return new ReadNameInfo(
+          casava18Matcher.group(1),
+          Integer.parseInt(casava18Matcher.group(3)),
+          "Y".equals(casava18Matcher.group(4)),
+          barcode == null || barcode.isEmpty() ? null : barcode);
+    }
+
+    if (!paired) {
+      int slashIndex = readName.lastIndexOf('/');
+      return new ReadNameInfo(
+          slashIndex == -1 ? readName : readName.substring(0, slashIndex),
+          defaultReadIndex,
+          false,
+          null);
+    }
+
+    if (!CASAVA_LIKE_NAME_WITHOUT_READ_INDEX.matcher(readName).matches()) {
+      Matcher pairSuffixMatcher = PAIR_SUFFIX.matcher(readName);
+      if (pairSuffixMatcher.matches()) {
+        return new ReadNameInfo(
+            pairSuffixMatcher.group(1), Integer.parseInt(pairSuffixMatcher.group(2)), false, null);
+      }
+    }
+
+    return new ReadNameInfo(readName, defaultReadIndex, false, null);
+  }
+
+  private static String outputBases(String bases, boolean convertUracil) {
+    return (convertUracil ? Utils.replaceUracilBases(bases) : bases)
+        .toUpperCase(java.util.Locale.ROOT);
+  }
+
+  private static byte[] normalizedQualities(
+      String qualityScores, QualityNormalizer qualityNormalizer) {
+    byte[] normalizedQualities = qualityScores.getBytes(StandardCharsets.UTF_8);
+    qualityNormalizer.normalize(normalizedQualities);
+    return normalizedQualities;
+  }
+
+  private static String canonicalRecord(SAMRecord record) {
+    boolean paired = record.getReadPairedFlag();
+    return canonicalRecord(
+        record.getReadName(),
+        record.getReadString(),
+        record.getBaseQualities(),
+        paired,
+        paired && record.getFirstOfPairFlag(),
+        paired && record.getSecondOfPairFlag(),
+        record.getReadUnmappedFlag(),
+        paired && record.getMateUnmappedFlag(),
+        record.getReadFailsVendorQualityCheckFlag(),
+        String.valueOf(record.getAttribute("RG")),
+        String.valueOf(record.getAttribute("BC")));
+  }
+
+  private static String canonicalRecord(
+      String readName,
+      String bases,
+      byte[] baseQualities,
+      boolean paired,
+      boolean firstOfPair,
+      boolean secondOfPair,
+      boolean unmapped,
+      boolean mateUnmapped,
+      boolean qcFail,
+      String readGroup,
+      String barcode) {
+    return String.join(
+        "\t",
+        "name=" + readName,
+        "bases=" + bases,
+        "qualities=" + Arrays.toString(baseQualities),
+        "paired=" + paired,
+        "first=" + firstOfPair,
+        "second=" + secondOfPair,
+        "unmapped=" + unmapped,
+        "mateUnmapped=" + mateUnmapped,
+        "qcFail=" + qcFail,
+        "RG=" + readGroup,
+        "BC=" + barcode);
+  }
+
+  private static final class ReadNameInfo {
+    final String samReadName;
+    final int pairNumber;
+    final boolean filtered;
+    final String barcode;
+
+    ReadNameInfo(String samReadName, int pairNumber, boolean filtered, String barcode) {
+      this.samReadName = samReadName;
+      this.pairNumber = pairNumber;
+      this.filtered = filtered;
+      this.barcode = barcode;
+    }
+  }
+
+  private static final class FastqInputRecord {
+    final String originalReadName;
+    final String samReadName;
+    final int pairNumber;
+    final String bases;
+    final String qualityScores;
+    final boolean filtered;
+    final String barcode;
+
+    FastqInputRecord(
+        String originalReadName,
+        String samReadName,
+        int pairNumber,
+        String bases,
+        String qualityScores,
+        boolean filtered,
+        String barcode) {
+      this.originalReadName = originalReadName;
+      this.samReadName = samReadName;
+      this.pairNumber = pairNumber;
+      this.bases = bases;
+      this.qualityScores = qualityScores;
+      this.filtered = filtered;
+      this.barcode = barcode;
+    }
+
+    @Override
+    public String toString() {
+      return originalReadName;
     }
   }
 }
