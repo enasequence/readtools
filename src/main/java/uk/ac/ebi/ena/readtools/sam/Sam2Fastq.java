@@ -44,6 +44,9 @@ public class Sam2Fastq {
   public static final boolean INCLUDE_NON_PRIMARY_ALIGNMENTS = false;
   public static final boolean INCLUDE_NON_PF_READS = false;
 
+  private long totalRecordCount = 0;
+  private long skippedSecondarySupplementaryReadCount = 0;
+  private long skippedVendorQualityCheckReadCount = 0;
   private long totalReadCount = 0, totalBaseCount = 0;
 
   private static void printUsage(JCommander jc) {
@@ -113,6 +116,9 @@ public class Sam2Fastq {
     d.prefix = params.prefix;
     d.run();
 
+    totalRecordCount = d.totalRecordCount;
+    skippedSecondarySupplementaryReadCount = d.skippedSecondarySupplementaryReadCount;
+    skippedVendorQualityCheckReadCount = d.skippedVendorQualityCheckReadCount;
     totalReadCount = d.totalReadCount;
     totalBaseCount = d.totalBaseCount;
 
@@ -137,6 +143,18 @@ public class Sam2Fastq {
     return totalBaseCount;
   }
 
+  public long getTotalRecordCount() {
+    return totalRecordCount;
+  }
+
+  public long getSkippedSecondarySupplementaryReadCount() {
+    return skippedSecondarySupplementaryReadCount;
+  }
+
+  public long getSkippedVendorQualityCheckReadCount() {
+    return skippedVendorQualityCheckReadCount;
+  }
+
   private abstract static class Dumper implements Runnable {
     protected File samFile;
     protected byte[] ref = null;
@@ -148,6 +166,9 @@ public class Sam2Fastq {
     private boolean reverse = false;
     protected AtomicBoolean brokenPipe;
 
+    public long totalRecordCount = 0;
+    public long skippedSecondarySupplementaryReadCount = 0;
+    public long skippedVendorQualityCheckReadCount = 0;
     public long totalReadCount = 0, totalBaseCount = 0;
 
     public Dumper(
@@ -204,13 +225,16 @@ public class Sam2Fastq {
       MultiFastqOutputter fastqOutputter = createFastqWriter();
 
       for (final SAMRecord currentRecord : samReader) {
+        ++totalRecordCount;
 
         if (currentRecord.isSecondaryOrSupplementary() && !INCLUDE_NON_PRIMARY_ALIGNMENTS) {
+          ++skippedSecondarySupplementaryReadCount;
           continue;
         }
 
         // Skip non-PF reads as necessary
         if (currentRecord.getReadFailsVendorQualityCheckFlag() && !INCLUDE_NON_PF_READS) {
+          ++skippedVendorQualityCheckReadCount;
           continue;
         }
 

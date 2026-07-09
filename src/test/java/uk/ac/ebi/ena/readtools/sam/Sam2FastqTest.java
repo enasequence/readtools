@@ -138,6 +138,36 @@ public class Sam2FastqTest {
     assertFastqResult(baseDir + fileNamePrefix, output.getPath(), "_2");
   }
 
+  @Test
+  public void tracksVendorQualityCheckSkippedReads() throws Exception {
+    File input = File.createTempFile("sam2fastq-qc-failed", ".sam");
+    Files.write(
+        input.toPath(),
+        ("@HD\tVN:1.6\tSO:unsorted\n"
+                + "@SQ\tSN:chr1\tLN:1000\n"
+                + "read1\t512\tchr1\t1\t255\t4M\t*\t0\t0\tACGT\t!!!!\n"
+                + "read2\t512\tchr1\t2\t255\t4M\t*\t0\t0\tTGCA\t!!!!\n")
+            .getBytes(StandardCharsets.UTF_8));
+
+    File output = File.createTempFile("FASTQ", "FASTQ");
+    output.delete();
+
+    Sam2Fastq.Params params = new Sam2Fastq.Params();
+    params.samFile = input;
+    params.reverse = true;
+    params.nofStreams = 3;
+    params.fastqBaseName = output.getPath();
+
+    Sam2Fastq sam2Fastq = new Sam2Fastq();
+    sam2Fastq.create(params);
+
+    Assert.assertEquals(2l, sam2Fastq.getTotalRecordCount());
+    Assert.assertEquals(2l, sam2Fastq.getSkippedVendorQualityCheckReadCount());
+    Assert.assertEquals(0l, sam2Fastq.getSkippedSecondarySupplementaryReadCount());
+    Assert.assertEquals(0l, sam2Fastq.getTotalReadCount());
+    Assert.assertEquals(0l, sam2Fastq.getTotalBaseCount());
+  }
+
   private GeneratedFastqResult generateFastqFiles(String source) throws Exception {
     File output = File.createTempFile("FASTQ", "FASTQ");
     output.delete();
