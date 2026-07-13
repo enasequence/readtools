@@ -37,6 +37,13 @@ jar {
     }
 }
 
+// Make the shadow (fat) jar directly executable: `java -jar readtools-<version>-all.jar ...`
+shadowJar {
+    manifest {
+        attributes( 'Main-Class': 'uk.ac.ebi.ena.readtools.v2.cli.ValidateCli' )
+    }
+}
+
 configurations.all {
 	if( !hasProperty( 'gitlab_private_token' ) )
 		project.ext.properties.gitlab_private_token = ''
