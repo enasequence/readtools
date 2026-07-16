@@ -1,0 +1,77 @@
+name: Build and release readtools
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  WEBIN_VALIDATOR_VERSION: "2.15.1"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out readtools
+        uses: actions/checkout@v6
+
+      - name: Check out webin-cli-validator
+        uses: actions/checkout@v6
+        with:
+          repository: enasequence/webin-cli-validator
+          path: webin-cli-validator
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Publish validator to local Maven repository
+        working-directory: webin-cli-validator
+        env:
+          APP_VERSION: ${{ env.WEBIN_VALIDATOR_VERSION }}
+        run: |
+          chmod +x gradlew
+          ./gradlew publishToMavenLocal -Pgitlab_private_token=x
+
+      - name: Build readtools fat JAR
+        run: |
+          chmod +x gradlew
+          ./gradlew clean shadowJar
+
+      - name: Locate release JAR
+        id: jar
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          JAR="$(find build/libs -maxdepth 1 -type f \
+            \( -name '*-all.jar' -o -name '*-shadow.jar' \) \
+            | head -n 1)"
+
+          if [[ -z "$JAR" ]]; then
+            echo "No Shadow JAR found in build/libs"
+            find build/libs -maxdepth 1 -type f -print || true
+            exit 1
+          fi
+
+          echo "path=$JAR" >> "$GITHUB_OUTPUT"
+          echo "Found release JAR: $JAR"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            "${{ steps.jar.outputs.path }}" \
+            --verify-tag \
+            --generate-notes \
+            --title "readtools ${GITHUB_REF_NAME}"
