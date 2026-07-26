@@ -65,4 +65,44 @@ public class ReadsValidatorTest {
     Assert.assertEquals(3, qs.size());
     qs.forEach(e -> Assert.assertTrue(e.getReadCount() > 0 && e.getHighQualityReadCount() > 0));
   }
+
+  /** Two paired fastq files must be reported as paired so that webin-cli can write PAIRED. */
+  @Test
+  public void twoPairedFastqFilesAreReportedAsPaired() throws IOException {
+    ReadsValidationResponse response =
+        validateFastq("2fastq/28239_1822_1.fastq", "2fastq/28239_1822_2.fastq");
+
+    Assert.assertEquals(ValidationResponse.status.VALIDATION_SUCCESS, response.getStatus());
+    Assert.assertTrue(response.isPaired());
+  }
+
+  /** A single fastq file has no pairing information (ENA-3407) and must not be reported paired. */
+  @Test
+  public void singleFastqFileIsNotReportedAsPaired() throws IOException {
+    ReadsValidationResponse response = validateFastq("2fastq/28239_1822_1.fastq");
+
+    Assert.assertEquals(ValidationResponse.status.VALIDATION_SUCCESS, response.getStatus());
+    Assert.assertFalse(response.isPaired());
+  }
+
+  private ReadsValidationResponse validateFastq(String... resourceNames) throws IOException {
+    Path workDir = Files.createTempDirectory("rvt");
+    Path reportFile = Files.createTempFile(workDir, "", ".report");
+
+    SubmissionFiles<ReadsManifest.FileType> submissionFiles = new SubmissionFiles<>();
+    for (String resourceName : resourceNames) {
+      File file =
+          new File(ReadsValidatorTest.class.getClassLoader().getResource(resourceName).getFile());
+      submissionFiles.add(
+          new SubmissionFile<>(ReadsManifest.FileType.FASTQ, file, reportFile.toFile()));
+    }
+
+    ReadsManifest readsManifest = new ReadsManifest();
+    readsManifest.setReportFile(reportFile.toFile());
+    readsManifest.setProcessDir(workDir.toFile());
+    readsManifest.setFiles(submissionFiles);
+    readsManifest.setQuick(true);
+
+    return new ReadsValidator().validate(readsManifest);
+  }
 }
