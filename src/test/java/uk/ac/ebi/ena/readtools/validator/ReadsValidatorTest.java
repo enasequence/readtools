@@ -76,7 +76,11 @@ public class ReadsValidatorTest {
     Assert.assertTrue(response.isPaired());
   }
 
-  /** A single fastq file has no pairing information (ENA-3407) and must not be reported paired. */
+  /**
+   * Pairing is deliberately not derived from a single fastq file: 7517a26 ("removed calculation of
+   * pair stats on single fastq validation", PR #11) gated paired.set(true) on a two-file
+   * submission. Asserted here so the behaviour is not changed by accident.
+   */
   @Test
   public void singleFastqFileIsNotReportedAsPaired() throws IOException {
     ReadsValidationResponse response = validateFastq("2fastq/28239_1822_1.fastq");
