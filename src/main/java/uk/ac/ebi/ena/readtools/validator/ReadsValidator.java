@@ -85,7 +85,8 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
             result,
             files.stream().map(e -> new File(e.getFilename())).collect(Collectors.toList()),
             FileFormat.valueOf(fileType.toString().toUpperCase()),
-            isQuick);
+            isQuick,
+            paired);
       } else {
         throw new RuntimeException("Unsupported file type: " + fileType.name());
       }
@@ -98,12 +99,17 @@ public class ReadsValidator implements Validator<ReadsManifest, ReadsValidationR
   }
 
   private void runValidatorWrapper(
-      ValidationResult result, List<File> files, FileFormat fileFormat, boolean isQuick) {
+      ValidationResult result,
+      List<File> files,
+      FileFormat fileFormat,
+      boolean isQuick,
+      AtomicBoolean paired) {
     ValidatorWrapper validatorWrapper =
         new ValidatorWrapper(files, fileFormat, isQuick ? QUICK_READ_LIMIT : EXTENDED_READ_LIMIT);
     try {
       validatorWrapper.run();
       fileQualityStats = validatorWrapper.getFileQualityStats();
+      paired.set(validatorWrapper.isPaired());
     } catch (ReadsValidationException e) {
       result.add(ValidationMessage.error(e.getMessage()));
       e.printStackTrace();
